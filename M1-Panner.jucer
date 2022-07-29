@@ -78,7 +78,8 @@
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
         <MODULEPATH id="juce_product_unlocking" path="../JUCE/modules"/>
         <MODULEPATH id="juce_cryptography" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_murka" path="../../JUCE_user-modules"/>
+        <MODULEPATH id="juce_murka" path="Modules"/>
+        <MODULEPATH id="m1_orientation_client" path="Modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2017 targetFolder="Builds/VisualStudio2017" externalLibraries="Mach1EncodeCAPI.lib"
