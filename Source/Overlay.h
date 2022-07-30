@@ -7,35 +7,34 @@
 
 #include "UI/OverlayUIBaseComponent.h"
 
-class M1pannerAudioProcessor;
-class M1PannerEditor;
+class M1PannerAudioProcessor;
+class M1PannerAudioProcessorEditor;
 
-class OverlayDialogWindow : public DialogWindow
+class OverlayDialogWindow : public juce::DialogWindow
 {
 public:
-	OverlayDialogWindow(LaunchOptions& options);
+    OverlayDialogWindow(LaunchOptions& options);
 
 	void closeButtonPressed() override;
 
-	M1pannerAudioProcessor* processor = nullptr;
-	M1PannerEditor* editor = nullptr;
+	M1PannerAudioProcessor* processor = nullptr;
+    M1PannerAudioProcessorEditor* editor = nullptr;
 };
 
-class Overlay : public Component, public Timer
+class Overlay : public juce::Component, public juce::Timer
 {
-	M1pannerAudioProcessor* processor = nullptr;
-	M1PannerEditor* editor = nullptr;
+	M1PannerAudioProcessor* processor = nullptr;
+    M1PannerAudioProcessorEditor* editor = nullptr;
 	juce::DialogWindow* dialogWindow = nullptr;
-
 	OverlayUIBaseComponent* overlayUIBaseComponent = nullptr;
 
 public:
 	//==============================================================================
-	Overlay(M1pannerAudioProcessor* processor, M1PannerEditor* editor);
+	Overlay(M1PannerAudioProcessor* processor, M1PannerAudioProcessorEditor* editor);
 	~Overlay();
 	//==============================================================================
 
-	void paint(Graphics& g);
+	void paint(juce::Graphics& g);
 	void resized();
 
 	void addOpenGLComponent() {

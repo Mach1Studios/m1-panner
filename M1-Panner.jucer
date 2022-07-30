@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="T1JyYR" name="M1-Panner" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Mach1"
+              companyCopyright="Mach1, Corp." companyWebsite="https://www.mach1.tech"
+              companyEmail="whatsup@mach1.tech" bundleIdentifier="com.mach1.panner"
+              pluginManufacturer="Mach1" pluginCode="M1PN" aaxIdentifier="com.mach1.panner"
+              pluginVSTCategory="kPlugCategSpacializer" pluginAAXCategory="0,512"
+              pluginRTASCategory="0,512" pluginVST3Category="Spatial,Surround,Up-Downmix"
+              pluginFormats="buildAAX,buildVST">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
     <FILE id="vkeyiB" name="Proxima Nova Reg.ttf" compile="0" resource="1"
@@ -149,7 +155,8 @@
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
-    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="0"
+            useGlobalPath="1"/>
     <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_box2d" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -161,10 +168,11 @@
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_murka" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_opengl" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
-    <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
-    <MODULE id="juce_murka" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0"
+            useGlobalPath="1"/>
     <MODULE id="m1_orientation_client" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
 </JUCERPROJECT>

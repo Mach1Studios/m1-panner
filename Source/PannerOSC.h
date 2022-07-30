@@ -3,29 +3,26 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-class PannerOSC :
-	private OSCSender,
-	private OSCReceiver,
-	private OSCReceiver::Listener<OSCReceiver::MessageLoopCallback>
+class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
 
 {
 	int port;
 	bool isConnected = false;
 
-	std::function<void(OSCMessage msg)> messageReceived;
+	std::function<void(juce::OSCMessage msg)> messageReceived;
 
-	void oscMessageReceived(const OSCMessage& msg) override;
+	void oscMessageReceived(const juce::OSCMessage& msg) override;
 
 public:
 	PannerOSC();
 
 	void update();
 
-	void AddListener(std::function<void(OSCMessage msg)> messageReceived);
+	void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
 
 	~PannerOSC();
 
-	bool Send(const OSCMessage& msg);
+	bool Send(const juce::OSCMessage& msg);
 
 	bool IsConnected();
 };

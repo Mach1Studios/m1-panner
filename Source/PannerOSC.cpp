@@ -1,7 +1,7 @@
 
 #include "PannerOSC.h"
 
-void PannerOSC::oscMessageReceived(const OSCMessage& msg)
+void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 {
 	if (messageReceived != nullptr)
 	{
@@ -24,41 +24,41 @@ PannerOSC::PannerOSC()
 		if (socket.bindToPort(port))
 		{
 			socket.shutdown();
-			OSCReceiver::connect(port);
+            juce::OSCReceiver::connect(port);
 			break;
 		}
 	}
 
-	OSCReceiver::addListener(this);
+    juce::OSCReceiver::addListener(this);
 }
 
 void PannerOSC::update()
 {
 	if (!isConnected)
 	{
-		if (OSCSender::connect("127.0.0.1", 10000))
+		if (juce::OSCSender::connect("127.0.0.1", 10000))
 		{
-			OSCMessage msg("/panner/port");
+            juce::OSCMessage msg("/panner/port");
 			msg.addInt32(port);
-			isConnected = OSCSender::send(msg);
+			isConnected = juce::OSCSender::send(msg);
 		}
 	}
 }
 
-void PannerOSC::AddListener(std::function<void(OSCMessage msg)> messageReceived)
+void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageReceived)
 {
 	this->messageReceived = messageReceived;
 }
 
 PannerOSC::~PannerOSC()
 {
-	OSCSender::disconnect();
-	OSCReceiver::disconnect();
+    juce::OSCSender::disconnect();
+    juce::OSCReceiver::disconnect();
 }
 
-bool PannerOSC::Send(const OSCMessage& msg)
+bool PannerOSC::Send(const juce::OSCMessage& msg)
 {
-	return (isConnected && OSCSender::send(msg));
+	return (isConnected && juce::OSCSender::send(msg));
 }
 
 bool PannerOSC::IsConnected()

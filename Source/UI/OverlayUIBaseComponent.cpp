@@ -4,14 +4,14 @@
 using namespace murka;
 
 //==============================================================================
-OverlayUIBaseComponent::OverlayUIBaseComponent(M1pannerAudioProcessor* processor_)
+OverlayUIBaseComponent::OverlayUIBaseComponent(M1PannerAudioProcessor* processor_)
 {
 	// Make sure you set the size of the component after
     // you add any child components.
 	setSize (getWidth(), getHeight());
 
 	processor = processor_;
-	pannerSettings = &processor->pannerSettings;
+    pannerSettings = &processor->pannerSettings;
 }
 
 struct Line2D {
@@ -57,8 +57,8 @@ inline MurkaPoint intersection_point(const Line2D& a, const Line2D& b) {
 
 
 void OverlayUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &y) {
-	x = cos(degreesToRadians(-r + 90)) * d * sqrt(2);
-	y = sin(degreesToRadians(-r + 90)) * d * sqrt(2);
+	x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
+	y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
 	if (x > 100) {
 		auto intersection = intersection_point({ 0, 0, x, y },
 			{ 100, -100, 100, 100 });
@@ -94,7 +94,7 @@ void OverlayUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float 
 		d = sqrtf(x*x + y * y) / sqrt(2.0);
 
 		float rotation_radian = atan2(x, y);//acos(x/d);
-		r = radiansToDegrees(rotation_radian);
+		r = juce::radiansToDegrees(rotation_radian);
 	}
 }
 
@@ -147,15 +147,15 @@ void OverlayUIBaseComponent::render()
 
 	if (pannerSettings) {
 
-		XYRZ xyrz = { pannerSettings->x, pannerSettings->y, pannerSettings->rotation, pannerSettings->z };
+		XYRZ xyrz = { pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->elevation };
         auto& overlayReticleField = m.draw<OverlayReticleField>({0, 0, getWidth() / m.getScreenScale(), getHeight() / m.getScreenScale()}).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
         overlayReticleField.teleportCursor = teleportCursor;
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
-        overlayReticleField.stereoMode = !pannerSettings->monoInput;
-        overlayReticleField.sRotate = pannerSettings->stereoRotate;
+        overlayReticleField.stereoMode = (pannerSettings->inputType == 2) ? true : false;
+        overlayReticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerSettings->stereoSpread;
         overlayReticleField.mixerYaw = mixerState.yaw;
         overlayReticleField.mixerPitch = mixerState.pitch;
@@ -163,9 +163,9 @@ void OverlayUIBaseComponent::render()
 		overlayReticleField.commit();
 
         if (overlayReticleField.changed) {
-			convertRCtoXYRaw(pannerSettings->rotation, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-			processor->updateCustomParameter(&pannerSettings->z);
-			processor->updateCustomParameter(&pannerSettings->rotation);
+			convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
+            processor->parameterChanged("azimuth", pannerSettings->azimuth);
+			processor->parameterChanged("elevation", pannerSettings->elevation);
 			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
@@ -199,8 +199,8 @@ void OverlayUIBaseComponent::render()
 
         if (divergeKnob.changed) {
             // update this parameter here, notifying host
-            convertRCtoXYRaw(pannerSettings->rotation, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-            processor->updateCustomParameter(&pannerSettings->diverge);
+            convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
+            processor->parameterChanged("diverge", pannerSettings->diverge);
             //?
         }
         
@@ -218,7 +218,7 @@ void OverlayUIBaseComponent::render()
 } 
 
 //==============================================================================
-void OverlayUIBaseComponent::paint (Graphics& g)
+void OverlayUIBaseComponent::paint (juce::Graphics& g)
 {
     // You can add your component specific drawing code here!
     // This will draw over the top of the openGL background.

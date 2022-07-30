@@ -4,33 +4,30 @@
 #include "Mach1Encode.h"
 
 struct PannerSettings {
-
-    
-    float x = 0;
-	float y = 100;
-	float z = 0; // elevation as well
-	float azimuth = 0;
-	float diverge = 70.7;
-	float gain = 6;
-	float stereoRotate = 0;
-	float stereoSpread = 50;
-	float stereoPan = 0;
-    Mach1EncodePannerMode pannerMode = 0;
     Mach1EncodeInputModeType inputType = Mach1EncodeInputModeStereo;
     Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeM1Spatial;
-    
+    Mach1EncodePannerMode pannerMode = Mach1EncodePannerModeIsotropicLinear;
+    float x = 0;
+	float y = 100;
+	float azimuth = 0;
+    float elevation = 0; // also known as `z`
+    float diverge = 70.7;
+	float gain = 6;
+	float stereoOrbitAzimuth = 0;
+	float stereoSpread = 50;
+	float stereoInputBalance = 0;
+    bool autoOrbit = true;
 	bool overlay = false;
 	 
 	Mach1Encode* m1Encode = nullptr;
 };
 
 struct MixerSettings {
+	int monitor_input_channel_count = 8;
+	int monitor_output_channel_count = 2;
 	float yaw = 0;
 	float pitch = 0;
 	float roll = 0;
-
-	float generatedCoeffs[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	int outputChannelCount = 0;
 };
 
 #endif

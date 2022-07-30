@@ -9,19 +9,69 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
+juce::String M1PannerAudioProcessor::paramElevation("elevation"); // also Z
+juce::String M1PannerAudioProcessor::paramDiverge("diverge");
+juce::String M1PannerAudioProcessor::paramGain("gain");
+juce::String M1PannerAudioProcessor::paramX("x");
+juce::String M1PannerAudioProcessor::paramY("y");
+juce::String M1PannerAudioProcessor::paramStereoOrbitAzimuth("orbitAzimuth");
+juce::String M1PannerAudioProcessor::paramStereoSpread("orbitSpread");
+juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
+juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
+juce::String M1PannerAudioProcessor::paramPannerMode("pannerMode");
+juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
+juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
+
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
-#ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       )
-#endif
+                       .withInput ("Input", juce::AudioChannelSet::stereo(), true)
+                       if (hostType == AvidProTools) {
+                            .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
+                        // manually declare confirmed multichannel DAWs
+                       } else if (hostType == JUCEPluginHost || hostType == Reaper || hostType == SteinbergNuendoGeneric || hostType == Ardour || hostType == DaVinciResolve) {
+                            .withOutput("Mach1 Out", AudioChannelSet::discreteChannels(8), true)
+                        // fallback for all other DAWs to output stereo
+                       } else {
+                            .withOutput("Output", juce::AudioChannelSet::stereo(), true)
+                       }
+                       ),
+    parameters(*this, &mUndoManager, juce::Identifier("M1Panner"),
+               {
+                    std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
+                                                            TRANS("Azimuth"),
+                                                            juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), mAzimuth.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + "°"; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramElevation,
+                                                            TRANS("Elevation"),
+                                                            juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), mElevation.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + "°"; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramDiverge,
+                                                            TRANS("Diverge"),
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mDiverge.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1); },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramGain,
+                                                            TRANS ("Input Gain"),
+                                                    juce::NormalisableRange<float>(-100.0f, 6.0f, 0.1f, std::log (0.5f) / std::log (100.0f / 106.0f)),
+                                                            mGain.get(), "",
+                                                    juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + " dB"; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters (3).getFloatValue(); }),
+               })
 {
+    parameters.addParameterListener(paramAzimuth, this);
+    parameters.addParameterListener(paramElevation, this);
+    parameters.addParameterListener(paramDiverge, this);
+    parameters.addParameterListener(paramGain, this);
+
+    // Setup for Mach1Enecode API
+    m1Encode.setInputMode(pannerSettings.inputType);
+    m1Encode.setOutputMode(pannerSettings.outputType);
+    m1Encode.setPannerMode(pannerSettings.pannerMode);
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
@@ -103,29 +153,26 @@ void M1PannerAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
+void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
+{
+    if (parameterID == paramAzimuth) {
+        mAzimuth = newValue;
+    }
+    else if (parameterID == paramElevation) {
+        mElevation = newValue;
+    }
+    else if (parameterID == paramDiverge) {
+        mDiverge = newValue;
+    }
+    else if (parameterID == paramGain) {
+        mGain = newValue;
+    }
+}
+
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
-    return true;
-  #endif
+    //TODO: setup logic to return true for all Mach1Encode I/O combos and return false for undefined I/O combos
 }
 #endif
 
@@ -159,6 +206,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 }
 
 //==============================================================================
+juce::AudioProcessorValueTreeState& M1PannerAudioProcessor::getValueTreeState()
+{
+    return parameters;
+}
+
 bool M1PannerAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
@@ -166,7 +218,7 @@ bool M1PannerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
-    return new M1PannerAudioProcessorEditor (*this);
+    return new M1PannerAudioProcessorEditor (*this, pannerSettings.pannerMode, pannerSettings.inputType);
 }
 
 //==============================================================================
@@ -175,12 +227,18 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream stream(destData, false);
+    parameters.state.writeToStream(stream);
 }
 
 void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
+    if (tree.isValid()) {
+        parameters.state = tree;
+    }
 }
 
 //==============================================================================

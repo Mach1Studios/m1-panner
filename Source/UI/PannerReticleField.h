@@ -162,7 +162,7 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
         
             // Reticles
-			float angle = autoOrbit ? -atan2((reticlePositionInWidgetSpace - center).x, (reticlePositionInWidgetSpace - center).y) : degreesToRadians(sRotate);
+			float angle = autoOrbit ? -atan2((reticlePositionInWidgetSpace - center).x, (reticlePositionInWidgetSpace - center).y) : juce::degreesToRadians(sRotate);
 			float widgetSpaceSpread = float(shape.size.x) / 200.;
 			std::vector<std::string> pointsNames = m1Encode->getPointsNames();
 			std::vector<Mach1Point3D> points = m1Encode->getPoints();
