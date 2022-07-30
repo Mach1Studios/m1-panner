@@ -66,7 +66,7 @@ public:
             inputValueAngleInDegrees = inputValueNormalised * 300 + 30;
         }
         
-        m.rotateZRad(inputValueAngleInDegrees * (MathConstants<float>::pi / 180));
+        m.rotateZRad(inputValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
         
         m.drawRectangle(-width * (4 + A(1 * inside)), 0, width * (8 + A(2 * inside)), shape.size.x * (0.25 + A(0.02 * inside)));
         

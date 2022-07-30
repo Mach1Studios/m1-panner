@@ -16,10 +16,8 @@ bool WindowUtil::isBusy = false;
 
 #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
 std::string WindowUtil::name = "Avid Video Engine";
-#endif
-
-#if (JucePlugin_Build_VST || JucePlugin_Build_VST3 || JucePlugin_Build_AU || JucePlugin_Build_AUv3 || JUCEPlugin_Build_Unity || JucePlugin_Build_Standalone)
-//TODO: figure out better solution: reaper & reaper's video window have same name
+#else
+//TODO: figure out better solution: reaper & reaper's video window have same name || FL Studio video window
 std::string WindowUtil::name = "";
 #endif
 

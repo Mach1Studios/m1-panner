@@ -5,9 +5,7 @@
 
 #import "WindowUtil.h"
 #import <Foundation/Foundation.h>
-
 #import <AppKit/NSAlert.h>
-
 
 float WindowUtil::x = 0;
 float WindowUtil::y = 0;
@@ -19,32 +17,26 @@ bool WindowUtil::isBusy = false;
 
 #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
 std::string WindowUtil::name = "Avid Video Engine";
-#endif
-
-#if (JucePlugin_Build_VST || JucePlugin_Build_VST3 || JucePlugin_Build_AU || JucePlugin_Build_AUv3 || JUCEPlugin_Build_Unity || JucePlugin_Build_Standalone)
+#else
 //TODO: figure out better solution: reaper & reaper's video window have same name || FL Studio video window
 std::string WindowUtil::name = "";
 #endif
 
-void WindowListApplierFunction(const void *inputDictionary, void *context)
-{
+void WindowListApplierFunction(const void *inputDictionary, void *context) {
     NSDictionary *entry = (__bridge NSDictionary*)inputDictionary;
     NSString *appName = @(WindowUtil::name.c_str());
     
     // The flags that we pass to CGWindowListCopyWindowInfo will automatically filter out most undesirable windows.
     // However, it is possible that we will get back a window that we cannot read from, so we'll filter those out manually.
     int sharingState = [[entry objectForKey:(id)kCGWindowSharingState] intValue];
-    if(sharingState != kCGWindowSharingNone)
-    {
+    if(sharingState != kCGWindowSharingNone) {
     NSString *sVisible = [entry objectForKey:(id)kCGWindowIsOnscreen];
     float isVisible = [sVisible floatValue];
     
-        if(isVisible==1)
-        {
+        if(isVisible==1) {
             // Grab the application name, but since it's optional we need to check before we can use it.
             NSString *applicationName = [entry objectForKey:(id)kCGWindowOwnerName];
-            if(applicationName != NULL)
-            {
+            if(applicationName != NULL) {
                 if ([applicationName isEqualToString:appName]){
                     
                     // Grab the Window Bounds, it's a dictionary in the array, but we want to display it as a string
@@ -60,23 +52,17 @@ void WindowListApplierFunction(const void *inputDictionary, void *context)
                     WindowUtil::width = bounds.size.width;
                     WindowUtil::height = bounds.size.height - 15;
                     WindowUtil::isFound = true;
-                    
-                    
                 }
-                
             }
-            
         } // visible
     }
 }
 
-void WindowUtil::update()
-{
+void WindowUtil::update() {
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(listOptions, kCGNullWindowID);
     
-    if(!WindowUtil::isBusy)
-    {
+    if(!WindowUtil::isBusy) {
         WindowUtil::isBusy = true;
         WindowUtil::isFound = false;
 

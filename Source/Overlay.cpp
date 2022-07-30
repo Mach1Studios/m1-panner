@@ -1,9 +1,9 @@
 #include "Overlay.h"
 
 #include "PluginProcessor.h"
-#include "M1PannerEditor.h"
+#include "PluginEditor.h"
 
-Overlay::Overlay(M1pannerAudioProcessor* processor_, M1PannerEditor* editor_)
+Overlay::Overlay(M1PannerAudioProcessor* processor_, M1PannerAudioProcessorEditor* editor_)
 {
 	dialogWindow = nullptr;
 
@@ -26,7 +26,7 @@ Overlay::~Overlay()
 }
 
 //==============================================================================
-void Overlay::paint(Graphics& g)
+void Overlay::paint(juce::Graphics& g)
 {
 	g.fillAll(juce::Colours::transparentBlack);
 }

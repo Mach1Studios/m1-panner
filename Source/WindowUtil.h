@@ -3,6 +3,7 @@
 //  M1-Panner
 //
 #include <string>
+#include "PluginProcessor.h"
 
 class WindowUtil
 {    
@@ -19,5 +20,4 @@ public:
     static std::string name;
     
     static void update();
- 
 };

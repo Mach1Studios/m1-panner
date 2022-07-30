@@ -28,12 +28,12 @@
 */
 class OverlayUIBaseComponent : public JuceMurkaBaseComponent
 {
-	M1pannerAudioProcessor* processor = nullptr;
+    M1PannerAudioProcessor* processor = nullptr;
 	PannerSettings* pannerSettings = nullptr;
 
 public:
     //==============================================================================
-    OverlayUIBaseComponent(M1pannerAudioProcessor* processor);
+    OverlayUIBaseComponent(M1PannerAudioProcessor* processor);
 	~OverlayUIBaseComponent();
 
     //==============================================================================
@@ -43,7 +43,7 @@ public:
 	void convertRCtoXYRaw(float r, float d, float & x, float & y);
 	void convertXYtoRCRaw(float x, float y, float &r, float &d);
 	//==============================================================================
-    void paint (Graphics& g) override;
+    void paint (juce::Graphics& g) override;
     void resized() override;
 
 	std::function<void(bool)> setOverlayVisible;
@@ -60,15 +60,15 @@ private:
 	bool rotateKnobDraggingNow = false;
 
 	std::function<void()> cursorHide = [&]() {
-		setMouseCursor(MouseCursor::NoCursor);
+		setMouseCursor(juce::MouseCursor::NoCursor);
 		cachedMousePositionWhenMouseWasHidden = currentMousePosition;
 	};
 	std::function<void()> cursorShow = [&]() {
-		setMouseCursor(MouseCursor::NormalCursor);
+		setMouseCursor(juce::MouseCursor::NormalCursor);
 	};
 	std::function<void()> cursorShowAndTeleportBack = [&]() {
-		setMouseCursor(MouseCursor::NormalCursor);
-		Desktop::setMousePosition(localPointToGlobal(juce::Point<int>(cachedMousePositionWhenMouseWasHidden.x, cachedMousePositionWhenMouseWasHidden.y)));
+		setMouseCursor(juce::MouseCursor::NormalCursor);
+        juce::Desktop::setMousePosition(localPointToGlobal(juce::Point<int>(cachedMousePositionWhenMouseWasHidden.x, cachedMousePositionWhenMouseWasHidden.y)));
 	};
 	std::function<void(int, int)> teleportCursor = [&](int x, int y) {
 		//
