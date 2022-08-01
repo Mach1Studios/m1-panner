@@ -88,10 +88,12 @@ private:
     juce::Atomic<float>   mX { pannerSettings.x };
     juce::Atomic<float>   mY { pannerSettings.y };
     juce::Atomic<float>   mGain { pannerSettings.gain };
-    juce::Atomic<bool>    mAutoOrbig { pannerSettings.autoOrbit };
+    juce::Atomic<bool>    mAutoOrbit { pannerSettings.autoOrbit };
     juce::Atomic<float>   mStereoOrbitAzimuth { pannerSettings.stereoOrbitAzimuth };
     juce::Atomic<float>   mStereoSpread { pannerSettings.stereoSpread };
     juce::Atomic<float>   mStereoInputBalance { pannerSettings.stereoInputBalance };
+    juce::Atomic<bool>    mIsotropicEncodeMode { (pannerSettings.pannerMode == Mach1EncodePannerModeIsotropicLinear || pannerSettings.pannerMode == Mach1EncodePannerModeIsotropicEqualPower) ? true : false };
+    juce::Atomic<bool>    mEqualPowerEncodeMode { (pannerSettings.pannerMode == Mach1EncodePannerModeIsotropicEqualPower) ? true : false };
     
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;

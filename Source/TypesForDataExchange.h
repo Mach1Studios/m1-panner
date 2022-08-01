@@ -18,6 +18,8 @@ struct PannerSettings {
 	float stereoInputBalance = 0;
     bool autoOrbit = true;
 	bool overlay = false;
+    bool isotropicMode = true;
+    bool equalpowerMode = false;
 	 
 	Mach1Encode* m1Encode = nullptr;
 };
