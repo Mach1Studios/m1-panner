@@ -19,23 +19,29 @@ juce::String M1PannerAudioProcessor::paramStereoOrbitAzimuth("orbitAzimuth");
 juce::String M1PannerAudioProcessor::paramStereoSpread("orbitSpread");
 juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
-juce::String M1PannerAudioProcessor::paramPannerMode("pannerMode");
+juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
+juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
-                       .withInput ("Input", juce::AudioChannelSet::stereo(), true)
-                       if (hostType == AvidProTools) {
-                            .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
-                        // manually declare confirmed multichannel DAWs
-                       } else if (hostType == JUCEPluginHost || hostType == Reaper || hostType == SteinbergNuendoGeneric || hostType == Ardour || hostType == DaVinciResolve) {
-                            .withOutput("Mach1 Out", AudioChannelSet::discreteChannels(8), true)
-                        // fallback for all other DAWs to output stereo
-                       } else {
-                            .withOutput("Output", juce::AudioChannelSet::stereo(), true)
-                       }
+                        .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
+                        #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
+                        .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
+                        #else
+                        .withOutput("Mach1 Out", AudioChannelSet::discreteChannels(8), true)
+                        #endif
+//                       if (hostType == AvidProTools) {
+//                            .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
+//                        // manually declare confirmed multichannel DAWs
+//                       } else if (hostType == JUCEPluginHost || hostType == Reaper || hostType == SteinbergNuendoGeneric || hostType == Ardour || hostType == DaVinciResolve) {
+//                            .withOutput("Mach1 Out", AudioChannelSet::discreteChannels(8), true)
+//                        // fallback for all other DAWs to output stereo
+//                       } else {
+//                            .withOutput("Output", juce::AudioChannelSet::stereo(), true)
+//                       }
                        ),
     parameters(*this, &mUndoManager, juce::Identifier("M1Panner"),
                {
@@ -157,14 +163,11 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 {
     if (parameterID == paramAzimuth) {
         mAzimuth = newValue;
-    }
-    else if (parameterID == paramElevation) {
+    } else if (parameterID == paramElevation) {
         mElevation = newValue;
-    }
-    else if (parameterID == paramDiverge) {
+    } else if (parameterID == paramDiverge) {
         mDiverge = newValue;
-    }
-    else if (parameterID == paramGain) {
+    } else if (parameterID == paramGain) {
         mGain = newValue;
     }
 }
@@ -172,7 +175,29 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    //TODO: setup logic to return true for all Mach1Encode I/O combos and return false for undefined I/O combos
+    Mach1Encode configTester;
+    
+    // block plugin if input or output is disabled on construction
+    if (layouts.getMainInputChannelSet()  == juce::AudioChannelSet::disabled()
+     || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled())
+        return false;
+    
+    // manually maintained for-loop of first enum element to last enum element
+    // TODO: brainstorm a way to not require manual maintaining of listed enum elements
+    for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
+        configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
+        // test each input, if the input has the number of channels as the input testing layout has move on to output testing
+        if (layouts.getMainInputChannels() == configTester.getInputChannelsCount()) {
+            for (int outputEnum = Mach1EncodeOutputModeM1Horizon; outputEnum != Mach1EncodeOutputModeM1SpatialPlusPlus; outputEnum++ ) {
+                // test each output
+               configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
+                if (layouts.getMainOutputChannels() == configTester.getOutputChannelsCount()){
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 #endif
 
