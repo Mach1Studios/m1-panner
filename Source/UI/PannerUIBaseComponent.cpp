@@ -562,8 +562,7 @@ void PannerUIBaseComponent::render()
 		if (processor->m1Encode.getOutputChannelsCount() > 0) {
             m.setFont("Proxima Nova Reg.ttf", 7);
 			for (int channelIndex = 0; channelIndex < processor->m1Encode.getOutputChannelsCount(); channelIndex++) {
-                // TODO: rewrite this so its the output of all input channels to the output channels
-                auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 560 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(1.0f).commit();
+                auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 560 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(processor->outputMeterValuedB[channelIndex]).commit();
 
                 m.setColor(210, 255);
                 m.draw<M1Label>({ 560 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();

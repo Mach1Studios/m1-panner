@@ -77,6 +77,9 @@ public:
     int monitorMode; // 0 = Spatial, 1 = Horizon, 2 = Stereo Safe, 3 = Folddown
     float monitorYaw = 0, monitorPitch = 0; // current yaw and pitch from Monitor for UI reference
     
+    // Variables from processor for UI
+    juce::Array<float> outputMeterValuedB;
+    
     Mach1Encode m1Encode;
     PannerSettings pannerSettings;
     juce::PluginHostType hostType;
