@@ -54,8 +54,11 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcess
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 {
+    overlayWindow = nullptr;
+    stopTimer();
+    pannerUIBaseComponent->shutdownOpenGL();
+    removeAllChildren();
     delete pannerUIBaseComponent;
-    pannerUIBaseComponent = nullptr;
 }
 
 //==============================================================================

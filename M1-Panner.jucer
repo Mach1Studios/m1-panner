@@ -31,6 +31,10 @@
       <FILE id="KBZIHM" name="WindowUtil.cpp" compile="1" resource="0" file="Source/WindowUtil.cpp"/>
       <FILE id="lnYnW9" name="WindowUtil.h" compile="0" resource="0" file="Source/WindowUtil.h"/>
       <FILE id="Ij83lH" name="WindowUtil.mm" compile="1" resource="0" file="Source/WindowUtil.mm"/>
+      <FILE id="MtAPRc" name="Mach1Encode.cpp" compile="1" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.cpp"/>
+      <FILE id="uj232a" name="Mach1Encode.h" compile="0" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.h"/>
+      <FILE id="cxAfth" name="Mach1EncodeCAPI.h" compile="0" resource="0"
+            file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1EncodeCAPI.h"/>
       <GROUP id="{9C402C38-70FE-774E-A921-CD4A15433E2C}" name="UI">
         <FILE id="AKmxuq" name="M1Checkbox.h" compile="0" resource="0" file="Source/UI/M1Checkbox.h"/>
         <FILE id="m10ewU" name="M1Knob.h" compile="0" resource="0" file="Source/UI/M1Knob.h"/>
