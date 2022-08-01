@@ -47,17 +47,27 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                {
                     std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
                                                             TRANS("Azimuth"),
-                                                            juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), mAzimuth.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), mAzimuth.get(), "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1) + "°"; },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(paramElevation,
                                                             TRANS("Elevation"),
-                                                            juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), mElevation.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), mElevation.get(), "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1) + "°"; },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(paramDiverge,
                                                             TRANS("Diverge"),
-                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mDiverge.get(), "",                                       juce::AudioProcessorParameter::genericParameter,
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mDiverge.get(), "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1); },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramX,
+                                                            TRANS("X"),
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mX.get(), "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1); },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramY,
+                                                            TRANS("Y"),
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mY.get(), "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1); },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(paramGain,
@@ -67,13 +77,35 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                     juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1) + " dB"; },
                                                             [](const juce::String& t) { return t.dropLastCharacters (3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterBool>(paramAutoOrbit, TRANS("Auto Orbit"), true),
+                    std::make_unique<juce::AudioParameterFloat>(paramStereoOrbitAzimuth,
+                                                            TRANS("Stereo Orbit Rotation"),
+                                                            juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), mStereoOrbitAzimuth.get(), "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + "°"; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramStereoSpread,
+                                                            TRANS("Stereo Spread"),
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mStereoSpread.get(), "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1); },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramStereoInputBalance,
+                                                            TRANS("Stereo Input Balance"),
+                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mStereoInputBalance.get(), "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1); },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                })
 {
     parameters.addParameterListener(paramAzimuth, this);
     parameters.addParameterListener(paramElevation, this);
     parameters.addParameterListener(paramDiverge, this);
+    parameters.addParameterListener(paramX, this);
+    parameters.addParameterListener(paramY, this);
     parameters.addParameterListener(paramGain, this);
-
+    parameters.addParameterListener(paramAutoOrbit, this);
+    parameters.addParameterListener(paramStereoOrbitAzimuth, this);
+    parameters.addParameterListener(paramStereoSpread, this);
+    parameters.addParameterListener(paramStereoInputBalance, this);
+    
     // Setup for Mach1Enecode API
     m1Encode.setInputMode(pannerSettings.inputType);
     m1Encode.setOutputMode(pannerSettings.outputType);
@@ -236,10 +268,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setElevationDegrees(parameters.getParameter(paramElevation)->getValue());
     m1Encode.setDiverge(_diverge); // using _diverge in case monitorMode was used
 
-//    m1Encode.setAutoOrbit(parameters.getParameter(paramAutoOrbit)->getValue());
+    m1Encode.setAutoOrbit(parameters.getParameter(paramAutoOrbit)->getValue());
     m1Encode.setOutputGain(parameters.getParameter(paramGain)->getValue(), true);
-//    m1Encode.setOrbitRotationDegrees(parameters.getParameter(paramStereoOrbitAzimuth)->getValue());
-//    m1Encode.setStereoSpread(parameters.getParameter(paramStereoSpread)->getValue());
+    m1Encode.setOrbitRotationDegrees(parameters.getParameter(paramStereoOrbitAzimuth)->getValue());
+    m1Encode.setStereoSpread(parameters.getParameter(paramStereoSpread)->getValue());
+    // TODO: logic for usage of `paramStereoInputBalance`
     
     m1Encode.generatePointResults();
     auto gainCoeffs = m1Encode.getGains();
