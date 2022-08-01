@@ -68,7 +68,8 @@ public:
     static juce::String paramStereoSpread;
     static juce::String paramStereoInputBalance;
     static juce::String paramAutoOrbit;
-    static juce::String paramPannerMode;
+    static juce::String paramIsotropicEncodeMode;
+    static juce::String paramEqualPowerEncodeMode;
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
     

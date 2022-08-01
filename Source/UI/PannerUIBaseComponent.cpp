@@ -478,27 +478,29 @@ void PannerUIBaseComponent::render()
         setOverlayVisible(pannerSettings->overlay);
     }
         
-//    auto& isotropicCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
-//                                                200, 20 })
-//                                                .controlling(&pannerSettings->pannerMode)
-//                                                .withLabel("ISOTROPIC");
-//    isotropicCheckbox.enabled = true;
-//    isotropicCheckbox.commit();
-//
-//    if (isotropicCheckbox.changed) {
-//        processor->parameterChanged("pannerMode", pannerSettings->pannerMode);
-//    }
-//
-//    auto& equalPowerCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
-//                                                200, 20 })
-//                                                .controlling(&pannerSettings->pannerMode)
-//                                                .withLabel("EQUALPOWER");
-//    equalPowerCheckbox.enabled = true;
-//    equalPowerCheckbox.commit();
-//
-//    if (equalPowerCheckbox.changed) {
-//        processor->parameterChanged("pannerMode", pannerSettings->pannerMode);
-//    }
+    auto& isotropicCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
+                                                200, 20 })
+                                                .withLabel("ISOTROPIC");
+    isotropicCheckbox.enabled = true;
+    isotropicCheckbox.commit();
+
+    auto& equalPowerCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
+                                                200, 20 })
+                                                .withLabel("EQUALPOWER");
+    equalPowerCheckbox.enabled = true;
+    equalPowerCheckbox.commit();
+
+    if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
+        if (isotropicCheckbox.checked) {
+            if (equalPowerCheckbox.checked) {
+                processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+            } else {
+                processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+            }
+        } else {
+            processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+        }
+    }
 
     auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
                                                 200, 20 })
