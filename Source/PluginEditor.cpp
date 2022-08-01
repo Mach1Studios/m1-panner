@@ -54,6 +54,8 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcess
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 {
+    delete pannerUIBaseComponent;
+    pannerUIBaseComponent = nullptr;
 }
 
 //==============================================================================

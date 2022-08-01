@@ -89,6 +89,10 @@ private:
     
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
+    
+    // Channel input
+    std::vector<std::vector<float>> audioDataIn;
+    std::vector< juce::LinearSmoothedValue<float> > smoothedChannelCoeffs;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (M1PannerAudioProcessor)
