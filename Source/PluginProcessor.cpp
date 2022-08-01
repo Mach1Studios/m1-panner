@@ -77,7 +77,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                     juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1) + " dB"; },
                                                             [](const juce::String& t) { return t.dropLastCharacters (3).getFloatValue(); }),
-                    std::make_unique<juce::AudioParameterBool>(paramAutoOrbit, TRANS("Auto Orbit"), true),
+                    std::make_unique<juce::AudioParameterBool>(paramAutoOrbit, TRANS("Auto Orbit"), mAutoOrbit.get()),
                     std::make_unique<juce::AudioParameterFloat>(paramStereoOrbitAzimuth,
                                                             TRANS("Stereo Orbit Rotation"),
                                                             juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), mStereoOrbitAzimuth.get(), "", juce::AudioProcessorParameter::genericParameter,
@@ -93,6 +93,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), mStereoInputBalance.get(), "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1); },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), mIsotropicEncodeMode.get()),
+                    std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), mEqualPowerEncodeMode.get()),
                })
 {
     parameters.addParameterListener(paramAzimuth, this);
@@ -110,6 +112,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     m1Encode.setInputMode(pannerSettings.inputType);
     m1Encode.setOutputMode(pannerSettings.outputType);
     m1Encode.setPannerMode(pannerSettings.pannerMode);
+    
+    // assign pointer to Mach1Encode object
+    pannerSettings.m1Encode = &m1Encode;
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()

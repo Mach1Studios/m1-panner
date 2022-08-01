@@ -480,17 +480,20 @@ void PannerUIBaseComponent::render()
         
     auto& isotropicCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
                                                 200, 20 })
+                                                .controlling(&pannerSettings->isotropicMode)
                                                 .withLabel("ISOTROPIC");
     isotropicCheckbox.enabled = true;
     isotropicCheckbox.commit();
 
     auto& equalPowerCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
                                                 200, 20 })
+                                                .controlling(&pannerSettings->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
     equalPowerCheckbox.enabled = true;
     equalPowerCheckbox.commit();
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
+        // update pannerSettings storage of current states
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
                 processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
