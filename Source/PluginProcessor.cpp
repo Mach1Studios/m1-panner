@@ -203,13 +203,41 @@ void M1PannerAudioProcessor::releaseResources()
 void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
-        mAzimuth = newValue;
+        pannerSettings.azimuth = newValue;
+        mAzimuth = pannerSettings.azimuth;
     } else if (parameterID == paramElevation) {
-        mElevation = newValue;
+        pannerSettings.elevation = newValue;
+        mElevation = pannerSettings.elevation;
     } else if (parameterID == paramDiverge) {
-        mDiverge = newValue;
+        pannerSettings.diverge = newValue;
+        mDiverge = pannerSettings.diverge;
     } else if (parameterID == paramGain) {
-        mGain = newValue;
+        pannerSettings.gain = newValue;
+        mGain = pannerSettings.gain;
+    } else if (parameterID == paramX) {
+        pannerSettings.x = newValue;
+        mX = pannerSettings.x;
+    } else if (parameterID == paramY) {
+        pannerSettings.y = newValue;
+        mY = pannerSettings.y;
+    } else if (parameterID == paramAutoOrbit) {
+        pannerSettings.autoOrbit = newValue;
+        mAutoOrbit = pannerSettings.autoOrbit;
+    } else if (parameterID == paramStereoOrbitAzimuth) {
+        pannerSettings.stereoOrbitAzimuth = newValue;
+        mStereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
+    } else if (parameterID == paramStereoSpread) {
+        pannerSettings.stereoSpread = newValue;
+        mStereoSpread = pannerSettings.stereoSpread;
+    } else if (parameterID == paramStereoInputBalance) {
+        pannerSettings.stereoInputBalance = newValue;
+        mStereoInputBalance = pannerSettings.stereoInputBalance;
+    } else if (parameterID == paramIsotropicEncodeMode) {
+        pannerSettings.isotropicMode = newValue;
+        mIsotropicEncodeMode = pannerSettings.isotropicMode;
+    } else if (parameterID == paramEqualPowerEncodeMode) {
+        pannerSettings.equalpowerMode = newValue;
+        mEqualPowerEncodeMode = pannerSettings.equalpowerMode;
     }
 }
 
@@ -299,8 +327,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         // Copy input data to additional buffer
         audioDataIn[input_channel].resize(mainInput.getNumSamples());
-        memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples()); //TODO: is this needed?
-        
+        memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples());
         // TODO: figure out how to best use getChannelIndexForType() instead of literal index?
         // Get the current input channel index audio data buffer
         const float* newChannelInputBuffer = audioDataIn[input_channel].data();
@@ -308,6 +335,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         
         // output channel setup loop
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
+            // TODO: add channel reorder here?
             smoothedChannelCoeffs[output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
         }
     }
@@ -322,6 +350,13 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 outBuffer[output_channel][sample] = inValue * inGain;
             }
         }
+    }
+    
+    // update meters
+    juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), mainOutput.getNumChannels(), mainOutput.getNumSamples());
+    outputMeterValuedB.resize(mainOutput.getNumChannels());
+    for (int j = 0; j < mainOutput.getNumChannels(); j++) {
+        outputMeterValuedB.set(j, j < mainOutput.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(j, 0, mainOutput.getNumSamples())) : -144 );
     }
 }
 
@@ -358,6 +393,7 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
     juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
     if (tree.isValid()) {
         parameters.state = tree;
+        //TODO: restore settings back to pannerSettings?
     }
 }
 
