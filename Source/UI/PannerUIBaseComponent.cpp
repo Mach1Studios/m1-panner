@@ -545,7 +545,8 @@ void PannerUIBaseComponent::render()
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
-	std::vector<float> volumesInDb{ -10, -10 };
+    
+	std::vector<float> volumesInDb(processor->getNumOutputChannels() , -10);
 	if (volumesInDb.size() > 0) {
 		std::vector<float> volumes = volumesInDb;
 
