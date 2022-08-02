@@ -108,13 +108,16 @@ void OverlayUIBaseComponent::initialise()
 {
 	JuceMurkaBaseComponent::initialise();
 
-    //TODO: move this to be static loaded?
-    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
-        std::string resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
-    } else {
-        std::string resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
-    }
-	
+	std::string resourcesPath;
+	if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
+		resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
+	}
+	else {
+		resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
+	}
+	printf("Resources Loaded From: %s \n", resourcesPath.c_str());
+	m.setResourcesPath(resourcesPath);
+
 	makeTransparent();
 }
 
@@ -134,7 +137,7 @@ void OverlayUIBaseComponent::render()
 	//OpenGLHelpers::clear (Colours::black);
 
 	// TODO
-	m.setFont("Proxima Nova Reg.ttf", 10);
+	m.setFont( "Proxima Nova Reg.ttf", 10);
 	m.begin();
 
 	m.setColor(0, 0);
@@ -161,6 +164,8 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.m1Encode = pannerState->m1Encode;
         overlayReticleField.sRotate = pannerState->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerState->stereoSpread;
+		overlayReticleField.monitorState = monitorState;
+		overlayReticleField.pannerState = pannerState;
 		overlayReticleField.commit();
 
         if (overlayReticleField.changed) {
