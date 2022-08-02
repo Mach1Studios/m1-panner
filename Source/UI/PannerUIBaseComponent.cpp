@@ -89,10 +89,8 @@ void PannerUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float &
 	if (x == 0 && y == 0) {
 		r = 0;
 		d = 0;
-	}
-	else {
+	} else {
 		d = sqrtf(x*x + y * y) / sqrt(2.0);
-
 		float rotation_radian = atan2(x, y);//acos(x/d);
 		r = juce::radiansToDegrees(rotation_radian);
 	}
@@ -161,10 +159,10 @@ void PannerUIBaseComponent::render()
     
     if (reticleField.results) {
 		convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged("azimuth", pannerSettings->azimuth);
-        processor->parameterChanged("diverge", pannerSettings->diverge);
-        processor->parameterChanged("x", pannerSettings->x);
-        processor->parameterChanged("y", pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+        processor->parameterChanged(processor->paramElevation, pannerSettings->diverge);
+        processor->parameterChanged(processor->paramX, pannerSettings->x);
+        processor->parameterChanged(processor->paramY, pannerSettings->y);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
     
@@ -201,14 +199,16 @@ void PannerUIBaseComponent::render()
     if (xKnob.changed) {
 		// update this parameter here, notifying host
 		convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged("azimuth", pannerSettings->azimuth);
-        processor->parameterChanged("diverge", pannerSettings->diverge);
-        processor->parameterChanged("x", pannerSettings->x);
-        processor->parameterChanged("y", pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
+        processor->parameterChanged(processor->paramX, pannerSettings->x);
+        processor->parameterChanged(processor->paramY, pannerSettings->y);
 	}
 	m.setColor(200, 255);
     auto& xLabel = m.draw<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    xLabel.label = "X"; xLabel.alignment = TEXT_CENTER; xLabel.enabled = true;
+    xLabel.label = "X";
+    xLabel.alignment = TEXT_CENTER;
+    xLabel.enabled = true;
     xLabel.highlighted = xKnob.hovered || reticleHoveredLastFrame;
     xLabel.commit();
 
@@ -229,15 +229,17 @@ void PannerUIBaseComponent::render()
     
     if (yKnob.changed) {
         convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged("azimuth", pannerSettings->azimuth);
-        processor->parameterChanged("diverge", pannerSettings->diverge);
-        processor->parameterChanged("x", pannerSettings->x);
-        processor->parameterChanged("y", pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
+        processor->parameterChanged(processor->paramX, pannerSettings->x);
+        processor->parameterChanged(processor->paramY, pannerSettings->y);
     }
     
 	m.setColor(200, 255);
     auto& yLabel = m.draw<M1Label>(MurkaShape(xOffset + 100 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    yLabel.label = "Y"; yLabel.alignment = TEXT_CENTER; yLabel.enabled = true;
+    yLabel.label = "Y";
+    yLabel.alignment = TEXT_CENTER;
+    yLabel.enabled = true;
     yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
     yLabel.commit();
 
@@ -258,10 +260,10 @@ void PannerUIBaseComponent::render()
 
     if (rKnob.changed) {
         convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-        processor->parameterChanged("azimuth", pannerSettings->azimuth);
-        processor->parameterChanged("diverge", pannerSettings->diverge);
-        processor->parameterChanged("x", pannerSettings->x);
-        processor->parameterChanged("y", pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
+        processor->parameterChanged(processor->paramX, pannerSettings->x);
+        processor->parameterChanged(processor->paramY, pannerSettings->y);
     }
     
 	rotateKnobDraggingNow = rKnob.draggingNow;
@@ -289,16 +291,16 @@ void PannerUIBaseComponent::render()
     dKnob.commit();
     
     if (dKnob.changed) {
-        processor->parameterChanged("azimuth", pannerSettings->azimuth);
-        processor->parameterChanged("diverge", pannerSettings->diverge);
-        processor->parameterChanged("x", pannerSettings->x);
-        processor->parameterChanged("y", pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
+        processor->parameterChanged(processor->paramX, pannerSettings->x);
+        processor->parameterChanged(processor->paramY, pannerSettings->y);
     }
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
 	m.setColor(200, 255);
     auto& dLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    dLabel.label = "DIVERGE";
+    dLabel.label = "X";
     dLabel.alignment = TEXT_CENTER;
     dLabel.enabled = true;
     dLabel.highlighted = dKnob.hovered || reticleHoveredLastFrame;

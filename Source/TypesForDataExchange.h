@@ -30,6 +30,7 @@ struct MixerSettings {
 	float yaw = 0;
 	float pitch = 0;
 	float roll = 0;
+    int monitor_mode = 0;
 };
 
 #endif

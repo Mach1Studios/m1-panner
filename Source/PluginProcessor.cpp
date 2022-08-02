@@ -205,39 +205,51 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     if (parameterID == paramAzimuth) {
         pannerSettings.azimuth = newValue;
         mAzimuth = pannerSettings.azimuth;
+        parameters.getParameter(paramAzimuth)->setValue(mAzimuth.get());
     } else if (parameterID == paramElevation) {
         pannerSettings.elevation = newValue;
         mElevation = pannerSettings.elevation;
+        parameters.getParameter(paramElevation)->setValue(mElevation.get());
     } else if (parameterID == paramDiverge) {
         pannerSettings.diverge = newValue;
         mDiverge = pannerSettings.diverge;
+        parameters.getParameter(paramDiverge)->setValue(mDiverge.get());
     } else if (parameterID == paramGain) {
         pannerSettings.gain = newValue;
         mGain = pannerSettings.gain;
+        parameters.getParameter(paramGain)->setValue(mGain.get());
     } else if (parameterID == paramX) {
         pannerSettings.x = newValue;
         mX = pannerSettings.x;
+        parameters.getParameter(paramX)->setValue(mX.get());
     } else if (parameterID == paramY) {
         pannerSettings.y = newValue;
         mY = pannerSettings.y;
+        parameters.getParameter(paramY)->setValue(mY.get());
     } else if (parameterID == paramAutoOrbit) {
         pannerSettings.autoOrbit = newValue;
         mAutoOrbit = pannerSettings.autoOrbit;
+        parameters.getParameter(paramAutoOrbit)->setValue(mAutoOrbit.get());
     } else if (parameterID == paramStereoOrbitAzimuth) {
         pannerSettings.stereoOrbitAzimuth = newValue;
         mStereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
+        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(mStereoOrbitAzimuth.get());
     } else if (parameterID == paramStereoSpread) {
         pannerSettings.stereoSpread = newValue;
         mStereoSpread = pannerSettings.stereoSpread;
+        parameters.getParameter(paramStereoSpread)->setValue(mStereoSpread.get());
     } else if (parameterID == paramStereoInputBalance) {
         pannerSettings.stereoInputBalance = newValue;
         mStereoInputBalance = pannerSettings.stereoInputBalance;
+        parameters.getParameter(paramStereoInputBalance)->setValue(mStereoInputBalance.get());
     } else if (parameterID == paramIsotropicEncodeMode) {
         pannerSettings.isotropicMode = newValue;
         mIsotropicEncodeMode = pannerSettings.isotropicMode;
+        parameters.getParameter(paramIsotropicEncodeMode)->setValue(mIsotropicEncodeMode.get());
     } else if (parameterID == paramEqualPowerEncodeMode) {
         pannerSettings.equalpowerMode = newValue;
         mEqualPowerEncodeMode = pannerSettings.equalpowerMode;
+        parameters.getParameter(paramEqualPowerEncodeMode)->setValue(mEqualPowerEncodeMode.get());
     }
 }
 
@@ -282,7 +294,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     float _diverge = parameters.getParameter(paramDiverge)->getValue();
     float _gain = juce::Decibels::decibelsToGain(parameters.getParameter(paramGain)->getValue());
     
-    if (monitorMode == 2) { // StereoSafe mode is on
+    if (monitorSettings.monitor_mode == 2) { // StereoSafe mode is on
         //store diverge for gain
         float abs_diverge = fabsf((parameters.getParameter(paramDiverge)->getValue() - -100.0f) / (100.0f - -100.0f));
         //Setup for stereoSafe diverge range to gain

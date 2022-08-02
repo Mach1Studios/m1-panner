@@ -72,16 +72,13 @@ public:
     static juce::String paramEqualPowerEncodeMode;
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
-    
-    // Monitor
-    int monitorMode; // 0 = Spatial, 1 = Horizon, 2 = Stereo Safe, 3 = Folddown
-    float monitorYaw = 0, monitorPitch = 0; // current yaw and pitch from Monitor for UI reference
-    
+        
     // Variables from processor for UI
     juce::Array<float> outputMeterValuedB;
     
     Mach1Encode m1Encode;
     PannerSettings pannerSettings;
+    MixerSettings monitorSettings;
     juce::PluginHostType hostType;
     
 private:

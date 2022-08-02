@@ -201,9 +201,8 @@ public:
         
             //TODO: make double click only within the bounds of the reticlegrid
             if ((context.doubleClick) && (inside)) {
-                MurkaPoint normalisedMouse = {context.mousePosition.x /                                     shape.size.x,
-                                              context.mousePosition.y /
-                                                shape.size.y};
+                MurkaPoint normalisedMouse = {context.mousePosition.x / shape.size.x,
+                                              context.mousePosition.y / shape.size.y};
                 std::get<0>(*xyrd) = normalisedMouse.x * 200 - 100;
                 std::get<1>(*xyrd) = -normalisedMouse.y * 200 + 100;
                 
