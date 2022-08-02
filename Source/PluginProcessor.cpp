@@ -196,10 +196,12 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
-    smoothedChannelCoeffs.resize(m1Encode.getOutputChannelsCount());
-    
-    for (int i = 0; i < m1Encode.getOutputChannelsCount(); i++) {
-        smoothedChannelCoeffs[i].reset(sampleRate, (double)0.01);
+    smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
+    for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
+        smoothedChannelCoeffs[input_channel].resize(m1Encode.getOutputChannelsCount());
+        for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
+            smoothedChannelCoeffs[input_channel][output_channel].reset(sampleRate, (double)0.01);
+        }
     }
 }
 
@@ -324,13 +326,16 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
     audioDataIn.resize(m1Encode.getInputChannelsCount());
-    smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
+
     // vector of output channel buffers
-    juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
-    float ** outBuffer = mainOutput.getArrayOfWritePointers();
-    
-    // clear all old output samples
-    mainOutput.clear();
+    std::vector<float*> outBuffer(getNumOutputChannels());
+    for (int output_channel = 0; output_channel < getNumOutputChannels(); output_channel++) {
+        juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, output_channel);
+        outBuffer[output_channel] = mainOutput.getWritePointer(0);
+
+        // clear all old output samples
+        mainOutput.clear();
+    }
     
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
@@ -345,27 +350,28 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         // output channel setup loop
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
             // TODO: add channel reorder here?
-            smoothedChannelCoeffs[output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
+            smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
         }
     }
     
     // processing loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
-        for (int sample = 0; sample < mainOutput.getNumSamples(); sample++){
+        for (int sample = 0; sample < buffer.getNumSamples(); sample++){
             float inValue = buffers[input_channel][sample];
             for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                 // TODO: add channel reorder here?
-                float inGain = smoothedChannelCoeffs[input_channel].getNextValue();
+                float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+
                 outBuffer[output_channel][sample] = inValue * inGain;
             }
         }
     }
     
     // update meters
-    juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), mainOutput.getNumChannels(), mainOutput.getNumSamples());
-    outputMeterValuedB.resize(mainOutput.getNumChannels());
-    for (int j = 0; j < mainOutput.getNumChannels(); j++) {
-        outputMeterValuedB.set(j, j < mainOutput.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(j, 0, mainOutput.getNumSamples())) : -144 );
+    juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), buffer.getNumChannels(), buffer.getNumSamples());
+    outputMeterValuedB.resize(buffer.getNumChannels());
+    for (int j = 0; j < buffer.getNumChannels(); j++) {
+        outputMeterValuedB.set(j, j < buffer.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(j, 0, buffer.getNumSamples())) : -144 );
     }
 }
 
