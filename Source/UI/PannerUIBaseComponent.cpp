@@ -12,6 +12,7 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
 
 	processor = processor_;
 	pannerSettings = &processor->pannerSettings;
+    mixerSettings = &processor->monitorSettings;
 }
 
 struct Line2D {
@@ -147,14 +148,15 @@ void PannerUIBaseComponent::render()
     reticleField.teleportCursor = teleportCursor;
     reticleField.shouldDrawDivergeGuideLine = divergeKnobDraggingNow;
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
-    reticleField.autoOrbit = pannerSettings->autoOrbit;
+    reticleField.azimuth = pannerSettings->azimuth;
     reticleField.elevation = pannerSettings->elevation;
+    reticleField.diverge = pannerSettings->diverge;
+    reticleField.autoOrbit = pannerSettings->autoOrbit;
     reticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
     reticleField.sSpread = pannerSettings->stereoSpread;
-    reticleField.mixerYaw = mixerState.yaw;
-    reticleField.mixerPitch = mixerState.pitch;
-    reticleField.mixerRoll = mixerState.roll;
     reticleField.m1Encode = pannerSettings->m1Encode;
+    reticleField.pannerState = pannerSettings;
+    reticleField.monitorState = mixerSettings;
     reticleField.commit();
     
     if (reticleField.results) {
@@ -300,7 +302,7 @@ void PannerUIBaseComponent::render()
 	divergeKnobDraggingNow = dKnob.draggingNow;
 	m.setColor(200, 255);
     auto& dLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    dLabel.label = "X";
+    dLabel.label = "DIVERGE";
     dLabel.alignment = TEXT_CENTER;
     dLabel.enabled = true;
     dLabel.highlighted = dKnob.hovered || reticleHoveredLastFrame;
@@ -517,21 +519,7 @@ void PannerUIBaseComponent::render()
     if (autoOrbitCheckbox.changed) {
         processor->parameterChanged("autoOrbit", pannerSettings->autoOrbit);
     }
-
-    /*
-    auto& monoInputCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 4,
-                                                200, 20 })
-                                                .controlling(&pannerSettings->monoInput)
-                                                .withLabel("MONO INPUT");
-    monoInputCheckbox.enabled = true;
-    monoInputCheckbox.commit();
     
-    if (monoInputCheckbox.changed) {
-        processor->updateCustomParameter(&pannerSettings->monoInput);
-    }
-    */
-    
-	//TODO: why is this so short? needs to be same height as ReticleGrid
 	//TODO: why are pitch ranges inversed?
     
     auto& pitchWheel = m.draw<M1PitchWheel>({ 445, 30 - 10,
@@ -542,7 +530,7 @@ void PannerUIBaseComponent::render()
     pitchWheel.rangeFrom = 90.;
     pitchWheel.rangeTo = -90.;
     pitchWheel.externalHovered = zHovered;
-    pitchWheel.mixerPitch = mixerState.pitch;
+    pitchWheel.mixerPitch = mixerSettings->pitch;
     pitchWheel.dataToControl = &pannerSettings->elevation;
     pitchWheel.commit();
     
