@@ -29,8 +29,8 @@
 class OverlayUIBaseComponent : public JuceMurkaBaseComponent
 {
     M1PannerAudioProcessor* processor = nullptr;
-	PannerSettings* pannerSettings = nullptr;
-    MixerSettings* mixerSettings = nullptr;
+	PannerSettings* pannerState = nullptr;
+    MixerSettings* monitorState = nullptr;
 
 public:
     //==============================================================================

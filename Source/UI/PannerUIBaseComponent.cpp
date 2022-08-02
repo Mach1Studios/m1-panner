@@ -11,8 +11,8 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
 	setSize (getWidth(), getHeight());
 
 	processor = processor_;
-	pannerSettings = &processor->pannerSettings;
-    mixerSettings = &processor->monitorSettings;
+	pannerState = &processor->pannerSettings;
+    monitorState = &processor->monitorSettings;
 }
 
 struct Line2D {
@@ -139,7 +139,7 @@ void PannerUIBaseComponent::render()
 
 	m.setColor(255);
 
-	XYRD xyrd = { pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge };
+	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
     auto & reticleField = m.drawWidget<PannerReticleField>(MurkaShape(25, 30, 400, 400));
     reticleField.controlling(&xyrd);
     
@@ -148,23 +148,23 @@ void PannerUIBaseComponent::render()
     reticleField.teleportCursor = teleportCursor;
     reticleField.shouldDrawDivergeGuideLine = divergeKnobDraggingNow;
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
-    reticleField.azimuth = pannerSettings->azimuth;
-    reticleField.elevation = pannerSettings->elevation;
-    reticleField.diverge = pannerSettings->diverge;
-    reticleField.autoOrbit = pannerSettings->autoOrbit;
-    reticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
-    reticleField.sSpread = pannerSettings->stereoSpread;
-    reticleField.m1Encode = pannerSettings->m1Encode;
-    reticleField.pannerState = pannerSettings;
-    reticleField.monitorState = mixerSettings;
+    reticleField.azimuth = pannerState->azimuth;
+    reticleField.elevation = pannerState->elevation;
+    reticleField.diverge = pannerState->diverge;
+    reticleField.autoOrbit = pannerState->autoOrbit;
+    reticleField.sRotate = pannerState->stereoOrbitAzimuth;
+    reticleField.sSpread = pannerState->stereoSpread;
+    reticleField.m1Encode = pannerState->m1Encode;
+    reticleField.pannerState = pannerState;
+    reticleField.monitorState = monitorState;
     reticleField.commit();
     
     if (reticleField.results) {
-		convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-        processor->parameterChanged(processor->paramElevation, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramX, pannerSettings->x);
-        processor->parameterChanged(processor->paramY, pannerSettings->y);
+		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramElevation, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
     
@@ -185,7 +185,7 @@ void PannerUIBaseComponent::render()
 
 	// X
     auto& xKnob = m.draw<M1Knob>(MurkaShape(xOffset + 10, yOffset, knobWidth, knobHeight))
-                                .controlling(&pannerSettings->x);
+                                .controlling(&pannerState->x);
     xKnob.rangeFrom = -100;
     xKnob.rangeTo = 100;
     xKnob.floatingPointPrecision = 1;
@@ -200,11 +200,11 @@ void PannerUIBaseComponent::render()
     
     if (xKnob.changed) {
 		// update this parameter here, notifying host
-		convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramX, pannerSettings->x);
-        processor->parameterChanged(processor->paramY, pannerSettings->y);
+		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
 	}
 	m.setColor(200, 255);
     auto& xLabel = m.draw<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
@@ -216,7 +216,7 @@ void PannerUIBaseComponent::render()
 
 	// Y
     auto& yKnob = m.draw<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
-                                .controlling(&pannerSettings->y);
+                                .controlling(&pannerState->y);
     yKnob.rangeFrom = -100;
     yKnob.rangeTo = 100;
     yKnob.floatingPointPrecision = 1;
@@ -230,11 +230,11 @@ void PannerUIBaseComponent::render()
     yKnob.commit();
     
     if (yKnob.changed) {
-        convertXYtoRCRaw(pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramX, pannerSettings->x);
-        processor->parameterChanged(processor->paramY, pannerSettings->y);
+        convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	m.setColor(200, 255);
@@ -247,7 +247,7 @@ void PannerUIBaseComponent::render()
 
 	// Rotation
     auto& rKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
-                                .controlling(&pannerSettings->azimuth);
+                                .controlling(&pannerState->azimuth);
     rKnob.rangeFrom = -180;
     rKnob.rangeTo = 180;
     rKnob.floatingPointPrecision = 1;
@@ -261,11 +261,11 @@ void PannerUIBaseComponent::render()
     rKnob.commit();
 
     if (rKnob.changed) {
-        convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramX, pannerSettings->x);
-        processor->parameterChanged(processor->paramY, pannerSettings->y);
+        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	rotateKnobDraggingNow = rKnob.draggingNow;
@@ -279,7 +279,7 @@ void PannerUIBaseComponent::render()
 
 	// Diverge
     auto& dKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
-                                .controlling(&pannerSettings->diverge);
+                                .controlling(&pannerState->diverge);
     dKnob.rangeFrom = -100;
     dKnob.rangeTo = 100;
     dKnob.floatingPointPrecision = 1;
@@ -293,10 +293,10 @@ void PannerUIBaseComponent::render()
     dKnob.commit();
     
     if (dKnob.changed) {
-        processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
-        processor->parameterChanged(processor->paramX, pannerSettings->x);
-        processor->parameterChanged(processor->paramY, pannerSettings->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
@@ -310,11 +310,11 @@ void PannerUIBaseComponent::render()
 
 	// Gain
     auto& gKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
-                                .controlling(&pannerSettings->gain);
+                                .controlling(&pannerState->gain);
     gKnob.rangeFrom = -90;
     gKnob.rangeTo = 24;
     gKnob.postfix = "db";
-    gKnob.prefix = std::string(pannerSettings->gain > 0 ? "+" : "");
+    gKnob.prefix = std::string(pannerState->gain > 0 ? "+" : "");
     gKnob.floatingPointPrecision = 1;
     gKnob.speed = knobSpeed;
     gKnob.defaultValue = 0;
@@ -326,7 +326,7 @@ void PannerUIBaseComponent::render()
     gKnob.commit();
     
     if (gKnob.changed) {
-        processor->parameterChanged("gain", pannerSettings->gain);
+        processor->parameterChanged("gain", pannerState->gain);
     }
 
 	m.setColor(200, 255);
@@ -340,7 +340,7 @@ void PannerUIBaseComponent::render()
 	// S Rotation 
     auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190,
                                              yOffset + 150, knobWidth, knobHeight))
-                                    .controlling(&pannerSettings->stereoOrbitAzimuth);
+                                    .controlling(&pannerState->stereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
     srKnob.prefix = "º";
@@ -349,14 +349,14 @@ void PannerUIBaseComponent::render()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = !pannerSettings->autoOrbit;
+    srKnob.enabled = !pannerState->autoOrbit;
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
     srKnob.commit();
     
     if (srKnob.changed) {
-        processor->parameterChanged("orbitAzimuth", pannerSettings->stereoOrbitAzimuth);
+        processor->parameterChanged("orbitAzimuth", pannerState->stereoOrbitAzimuth);
     }
 
 	m.setColor(200, 255);
@@ -364,7 +364,7 @@ void PannerUIBaseComponent::render()
                                               yOffset - M1LabelOffsetY + 150, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = !pannerSettings->autoOrbit;
+    srLabel.enabled = !pannerState->autoOrbit;
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
     srLabel.commit();
 
@@ -373,7 +373,7 @@ void PannerUIBaseComponent::render()
 	// TODO didChangeOutsideThisThread ???
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280,
                                              yOffset + 150, knobWidth, knobHeight))
-                                    .controlling(&pannerSettings->stereoOrbitAzimuth);
+                                    .controlling(&pannerState->stereoOrbitAzimuth);
     ssKnob.rangeFrom = 0;
     ssKnob.rangeTo = 100;
     ssKnob.prefix = "";
@@ -382,14 +382,14 @@ void PannerUIBaseComponent::render()
     ssKnob.speed = knobSpeed;
     ssKnob.defaultValue = 50;
     ssKnob.isEndlessRotary = false;
-    ssKnob.enabled = (pannerSettings->inputType > 1) ? true : false;
+    ssKnob.enabled = (pannerState->inputType > 1) ? true : false;
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
     ssKnob.commit();
     
     if (ssKnob.changed) {
-        processor->parameterChanged("orbitSpread", pannerSettings->stereoSpread);
+        processor->parameterChanged("orbitSpread", pannerState->stereoSpread);
     }
 
 	//M1LabelAnimation = A((getLatestDrawnWidget<M1Knob>(m.latestContext)->hovered || reticleHoveredLastFrame) && (pannerSettings->inputType > 1) ? true : false);
@@ -399,14 +399,14 @@ void PannerUIBaseComponent::render()
                                                knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerSettings->inputType > 1) ? true : false;
+    ssLabel.enabled = (pannerState->inputType > 1) ? true : false;
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
     ssLabel.commit();
 
 	// S Pan
     auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370,
                                             yOffset + 150, knobWidth, knobHeight))
-                                            .controlling(&pannerSettings->stereoInputBalance);
+                                            .controlling(&pannerState->stereoInputBalance);
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
     spKnob.prefix = "";
@@ -415,7 +415,7 @@ void PannerUIBaseComponent::render()
     spKnob.speed = knobSpeed;
     spKnob.defaultValue = 0;
     spKnob.isEndlessRotary = false;
-    spKnob.enabled = (pannerSettings->inputType > 1) ? true : false;
+    spKnob.enabled = (pannerState->inputType > 1) ? true : false;
     spKnob.externalHover = false;
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
@@ -424,7 +424,7 @@ void PannerUIBaseComponent::render()
 //    m.prepare<Label>({100, 100, 500, 100}).text("Label").draw();
     
     if (spKnob.changed) {
-        processor->parameterChanged("orbitBalance", pannerSettings->stereoInputBalance);
+        processor->parameterChanged("orbitBalance", pannerState->stereoInputBalance);
     }
 
 	m.setColor(200, 255);
@@ -432,13 +432,13 @@ void PannerUIBaseComponent::render()
                                                yOffset - M1LabelOffsetY + 150, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
-    spLabel.enabled = (pannerSettings->inputType > 1) ? true : false;
+    spLabel.enabled = (pannerState->inputType > 1) ? true : false;
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
     spLabel.commit();
 
 	// Z
     auto& zKnob = m.draw<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
-                                            .controlling(&pannerSettings->elevation);
+                                            .controlling(&pannerState->elevation);
     zKnob.rangeFrom = -90;
     zKnob.rangeTo = 90;
     zKnob.prefix = "";
@@ -454,7 +454,7 @@ void PannerUIBaseComponent::render()
     zKnob.commit();
     
     if (zKnob.changed) {
-        processor->parameterChanged("elevation", pannerSettings->elevation);
+        processor->parameterChanged("elevation", pannerState->elevation);
     }
 
 	bool zHovered = zKnob.hovered;
@@ -473,25 +473,25 @@ void PannerUIBaseComponent::render()
     
     auto& overlayCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 0,
                                                 200, 20 })
-                                                .controlling(&pannerSettings->overlay)
+                                                .controlling(&pannerState->overlay)
                                                 .withLabel("OVERLAY");
     overlayCheckbox.enabled = true;
     overlayCheckbox.commit();
     
     if (overlayCheckbox.changed) {
-        setOverlayVisible(pannerSettings->overlay);
+        setOverlayVisible(pannerState->overlay);
     }
         
     auto& isotropicCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
                                                 200, 20 })
-                                                .controlling(&pannerSettings->isotropicMode)
+                                                .controlling(&pannerState->isotropicMode)
                                                 .withLabel("ISOTROPIC");
     isotropicCheckbox.enabled = true;
     isotropicCheckbox.commit();
 
     auto& equalPowerCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
                                                 200, 20 })
-                                                .controlling(&pannerSettings->equalpowerMode)
+                                                .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
     equalPowerCheckbox.enabled = true;
     equalPowerCheckbox.commit();
@@ -500,24 +500,24 @@ void PannerUIBaseComponent::render()
         // update pannerSettings storage of current states
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
-                processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+                processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
             } else {
-                processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+                processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
             }
         } else {
-            processor->parameterChanged("isotropicEncodeMode", pannerSettings->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+            processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
         }
     }
 
     auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
                                                 200, 20 })
-                                                .controlling(&pannerSettings->autoOrbit)
+                                                .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
     autoOrbitCheckbox.enabled = true;
     autoOrbitCheckbox.commit();
     
     if (autoOrbitCheckbox.changed) {
-        processor->parameterChanged("autoOrbit", pannerSettings->autoOrbit);
+        processor->parameterChanged("autoOrbit", pannerState->autoOrbit);
     }
     
 	//TODO: why are pitch ranges inversed?
@@ -530,12 +530,12 @@ void PannerUIBaseComponent::render()
     pitchWheel.rangeFrom = 90.;
     pitchWheel.rangeTo = -90.;
     pitchWheel.externalHovered = zHovered;
-    pitchWheel.mixerPitch = mixerSettings->pitch;
-    pitchWheel.dataToControl = &pannerSettings->elevation;
+    pitchWheel.mixerPitch = monitorState->pitch;
+    pitchWheel.dataToControl = &pannerState->elevation;
     pitchWheel.commit();
     
     if (pitchWheel.changed) {
-        processor->parameterChanged("elevation", pannerSettings->elevation);
+        processor->parameterChanged("elevation", pannerState->elevation);
     }
     
 //	if (m.drawWidget<M1PitchWheel>(m, &pannerSettings->elevation, { cursorHide, cursorShow, 10., 90., -90., zHovered, mixerState.pitch }, { 445, 30 - 10, 80, 400 + 20 })) {

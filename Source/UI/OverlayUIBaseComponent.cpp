@@ -11,8 +11,8 @@ OverlayUIBaseComponent::OverlayUIBaseComponent(M1PannerAudioProcessor* processor
 	setSize (getWidth(), getHeight());
 
 	processor = processor_;
-    pannerSettings = &processor->pannerSettings;
-    mixerSettings = &processor->monitorSettings;
+    pannerState = &processor->pannerSettings;
+    monitorState = &processor->monitorSettings;
 }
 
 struct Line2D {
@@ -150,23 +150,23 @@ void OverlayUIBaseComponent::render()
 
 	float knobSpeed = 250; // TODO: if shift pressed, lower speed
 
-	if (pannerSettings) {
-		XYRZ xyrz = { pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->elevation };
+	if (pannerState) {
+		XYRZ xyrz = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->elevation };
         auto& overlayReticleField = m.draw<OverlayReticleField>({0, 0, getWidth() / m.getScreenScale(), getHeight() / m.getScreenScale()}).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
         overlayReticleField.teleportCursor = teleportCursor;
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
-        overlayReticleField.m1Encode = pannerSettings->m1Encode;
-        overlayReticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
-        overlayReticleField.sSpread = pannerSettings->stereoSpread;
+        overlayReticleField.m1Encode = pannerState->m1Encode;
+        overlayReticleField.sRotate = pannerState->stereoOrbitAzimuth;
+        overlayReticleField.sSpread = pannerState->stereoSpread;
 		overlayReticleField.commit();
 
         if (overlayReticleField.changed) {
-			convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-            processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
-            processor->parameterChanged(processor->paramElevation, pannerSettings->elevation);
+			convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+            processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+            processor->parameterChanged(processor->paramElevation, pannerState->elevation);
 			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
@@ -185,10 +185,10 @@ void OverlayUIBaseComponent::render()
 	m.setFont("Proxima Nova Reg.ttf", 10);
 
 	// Diverge
-	if (pannerSettings) {
+	if (pannerState) {
         
         auto& divergeKnob = m.draw<M1Knob>({xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight})
-            .controlling(&pannerSettings->diverge);
+            .controlling(&pannerState->diverge);
         divergeKnob.rangeFrom = -100;
         divergeKnob.rangeTo = 100;
         divergeKnob.floatingPointPrecision = 1;
@@ -200,8 +200,8 @@ void OverlayUIBaseComponent::render()
 
         if (divergeKnob.changed) {
             // update this parameter here, notifying host
-            convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-            processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
+            convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+            processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
             //?
         }
         
