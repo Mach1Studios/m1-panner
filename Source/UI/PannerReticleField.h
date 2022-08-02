@@ -27,9 +27,10 @@ public:
             m.setColor(47, 47, 47, 255);
             auto linestep = context.getSize().x / (4 * 24);
             for (int i = 0; i < (4 * 24); i++) {
-                // if monitorMode != 2
-                m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
-                m.drawLine(0, linestep * i, shape.size.x, linestep * i);
+                if (monitorState->monitor_mode != 2){
+                    m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
+                    m.drawLine(0, linestep * i, shape.size.x, linestep * i);
+                }
             } 
 
             m.setColor(83, 83, 83, 255);
@@ -44,7 +45,7 @@ public:
             m.drawLine(context.getSize().x, 0, 0, context.getSize().y);
         
             // GUIDE CIRCLES
-            //if (processor->monitorMode != 2) {
+            if (monitorState->monitor_mode != 2){
                 //inside circle
                 m.disableFill();
                 m.drawCircle(context.getSize().x / 2, context.getSize().y / 2, context.getSize().y / 4);
@@ -52,15 +53,15 @@ public:
                 m.drawCircle(shape.size.x / 2, shape.size.y / 2, shape.size.y / 2);
                 //middle circle
                 //r->drawCircle(context.getSize().x / 2, context.getSize().y / 2, sqrt(pow(context.getSize().y / 4, 2) + pow(context.getSize().y / 4, 2)));
-            //}
+            }
             m.enableFill();
 
             // GRID FILLS
-            //if (processor->monitorMode != 2) {
+            if (monitorState->monitor_mode != 2){
                 m.setColor(40, 40, 40, 255);
-                //r->fillRect(context.getSize().x/2 - 10, 0, 20, 10);
-                //r->fillRect(context.getSize().x/2 - 10, context.getSize().y - 10, 20, 10);
-            //}
+                m.drawRectangle((context.getSize().x/2) - 10, 0, 20, 10);
+                m.drawRectangle((context.getSize().x/2) - 10, context.getSize().y - 10, 20, 10);
+            }
         
             // LARGE GRID LINES
             m.setColor(83, 83, 83, 255);
@@ -73,7 +74,7 @@ public:
             }
         
             // GRID LABELS
-            //if (processor->monitorMode !=2) {
+            if (monitorState->monitor_mode != 2){
                 m.setColor(40, 40, 40, 255);
                 m.drawRectangle((context.getSize().x/2) - 10, 0, 20, 12);
                 m.drawRectangle((context.getSize().x/2) - 12, context.getSize().y - 15, 25, 20);
@@ -83,7 +84,7 @@ public:
                 m.draw<murka::Label>(zeroLabelShape).text({"0"}).commit();
                 MurkaShape oneEightyLabelShape = {(context.getSize().x/2) - 13, context.getSize().y - 12, 30, 15};
                 m.draw<murka::Label>(oneEightyLabelShape).text("180").commit();
-            //}
+            }
  
 			// MIXER - MONITOR DISPLAY
 			/*
@@ -253,9 +254,10 @@ public:
     bool shouldDrawDivergeGuideLine = false;
     bool shouldDrawRotateGuideLine = false;
     Mach1Encode* m1Encode = nullptr;
+    PannerSettings* pannerState = nullptr;
+    MixerSettings* monitorState = nullptr;
     bool autoOrbit = false;
-    float elevation = 0, sRotate = 0, sSpread = 50;
-    float mixerYaw = 0, mixerPitch = 0, mixerRoll = 0;
+    float azimuth = 0, elevation = 0, diverge = 0, sRotate = 0, sSpread = 50;
 
     // The results type, you also need to define it even if it's nothing.
     typedef bool Results;

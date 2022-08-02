@@ -48,15 +48,15 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
 
             // Draw additional reticles for each input channel
-            std::vector<std::string> pointsNames = pannerState.m1Encode->getPointsNames();
-            std::vector<Mach1Point3D> points = pannerState.m1Encode->getPoints();
-            for (int i = 0; i < pannerState.m1Encode->getPointsCount(); i++) {
+            std::vector<std::string> pointsNames = m1Encode->getPointsNames();
+            std::vector<Mach1Point3D> points = m1Encode->getPoints();
+            for (int i = 0; i < m1Encode->getPointsCount(); i++) {
                 drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, m, context);
             }
 
             // MIXER - MONITOR DISPLAY
-            if (monitorState.monitor_mode != 2){
-                drawMonitorYaw(monitorState.yaw - 180., monitorState.pitch, m); //TODO: Why do we need -180?
+            if (monitorState->monitor_mode != 2){
+                drawMonitorYaw(monitorState->yaw - 180., monitorState->pitch, m); //TODO: Why do we need -180?
             }
         
             reticleHoveredLastFrame = reticleHovered;
@@ -189,8 +189,7 @@ public:
     bool shouldDrawDivergeLine = false;
     bool shouldDrawRotateLine = false;
     float sRotate = 0, sSpread = 50;
-    float mixerYaw = 0, mixerPitch = 0, mixerRoll = 0;
     Mach1Encode* m1Encode = nullptr;
-    PannerSettings pannerState;
-    MixerSettings monitorState;
+    PannerSettings* pannerState = nullptr;
+    MixerSettings* monitorState = nullptr;
 };

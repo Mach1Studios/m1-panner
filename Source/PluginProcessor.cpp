@@ -206,50 +206,62 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         pannerSettings.azimuth = newValue;
         mAzimuth = pannerSettings.azimuth;
         parameters.getParameter(paramAzimuth)->setValue(mAzimuth.get());
+        m1Encode.setAzimuthDegrees(mAzimuth.get());
     } else if (parameterID == paramElevation) {
         pannerSettings.elevation = newValue;
         mElevation = pannerSettings.elevation;
         parameters.getParameter(paramElevation)->setValue(mElevation.get());
+        m1Encode.setElevationDegrees(mElevation.get());
     } else if (parameterID == paramDiverge) {
         pannerSettings.diverge = newValue;
         mDiverge = pannerSettings.diverge;
         parameters.getParameter(paramDiverge)->setValue(mDiverge.get());
+        m1Encode.setDiverge(mDiverge.get());
     } else if (parameterID == paramGain) {
         pannerSettings.gain = newValue;
         mGain = pannerSettings.gain;
         parameters.getParameter(paramGain)->setValue(mGain.get());
+        m1Encode.setOutputGain(mGain.get(), true);
     } else if (parameterID == paramX) {
         pannerSettings.x = newValue;
         mX = pannerSettings.x;
         parameters.getParameter(paramX)->setValue(mX.get());
+        //TODO: XYtoRD
     } else if (parameterID == paramY) {
         pannerSettings.y = newValue;
         mY = pannerSettings.y;
         parameters.getParameter(paramY)->setValue(mY.get());
+        //TODO: XYtoRD
     } else if (parameterID == paramAutoOrbit) {
         pannerSettings.autoOrbit = newValue;
         mAutoOrbit = pannerSettings.autoOrbit;
         parameters.getParameter(paramAutoOrbit)->setValue(mAutoOrbit.get());
+        m1Encode.setAutoOrbit(mAutoOrbit.get());
     } else if (parameterID == paramStereoOrbitAzimuth) {
         pannerSettings.stereoOrbitAzimuth = newValue;
         mStereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
         parameters.getParameter(paramStereoOrbitAzimuth)->setValue(mStereoOrbitAzimuth.get());
+        m1Encode.setOrbitRotationDegrees(mStereoOrbitAzimuth.get());
     } else if (parameterID == paramStereoSpread) {
         pannerSettings.stereoSpread = newValue;
         mStereoSpread = pannerSettings.stereoSpread;
         parameters.getParameter(paramStereoSpread)->setValue(mStereoSpread.get());
+        m1Encode.setStereoSpread(mStereoSpread.get());
     } else if (parameterID == paramStereoInputBalance) {
         pannerSettings.stereoInputBalance = newValue;
         mStereoInputBalance = pannerSettings.stereoInputBalance;
         parameters.getParameter(paramStereoInputBalance)->setValue(mStereoInputBalance.get());
+        //TODO: add this via processing?
     } else if (parameterID == paramIsotropicEncodeMode) {
         pannerSettings.isotropicMode = newValue;
         mIsotropicEncodeMode = pannerSettings.isotropicMode;
         parameters.getParameter(paramIsotropicEncodeMode)->setValue(mIsotropicEncodeMode.get());
+        // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
         pannerSettings.equalpowerMode = newValue;
         mEqualPowerEncodeMode = pannerSettings.equalpowerMode;
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(mEqualPowerEncodeMode.get());
+        // set in UI
     }
 }
 

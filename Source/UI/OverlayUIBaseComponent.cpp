@@ -12,6 +12,7 @@ OverlayUIBaseComponent::OverlayUIBaseComponent(M1PannerAudioProcessor* processor
 
 	processor = processor_;
     pannerSettings = &processor->pannerSettings;
+    mixerSettings = &processor->monitorSettings;
 }
 
 struct Line2D {
@@ -160,10 +161,6 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.m1Encode = pannerSettings->m1Encode;
         overlayReticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerSettings->stereoSpread;
-        overlayReticleField.mixerYaw = mixerSettings->yaw;
-        overlayReticleField.mixerPitch = mixerSettings->pitch;
-        overlayReticleField.mixerRoll = mixerSettings->roll;
-
 		overlayReticleField.commit();
 
         if (overlayReticleField.changed) {
