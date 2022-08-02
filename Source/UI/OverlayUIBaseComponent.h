@@ -30,6 +30,7 @@ class OverlayUIBaseComponent : public JuceMurkaBaseComponent
 {
     M1PannerAudioProcessor* processor = nullptr;
 	PannerSettings* pannerSettings = nullptr;
+    MixerSettings* mixerSettings = nullptr;
 
 public:
     //==============================================================================
@@ -73,8 +74,6 @@ private:
 	std::function<void(int, int)> teleportCursor = [&](int x, int y) {
 		//
 	};
-
-	MixerSettings mixerState;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OverlayUIBaseComponent)
 };

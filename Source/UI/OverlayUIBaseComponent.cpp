@@ -107,8 +107,12 @@ void OverlayUIBaseComponent::initialise()
 {
 	JuceMurkaBaseComponent::initialise();
 
-	std::string resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/m1panner/resources").getFullPathName().toStdString();
-	m.setResourcesPath(resourcesPath);
+    //TODO: move this to be static loaded?
+    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
+        std::string resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
+    } else {
+        std::string resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
+    }
 	
 	makeTransparent();
 }
@@ -146,7 +150,6 @@ void OverlayUIBaseComponent::render()
 	float knobSpeed = 250; // TODO: if shift pressed, lower speed
 
 	if (pannerSettings) {
-
 		XYRZ xyrz = { pannerSettings->x, pannerSettings->y, pannerSettings->azimuth, pannerSettings->elevation };
         auto& overlayReticleField = m.draw<OverlayReticleField>({0, 0, getWidth() / m.getScreenScale(), getHeight() / m.getScreenScale()}).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
@@ -154,18 +157,19 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.teleportCursor = teleportCursor;
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
-        overlayReticleField.stereoMode = (pannerSettings->inputType == 2) ? true : false;
+        overlayReticleField.m1Encode = pannerSettings->m1Encode;
         overlayReticleField.sRotate = pannerSettings->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerSettings->stereoSpread;
-        overlayReticleField.mixerYaw = mixerState.yaw;
-        overlayReticleField.mixerPitch = mixerState.pitch;
-        overlayReticleField.mixerRoll = mixerState.roll;
+        overlayReticleField.mixerYaw = mixerSettings->yaw;
+        overlayReticleField.mixerPitch = mixerSettings->pitch;
+        overlayReticleField.mixerRoll = mixerSettings->roll;
+
 		overlayReticleField.commit();
 
         if (overlayReticleField.changed) {
 			convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-            processor->parameterChanged("azimuth", pannerSettings->azimuth);
-			processor->parameterChanged("elevation", pannerSettings->elevation);
+            processor->parameterChanged(processor->paramAzimuth, pannerSettings->azimuth);
+            processor->parameterChanged(processor->paramElevation, pannerSettings->elevation);
 			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
@@ -200,7 +204,7 @@ void OverlayUIBaseComponent::render()
         if (divergeKnob.changed) {
             // update this parameter here, notifying host
             convertRCtoXYRaw(pannerSettings->azimuth, pannerSettings->diverge, pannerSettings->x, pannerSettings->y);
-            processor->parameterChanged("diverge", pannerSettings->diverge);
+            processor->parameterChanged(processor->paramDiverge, pannerSettings->diverge);
             //?
         }
         

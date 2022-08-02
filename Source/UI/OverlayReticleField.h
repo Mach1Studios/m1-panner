@@ -47,18 +47,17 @@ public:
             m.setColor(255, 198, 31);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
 
-            // STEREO INPUT
-            if (stereoMode) {
-                float paramSTSpread = sSpread;
-                float width = float(shape.size.x) * (paramSTSpread/2) / 200.;
-                drawAdditionalReticle(reticlePositionInWidgetSpace.x - width/2, reticlePositionInWidgetSpace.y, "L", reticleHovered, m, context);
-                drawAdditionalReticle(reticlePositionInWidgetSpace.x + width/2, reticlePositionInWidgetSpace.y, "R", reticleHovered, m, context);
+            // Draw additional reticles for each input channel
+            std::vector<std::string> pointsNames = pannerState.m1Encode->getPointsNames();
+            std::vector<Mach1Point3D> points = pannerState.m1Encode->getPoints();
+            for (int i = 0; i < pannerState.m1Encode->getPointsCount(); i++) {
+                drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, m, context);
             }
-        
+
             // MIXER - MONITOR DISPLAY
-            //if (processor->monitorMode != 2){
-                drawMonitorYaw(mixerYaw - 180., mixerPitch, m); //TODO: Why do we need -180?
-            //}
+            if (monitorState.monitor_mode != 2){
+                drawMonitorYaw(monitorState.yaw - 180., monitorState.pitch, m); //TODO: Why do we need -180?
+            }
         
             reticleHoveredLastFrame = reticleHovered;
         
@@ -131,8 +130,6 @@ public:
         m.disableFill();
         M1Label& l = m.draw<M1Label>(MurkaShape(realx-9, realy-7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
         
-        
-        
         if (realx + 20 > context.getSize().x){
             //draw rollover shape on left side
             float left_rollover = (realx+8)-context.getSize().x;
@@ -191,9 +188,9 @@ public:
     std::function<void(int, int)> teleportCursor;
     bool shouldDrawDivergeLine = false;
     bool shouldDrawRotateLine = false;
-    bool stereoMode = false;
     float sRotate = 0, sSpread = 50;
     float mixerYaw = 0, mixerPitch = 0, mixerRoll = 0;
-
-
+    Mach1Encode* m1Encode = nullptr;
+    PannerSettings pannerState;
+    MixerSettings monitorState;
 };
