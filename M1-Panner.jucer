@@ -7,7 +7,7 @@
               pluginManufacturer="Mach1" pluginCode="M1PN" aaxIdentifier="com.mach1.panner"
               pluginVSTCategory="kPlugCategSpacializer" pluginAAXCategory="0,512"
               pluginRTASCategory="0,512" pluginVST3Category="Spatial,Surround,Up-Downmix"
-              pluginFormats="buildAAX,buildVST">
+              pluginFormats="buildAU,buildVST" version="2.0.0">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
     <FILE id="vkeyiB" name="Proxima Nova Reg.ttf" compile="0" resource="1"

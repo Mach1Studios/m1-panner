@@ -50,7 +50,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 //                            .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 //                       }
                        ),
-    parameters(*this, &mUndoManager, juce::Identifier("M1Panner"),
+    parameters(*this, &mUndoManager, juce::Identifier("M1-Panner"),
                {
                     std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
                                                             TRANS("Azimuth"),
