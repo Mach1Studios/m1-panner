@@ -28,9 +28,9 @@ juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
                         .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
-                        #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
-                        .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
-                        #else
+//                        #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
+//                        .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
+//                        #else
                         .withOutput ("Mach1 Output 1", juce::AudioChannelSet::mono(), true)
                         .withOutput ("Mach1 Output 2", juce::AudioChannelSet::mono(), true)
                         .withOutput ("Mach1 Output 3", juce::AudioChannelSet::mono(), true)
@@ -39,7 +39,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                         .withOutput ("Mach1 Output 6", juce::AudioChannelSet::mono(), true)
                         .withOutput ("Mach1 Output 7", juce::AudioChannelSet::mono(), true)
                         .withOutput ("Mach1 Output 8", juce::AudioChannelSet::mono(), true)
-                        #endif
+//                        #endif
 //                       if (juce::PluginHostType::getPluginLoadedAs() == AudioProcessor::wrapperType_AAX || juce::PluginHostType::getPluginLoadedAs() == AudioProcessor::wrapperType_RTAS) {
 //                            .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
 //                        // manually declare confirmed multichannel DAWs
@@ -102,6 +102,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 1, 6, 2),
+                    std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 1, 7, 2),
+
                })
 {
     parameters.addParameterListener(paramAzimuth, this);
@@ -116,7 +119,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
-    
+    parameters.addParameterListener(paramInputMode, this);
+    parameters.addParameterListener(paramOutputMode, this);
+
     // Setup for Mach1Enecode API
     m1Encode.setInputMode(pannerSettings.inputType);
     m1Encode.setOutputMode(pannerSettings.outputType);
@@ -249,7 +254,46 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
+    } else if (parameterID == paramInputMode) {
+        int inputChannelCount = parameters.getParameter(paramInputMode)->getValue();
+        Mach1EncodeInputModeType input;
+        if (inputChannelCount == 1) {
+            input = Mach1EncodeInputModeMono;
+        } else if (inputChannelCount == 2) {
+            input = Mach1EncodeInputModeStereo;
+        } else if (inputChannelCount == 3) {
+            input = Mach1EncodeInputModeLCR;
+        } else if (inputChannelCount == 4) {
+            input = Mach1EncodeInputModeQuad;
+        } else if (inputChannelCount == 5) {
+            input = Mach1EncodeInputMode5dot0;
+        } else if (inputChannelCount == 6) {
+            input = Mach1EncodeInputMode5dot1Film;
+        }
+        m1Encode.setInputMode(input);
+        pannerSettings.inputType = input;
+    } else if (parameterID == paramOutputMode) {
+        int outputChannelCount = parameters.getParameter(paramOutputMode)->getValue();
+        Mach1EncodeOutputModeType output;
+        if (outputChannelCount == 1) {
+            output = Mach1EncodeOutputModeM1Horizon_4;
+        } else if (outputChannelCount == 2) {
+            output = Mach1EncodeOutputModeM1Spatial_8;
+        } else if (outputChannelCount == 3) {
+            output = Mach1EncodeOutputModeM1Spatial_12;
+        } else if (outputChannelCount == 4) {
+            output = Mach1EncodeOutputModeM1Spatial_14;
+        } else if (outputChannelCount == 5) {
+            output = Mach1EncodeOutputModeM1Spatial_16;
+        } else if (outputChannelCount == 6) {
+            output = Mach1EncodeOutputModeM1Spatial_18;
+        } else if (outputChannelCount == 7) {
+            output = Mach1EncodeOutputModeM1Spatial_32;
+        }
+        m1Encode.setOutputMode(output);
+        pannerSettings.outputType = output;
     }
+    pannerSettings.m1Encode = &m1Encode;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -286,6 +330,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    // if you've got more output channels than input clears extra outputs
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear (i, 0, buffer.getNumSamples());
     
     // Set temp values for processing
     float _azimuth = parameters.getParameter(paramAzimuth)->getValue();
@@ -301,11 +349,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         //Set Diverge to 0 after using Diverge for Gain
         _diverge = 0;
     }
-
-    // Committing Mach1Encode settings for processing
-    m1Encode.setInputMode(pannerSettings.inputType);
-    m1Encode.setOutputMode(pannerSettings.outputType);
-    m1Encode.setPannerMode(pannerSettings.pannerMode);
     
     // parameters that can be automated will get their values updated from PannerSettings->Parameter
     m1Encode.setAzimuthDegrees(parameters.getParameter(paramAzimuth)->getValue());
@@ -373,6 +416,9 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (int j = 0; j < buffer.getNumChannels(); j++) {
         outputMeterValuedB.set(j, j < buffer.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(j, 0, buffer.getNumSamples())) : -144 );
     }
+    
+    // update m1encode for UI
+    pannerSettings.m1Encode = &m1Encode;
 }
 
 //==============================================================================
