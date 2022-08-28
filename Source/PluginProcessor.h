@@ -9,7 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "Mach1Encode.h"
+#include <Mach1Encode.h>
 #include "TypesForDataExchange.h"
 
 //==============================================================================

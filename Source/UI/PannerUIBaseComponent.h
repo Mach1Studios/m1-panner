@@ -16,7 +16,9 @@
 #include "M1PitchWheel.h"
 #include "M1VolumeDisplayLine.h"
 #include "M1Checkbox.h"
-#include "M1Label.h"
+#include "m1_orientation_client/UI/M1Label.h"
+#include "m1_orientation_client/UI/M1OrientationWindowToggleButton.h"
+#include "m1_orientation_client/UI/M1OrientationClientWindow.h"
 
 #include "../TypesForDataExchange.h"
 #include "../PluginProcessor.h"
@@ -74,6 +76,12 @@ private:
 	std::function<void(int, int)> teleportCursor = [&](int x, int y) {
 		//
 	};
+    
+    M1OrientationClientWindow orientationControlWindow;
+    bool showOrientationControlMenu = false;
+    bool showedOrientationControlBefore = false;
+    int DEBUG_orientationDeviceSelected = -1;
+    bool DEBUG_trackYaw = true, DEBUG_trackPitch = true, DEBUG_trackRoll = true;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PannerUIBaseComponent)
 };

@@ -7,13 +7,18 @@
               pluginManufacturer="Mach1" pluginCode="M1PN" aaxIdentifier="com.mach1.panner"
               pluginVSTCategory="kPlugCategSpacializer" pluginAAXCategory="0,512"
               pluginRTASCategory="0,512" pluginVST3Category="Spatial,Surround,Up-Downmix"
-              pluginFormats="buildAU,buildVST" version="2.0.0">
+              pluginFormats="buildAU,buildVST" version="2.0.0" cppLanguageStandard="17">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
     <FILE id="vkeyiB" name="Proxima Nova Reg.ttf" compile="0" resource="1"
           file="Resources/Proxima Nova Reg.ttf"/>
     <FILE id="xavLT3" name="SoinSansPro-Roman.ttf" compile="0" resource="1"
           file="Resources/SoinSansPro-Roman.ttf"/>
+    <FILE id="qM1czu" name="bluetooth_icon.png" compile="0" resource="1"
+          file="Resources/bluetooth_icon.png"/>
+    <FILE id="hUQhuN" name="tech_support_icon.png" compile="0" resource="1"
+          file="Resources/tech_support_icon.png"/>
+    <FILE id="Zy9gmZ" name="wi-fi_icon.png" compile="0" resource="1" file="Resources/wi-fi_icon.png"/>
     <GROUP id="{7A7A81D7-A723-FE81-2AAD-D694F318368D}" name="Source">
       <FILE id="hQY4yG" name="TypesForDataExchange.h" compile="0" resource="0"
             file="Source/TypesForDataExchange.h"/>
@@ -38,18 +43,17 @@
       <GROUP id="{9C402C38-70FE-774E-A921-CD4A15433E2C}" name="UI">
         <FILE id="AKmxuq" name="M1Checkbox.h" compile="0" resource="0" file="Source/UI/M1Checkbox.h"/>
         <FILE id="m10ewU" name="M1Knob.h" compile="0" resource="0" file="Source/UI/M1Knob.h"/>
-        <FILE id="j1yVyQ" name="M1Label.h" compile="0" resource="0" file="Source/UI/M1Label.h"/>
         <FILE id="xLuRDV" name="M1PitchWheel.h" compile="0" resource="0" file="Source/UI/M1PitchWheel.h"/>
         <FILE id="jLBJft" name="M1VolumeDisplayLine.h" compile="0" resource="0"
               file="Source/UI/M1VolumeDisplayLine.h"/>
+        <FILE id="pSf7BB" name="PannerReticleField.h" compile="0" resource="0"
+              file="Source/UI/PannerReticleField.h"/>
         <FILE id="qZil4f" name="OverlayReticleField.h" compile="0" resource="0"
               file="Source/UI/OverlayReticleField.h"/>
         <FILE id="hhUWgO" name="OverlayUIBaseComponent.cpp" compile="1" resource="0"
               file="Source/UI/OverlayUIBaseComponent.cpp"/>
         <FILE id="dznkPK" name="OverlayUIBaseComponent.h" compile="0" resource="0"
               file="Source/UI/OverlayUIBaseComponent.h"/>
-        <FILE id="pSf7BB" name="PannerReticleField.h" compile="0" resource="0"
-              file="Source/UI/PannerReticleField.h"/>
         <FILE id="W1G6Z3" name="PannerUIBaseComponent.cpp" compile="1" resource="0"
               file="Source/UI/PannerUIBaseComponent.cpp"/>
         <FILE id="HOnRaE" name="PannerUIBaseComponent.h" compile="0" resource="0"
