@@ -134,10 +134,8 @@ void PannerUIBaseComponent::render()
 	m.setFont("Proxima Nova Reg.ttf", 10);
 	m.begin();
 
-	m.setColor(40, 40, 40, 255);
+	m.setColor(BACKGROUND_GREY);
 	m.clear();
-
-	m.setColor(255);
 
 	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
     auto & reticleField = m.drawWidget<PannerReticleField>(MurkaShape(25, 30, 400, 400));
@@ -206,7 +204,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramX, pannerState->x);
         processor->parameterChanged(processor->paramY, pannerState->y);
 	}
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& xLabel = m.draw<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     xLabel.label = "X";
     xLabel.alignment = TEXT_CENTER;
@@ -237,7 +235,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& yLabel = m.draw<M1Label>(MurkaShape(xOffset + 100 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     yLabel.label = "Y";
     yLabel.alignment = TEXT_CENTER;
@@ -269,7 +267,7 @@ void PannerUIBaseComponent::render()
     }
     
 	rotateKnobDraggingNow = rKnob.draggingNow;
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& rLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     rLabel.label = "ROTATE";
     rLabel.alignment = TEXT_CENTER;
@@ -300,7 +298,7 @@ void PannerUIBaseComponent::render()
     }
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& dLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     dLabel.label = "DIVERGE";
     dLabel.alignment = TEXT_CENTER;
@@ -329,7 +327,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged("gain", pannerState->gain);
     }
 
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& gLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     gLabel.label = "GAIN";
     gLabel.alignment = TEXT_CENTER;
@@ -360,7 +358,7 @@ void PannerUIBaseComponent::render()
 
     bool zHovered = zKnob.hovered;
 
-    m.setColor(200, 255);
+    m.setColor(ENABLED_PARAM);
     auto& zLabel = m.draw<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
                                               knobWidth, knobHeight));
     zLabel.label = "Z";
@@ -391,7 +389,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged("orbitAzimuth", pannerState->stereoOrbitAzimuth);
     }
 
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX,
                                               yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
@@ -425,7 +423,7 @@ void PannerUIBaseComponent::render()
     }
 
 	//M1LabelAnimation = A((getLatestDrawnWidget<M1Knob>(m.latestContext)->hovered || reticleHoveredLastFrame) && (pannerSettings->inputType > 1) ? true : false);
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX,
                                                yOffset - M1LabelOffsetY + 140,
                                                knobWidth + 10, knobHeight));
@@ -459,7 +457,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged("orbitBalance", pannerState->stereoInputBalance);
     }
 
-	m.setColor(200, 255);
+	m.setColor(ENABLED_PARAM);
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX,
                                                yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
     spLabel.label = "S PAN";
@@ -545,7 +543,6 @@ void PannerUIBaseComponent::render()
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
-    
 	std::vector<float> volumesInDb(processor->getNumOutputChannels() , -10);
 	if (volumesInDb.size() > 0) {
 		std::vector<float> volumes = volumesInDb;
@@ -555,7 +552,7 @@ void PannerUIBaseComponent::render()
 			for (int channelIndex = 0; channelIndex < processor->m1Encode.getOutputChannelsCount(); channelIndex++) {
                 auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 560 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(processor->outputMeterValuedB[channelIndex]).commit();
 
-                m.setColor(210, 255);
+                m.setColor(LABEL_TEXT_COLOR);
                 m.draw<M1Label>({ 560 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
 
 				//                    if ((pannerSettings->inputType > 1) ? true : false) {
@@ -565,9 +562,9 @@ void PannerUIBaseComponent::render()
 				//                    }
 			}
 
-			m.setColor(210, 255);
+			m.setColor(REF_LABEL_TEXT_COLOR);
 			for (int i = 0; i <= 56; i += 6) {
-				//                    float db = ofMap(i, 0, 100, 0, -144); // 144 from M1VolumeDisplayLine math
+				//float db = ofMap(i, 0, 100, 0, -144); // 144 from M1VolumeDisplayLine math
 				float db = -i + 12;
 
 				float y = i * 7;
@@ -578,9 +575,32 @@ void PannerUIBaseComponent::render()
 		}
 	}
 
-    m.setColor(200, 255);
+    /// Bottom bar
+#ifdef STREAMING_PANNER_PLUGIN
+    m.setColor(GRID_LINES_3_RGB);
+    m.drawLine(0, m.getSize().height()-31, m.getSize().width(), m.getSize().height()-32); // Divider line
+    m.setColor(BACKGROUND_GREY);
+    m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 30); // bottom bar
+    
+    // TODO: add dropdown (dropup?) for input
+    
+    // TODO: add dropdown (dropup?) for output
+    
+#endif
+    
+    m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
+#ifdef STREAMING_PANNER_PLUGIN
+    /// -> label
+    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 40, m.getSize().height() - 20, 80, 20));
+    arrowLabel.label = "->";
+    arrowLabel.alignment = TEXT_CENTER;
+    arrowLabel.enabled = false;
+    arrowLabel.highlighted = false;
+    arrowLabel.commit();
+#endif
+    /// Panner label
+    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 20, 80, 20));
     pannerLabel.label = "PANNER";
     pannerLabel.alignment = TEXT_CENTER;
     pannerLabel.enabled = false;
@@ -588,7 +608,7 @@ void PannerUIBaseComponent::render()
     pannerLabel.commit();
     
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
-    m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
+    m.drawImage(m1logo, 20, m.getSize().height() - 20, 161 / 3, 39 / 3);
     
     /// Temp UI for OrientationDevice management
     /*
@@ -647,9 +667,9 @@ void PannerUIBaseComponent::render()
         std::string deviceReportString = "Tracking device:" + slots[DEBUG_orientationDeviceSelected].deviceName;
         auto font = m.getCurrentFont();
         auto bbox = font->getStringBoundingBox(deviceReportString, 0, 0);
-        m.setColor(40, 40, 40, 200);
+        m.setColor(BACKGROUND_GREY);
         m.drawRectangle(678 + 40 - bbox.width - 5, 45, bbox.width + 10, 30);
-        m.setColor(230, 230, 230);
+        m.setColor(ENABLED_PARAM);
         m.draw<M1Label>({678 + 40 - bbox.width - 5, 48, bbox.width + 10, 30}).text(deviceReportString).commit();
     }
 

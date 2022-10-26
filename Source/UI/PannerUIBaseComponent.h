@@ -12,6 +12,10 @@
 
 #include "juce_murka/JuceMurkaBaseComponent.h"
 
+#include "../TypesForDataExchange.h"
+#include "../PluginProcessor.h"
+#include "../Config.h"
+
 #include "M1Knob.h"
 #include "M1PitchWheel.h"
 #include "M1VolumeDisplayLine.h"
@@ -19,9 +23,6 @@
 #include "m1_orientation_client/UI/M1Label.h"
 #include "m1_orientation_client/UI/M1OrientationWindowToggleButton.h"
 #include "m1_orientation_client/UI/M1OrientationClientWindow.h"
-
-#include "../TypesForDataExchange.h"
-#include "../PluginProcessor.h"
 
 //==============================================================================
 /*

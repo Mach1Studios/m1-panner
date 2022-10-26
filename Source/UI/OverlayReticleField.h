@@ -23,7 +23,7 @@ public:
             auto center = MurkaPoint(context.getSize().x / 2, context.getSize().y / 2);
 
              if ((draggingNow) || (shouldDrawDivergeLine)) {
-                m.setColor(83, 83, 83, 255 * 0.3);
+                m.setColor(GRID_LINES_1_RGBA);
                 m.disableFill();
 				auto x = context.getSize().x;
                 m.drawLine(reticlePositionInWidgetSpace.x, 0, reticlePositionInWidgetSpace.x, context.getSize().y);
@@ -37,12 +37,12 @@ public:
         
             // Drawing central reticle
             m.enableFill();
-            m.setColor(255, 198, 31);
+            m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered)));
-            m.setColor(40, 40, 40); // background color for internal circle
+            m.setColor(BACKGROUND_GREY); // background color for internal circle
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered)));
             
-            m.setColor(255, 198, 31);
+            m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
 
             // Draw additional reticles for each input channel
@@ -107,7 +107,7 @@ public:
         float realx = x;
         float realy = y;
         
-        m.setColor(255, 198, 31);
+        m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         m.drawCircle(realx-1, realy-1, (10 + 3 * A(reticleHovered)));
         
@@ -124,7 +124,7 @@ public:
         }
         
         m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered)));
-        m.setColor(255, 198, 31);
+        m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         M1Label& l = m.draw<M1Label>(MurkaShape(realx-9, realy-7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
         
@@ -146,7 +146,7 @@ public:
         float yaw = normalize(yawAngle, -180., 180.); //TODO: fix this
         float pitch = pitchAngle + 90.; //TODO: fix this
         float divider = 4.; // Diameter/width of drawn object
-        m.setColor(93, 93, 93, 80);
+        m.setColor(REF_LABEL_TEXT_COLOR);
         float halfWidth = context.getSize().x/(divider*2);
         float halfHeight = context.getSize().y/(divider*2);
         float centerPos = fmod(yaw+0.5, 1.) * context.getSize().x;
