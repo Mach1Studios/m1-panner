@@ -2,8 +2,10 @@
 
 #include "MurkaView.h"
 #include "MurkaBasicWidgets.h"
-
 #include "Mach1Encode.h"
+
+// TODO: Click & Drag should hide cursor and continue dragging from last reticle position
+// TODO: Smoother curved lines
 
 using namespace murka;
 
@@ -17,12 +19,8 @@ public:
     
     void internalDraw(Murka & m) {
             MurkaContext& context = m.currentContext;
-
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
-
             XYRD *xyrd = (XYRD*)dataToControl;
-
-			auto& c = context;
 
             m.setColor(47, 47, 47, 255);
             auto linestep = context.getSize().x / (4 * 24);
@@ -164,7 +162,7 @@ public:
         
             // Reticles
 			float angle = autoOrbit ? -atan2((reticlePositionInWidgetSpace - center).x, (reticlePositionInWidgetSpace - center).y) : juce::degreesToRadians(sRotate);
-			float widgetSpaceSpread = float(shape.size.x) / 200.;
+			//float widgetSpaceSpread = float(shape.size.x) / 200.;
 			std::vector<std::string> pointsNames = m1Encode->getPointsNames();
 			std::vector<Mach1Point3D> points = m1Encode->getPoints();
 			for (int i = 0; i < m1Encode->getPointsCount(); i++) {
@@ -242,9 +240,7 @@ public:
     XYRD *dataToControl;
     
     bool draggingNow = false;
-    
     bool reticleHoveredLastFrame = false;
-    
     bool results = false;
     
     float somevalue = 0.0;

@@ -27,29 +27,33 @@ juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
-                        .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
-//                        #if (JucePlugin_Build_AAX || JucePlugin_Build_RTAS)
-//                        .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
-//                        #else
-                        .withOutput ("Mach1 Output 1", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 2", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 3", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 4", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 5", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 6", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 7", juce::AudioChannelSet::mono(), true)
-                        .withOutput ("Mach1 Output 8", juce::AudioChannelSet::mono(), true)
-//                        #endif
-//                       if (juce::PluginHostType::getPluginLoadedAs() == AudioProcessor::wrapperType_AAX || juce::PluginHostType::getPluginLoadedAs() == AudioProcessor::wrapperType_RTAS) {
-//                            .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)
-//                        // manually declare confirmed multichannel DAWs
-//                       } else if (hostType == JUCEPluginHost || hostType == Reaper || hostType == SteinbergNuendoGeneric || hostType == Ardour || hostType == DaVinciResolve) {
-//                            .withOutput("Mach1 Out", AudioChannelSet::discreteChannels(8), true)
-//                        // fallback for all other DAWs to output stereo
-//                       } else {
-//                            .withOutput("Output", juce::AudioChannelSet::stereo(), true)
-//                       }
-                       ),
+            #ifdef CUSTOM_CHANNEL_LAYOUT
+                .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
+            #else
+                #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
+                    .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
+                #else
+                    .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
+                #endif
+            #endif
+                    //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
+                    //.withInput("Side Chain Mono", juce::AudioChannelSet::mono(), true)
+            #ifdef CUSTOM_CHANNEL_LAYOUT
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
+            #else
+                #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
+                    .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)),
+                #else
+                    .withOutput ("Mach1 Out 1", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 2", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 3", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 4", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 5", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 6", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 7", juce::AudioChannelSet::mono(), true)
+                    .withOutput ("Mach1 Out 8", juce::AudioChannelSet::mono(), true)),
+                #endif
+            #endif
     parameters(*this, &mUndoManager, juce::Identifier("M1-Panner"),
                {
                     std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
@@ -102,9 +106,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
-                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 1, 6, 2),
-                    std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 1, 7, 2),
-
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeB3OAFUMA, Mach1EncodeInputModeStereo),
+                    std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
                })
 {
     parameters.addParameterListener(paramAzimuth, this);
@@ -198,6 +201,63 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 }
 
 //==============================================================================
+void M1PannerAudioProcessor::CreateLayout(){
+    if (pannerSettings.inputType == Mach1EncodeInputModeMono){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
+        //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
+        //getBus(true, 1)->setCurrentLayout(juce::AudioChannelSet::mono());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeStereo){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeLCR){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::createLCR());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeQuad){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputMode5dot0){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point0());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputMode5dot1Film){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point1());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeB2OAACN){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(2));
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeB3OAACN){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(3));
+    }
+    
+    //busArrangement.outputBuses.clear();
+    if(pannerSettings.outputType == Mach1EncodeOutputModeM1Horizon_4){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
+    } else if (pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_8){
+        if (hostType.isProTools()){
+            getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::create7point1());
+        } else {
+            getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(8));
+        }
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_12){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(12));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_14){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(14));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_18){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(18));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_32){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(32));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_36){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(36));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_48){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(48));
+    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_60){
+        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(60));
+    }
+    
+    updateHostDisplay();
+}
+
+//==============================================================================
 void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
@@ -272,31 +332,37 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
         m1Encode.setInputMode(input);
         pannerSettings.inputType = input;
+        CreateLayout();
     } else if (parameterID == paramOutputMode) {
         int outputChannelCount = parameters.getParameter(paramOutputMode)->getValue();
         Mach1EncodeOutputModeType output;
         if (outputChannelCount == 1) {
-            output = Mach1EncodeOutputModeM1Horizon_4;
-        } else if (outputChannelCount == 2) {
             output = Mach1EncodeOutputModeM1Spatial_8;
+        } else if (outputChannelCount == 2) {
+            output = Mach1EncodeOutputModeM1Horizon_4;
         } else if (outputChannelCount == 3) {
             output = Mach1EncodeOutputModeM1Spatial_12;
         } else if (outputChannelCount == 4) {
             output = Mach1EncodeOutputModeM1Spatial_14;
         } else if (outputChannelCount == 5) {
-            output = Mach1EncodeOutputModeM1Spatial_16;
-        } else if (outputChannelCount == 6) {
             output = Mach1EncodeOutputModeM1Spatial_18;
-        } else if (outputChannelCount == 7) {
+        } else if (outputChannelCount == 6) {
             output = Mach1EncodeOutputModeM1Spatial_32;
+        } else if (outputChannelCount == 7) {
+            output = Mach1EncodeOutputModeM1Spatial_36;
+        } else if (outputChannelCount == 8) {
+            output = Mach1EncodeOutputModeM1Spatial_48;
+        } else if (outputChannelCount == 9) {
+            output = Mach1EncodeOutputModeM1Spatial_60;
         }
         m1Encode.setOutputMode(output);
         pannerSettings.outputType = output;
+        CreateLayout();
     }
     pannerSettings.m1Encode = &m1Encode;
 }
 
-#ifndef JucePlugin_PreferredChannelConfigurations
+#ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     Mach1Encode configTester;
@@ -361,6 +427,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setStereoSpread(parameters.getParameter(paramStereoSpread)->getValue());
     // TODO: logic for usage of `paramStereoInputBalance`
     
+    // IF INTERNAL_SPATIAL_PROCESSING
     m1Encode.generatePointResults();
     auto gainCoeffs = m1Encode.getGains();
 

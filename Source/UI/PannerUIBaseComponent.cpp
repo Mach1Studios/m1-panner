@@ -336,10 +336,42 @@ void PannerUIBaseComponent::render()
     gLabel.enabled = true;
     gLabel.highlighted = gKnob.hovered || reticleHoveredLastFrame;
     gLabel.commit();
+    
+    // Z
+    auto& zKnob = m.draw<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
+                                            .controlling(&pannerState->elevation);
+    zKnob.rangeFrom = -90;
+    zKnob.rangeTo = 90;
+    zKnob.prefix = "";
+    zKnob.postfix = "";
+    zKnob.floatingPointPrecision = 1;
+    zKnob.speed = knobSpeed;
+    zKnob.defaultValue = 0;
+    zKnob.isEndlessRotary = false;
+    zKnob.enabled = true;
+    zKnob.externalHover = pitchWheelHoveredAtLastFrame;
+    zKnob.cursorHide = cursorHide;
+    zKnob.cursorShow = cursorShowAndTeleportBack;
+    zKnob.commit();
+    
+    if (zKnob.changed) {
+        processor->parameterChanged("elevation", pannerState->elevation);
+    }
+
+    bool zHovered = zKnob.hovered;
+
+    m.setColor(200, 255);
+    auto& zLabel = m.draw<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
+                                              knobWidth, knobHeight));
+    zLabel.label = "Z";
+    zLabel.alignment = TEXT_CENTER;
+    zLabel.enabled = true;
+    zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
+    zLabel.commit();
 
 	// S Rotation 
     auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190,
-                                             yOffset + 150, knobWidth, knobHeight))
+                                             yOffset + 140, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
@@ -361,7 +393,7 @@ void PannerUIBaseComponent::render()
 
 	m.setColor(200, 255);
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX,
-                                              yOffset - M1LabelOffsetY + 150, knobWidth, knobHeight));
+                                              yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
     srLabel.enabled = !pannerState->autoOrbit;
@@ -372,7 +404,7 @@ void PannerUIBaseComponent::render()
 
 	// TODO didChangeOutsideThisThread ???
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280,
-                                             yOffset + 150, knobWidth, knobHeight))
+                                             yOffset + 140, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
     ssKnob.rangeFrom = 0;
     ssKnob.rangeTo = 100;
@@ -395,7 +427,7 @@ void PannerUIBaseComponent::render()
 	//M1LabelAnimation = A((getLatestDrawnWidget<M1Knob>(m.latestContext)->hovered || reticleHoveredLastFrame) && (pannerSettings->inputType > 1) ? true : false);
 	m.setColor(200, 255);
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX,
-                                               yOffset - M1LabelOffsetY + 150,
+                                               yOffset - M1LabelOffsetY + 140,
                                                knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
@@ -405,7 +437,7 @@ void PannerUIBaseComponent::render()
 
 	// S Pan
     auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370,
-                                            yOffset + 150, knobWidth, knobHeight))
+                                            yOffset + 140, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
@@ -429,46 +461,14 @@ void PannerUIBaseComponent::render()
 
 	m.setColor(200, 255);
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX,
-                                               yOffset - M1LabelOffsetY + 150, knobWidth, knobHeight));
+                                               yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
     spLabel.enabled = (pannerState->inputType > 1) ? true : false;
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
     spLabel.commit();
 
-	// Z
-    auto& zKnob = m.draw<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
-                                            .controlling(&pannerState->elevation);
-    zKnob.rangeFrom = -90;
-    zKnob.rangeTo = 90;
-    zKnob.prefix = "";
-    zKnob.postfix = "";
-    zKnob.floatingPointPrecision = 1;
-    zKnob.speed = knobSpeed;
-    zKnob.defaultValue = 0;
-    zKnob.isEndlessRotary = false;
-    zKnob.enabled = true;
-    zKnob.externalHover = pitchWheelHoveredAtLastFrame;
-    zKnob.cursorHide = cursorHide;
-    zKnob.cursorShow = cursorShowAndTeleportBack;
-    zKnob.commit();
-    
-    if (zKnob.changed) {
-        processor->parameterChanged("elevation", pannerState->elevation);
-    }
-
-	bool zHovered = zKnob.hovered;
-
-	m.setColor(200, 255);
-    auto& zLabel = m.draw<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
-                                              knobWidth, knobHeight));
-    zLabel.label = "Z";
-    zLabel.alignment = TEXT_CENTER;
-    zLabel.enabled = true;
-    zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
-    zLabel.commit();
-
-	// CHECKBOXES
+	/// CHECKBOXES
 	float checkboxSlotHeight = 28;
     
     auto& overlayCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 0,
@@ -590,6 +590,8 @@ void PannerUIBaseComponent::render()
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
     
+    /// Temp UI for OrientationDevice management
+    /*
     std::vector<M1OrientationClientWindowDeviceSlot> slots;
     
     slots.push_back({"bt", "bluetooth device 1", 0 == DEBUG_orientationDeviceSelected, 0, [&](int idx)
@@ -680,7 +682,7 @@ void PannerUIBaseComponent::render()
         
         orientationControlWindow.commit();
     }
-    
+    */
 	m.end();
 } 
 
