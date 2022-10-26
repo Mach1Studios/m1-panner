@@ -22,7 +22,7 @@ public:
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
             XYRD *xyrd = (XYRD*)dataToControl;
 
-            m.setColor(47, 47, 47, 255);
+            m.setColor(GRID_LINES_1_RGBA);
             auto linestep = context.getSize().x / (4 * 24);
             for (int i = 0; i < (4 * 24); i++) {
                 if (monitorState->monitor_mode != 2){
@@ -31,14 +31,14 @@ public:
                 }
             } 
 
-            m.setColor(83, 83, 83, 255);
+            m.setColor(GRID_LINES_2);
             linestep = shape.size.x / 4;
             for (int i = 1; i < 4; i++) {
                 m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
                 m.drawLine(0, linestep * i, shape.size.x, linestep * i);
             }
         
-            m.setColor(83, 83, 83, 255);
+            m.setColor(GRID_LINES_3_RGBA);
             m.drawLine(0, 0, context.getSize().x, context.getSize().y);
             m.drawLine(context.getSize().x, 0, 0, context.getSize().y);
         
@@ -56,13 +56,13 @@ public:
 
             // GRID FILLS
             if (monitorState->monitor_mode != 2){
-                m.setColor(40, 40, 40, 255);
+                m.setColor(BACKGROUND_GREY);
                 m.drawRectangle((context.getSize().x/2) - 10, 0, 20, 10);
                 m.drawRectangle((context.getSize().x/2) - 10, context.getSize().y - 10, 20, 10);
             }
         
             // LARGE GRID LINES
-            m.setColor(83, 83, 83, 255);
+            m.setColor(REF_LABEL_TEXT_COLOR);
             linestep = context.getSize().x / 4;
             for (int i = 1; i < 4; i++) {
                 for (int j = 1; j < 4; j++) {
@@ -73,11 +73,11 @@ public:
         
             // GRID LABELS
             if (monitorState->monitor_mode != 2){
-                m.setColor(40, 40, 40, 255);
+                m.setColor(BACKGROUND_GREY);
                 m.drawRectangle((context.getSize().x/2) - 10, 0, 20, 12);
                 m.drawRectangle((context.getSize().x/2) - 12, context.getSize().y - 15, 25, 20);
                 m.setFont("Proxima Nova Reg.ttf", 8.5);
-                m.setColor(93, 93, 93, 255);
+                m.setColor(REF_LABEL_TEXT_COLOR);
                 MurkaShape zeroLabelShape = {(context.getSize().x/2) - 7.5, -2, 25, 15};
                 m.draw<murka::Label>(zeroLabelShape).text({"0"}).commit();
                 MurkaShape oneEightyLabelShape = {(context.getSize().x/2) - 13, context.getSize().y - 12, 30, 15};
@@ -108,7 +108,7 @@ public:
 				r->pushMatrix();
 				r->translate(center.x, center.y, 0);
 				r->rotateZRad(degreesToRadians(params->mixerYaw - 180)); //TODO: Why do we need -180?
-				r->setColor(200);
+				r->setColor(ENABLED_PARAM);
 
 				// temp
 				for (size_t i = 1; i < vects.size(); i++) {
@@ -128,14 +128,14 @@ public:
                                  context.getSize().y / 2);
 
             if ((draggingNow) || (shouldDrawRotateGuideLine)) {
-                m.setColor(255, 198, 31);
+                m.setColor(M1_ACTION_YELLOW);
                 m.disableFill();
                 m.drawCircle(center.x,
                              center.y, (std::get<3>(*xyrd) / 100.) * context.getSize().x / sqrt(2));
             } 
         
             if ((draggingNow) || (shouldDrawDivergeGuideLine)) {
-                m.setColor(255, 198, 31);
+                m.setColor(M1_ACTION_YELLOW);
                 m.disableFill();
                 auto center = MurkaPoint(shape.size.x / 2,
                                          shape.size.y / 2);
@@ -152,12 +152,12 @@ public:
         
             // Drawing central reticle
             m.enableFill();
-            m.setColor(255, 198, 31);
+            m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (elevation/90))));
-            m.setColor(40, 40, 40); // background color for internal circle
+            m.setColor(BACKGROUND_GREY); // background color for internal circle
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (elevation/90))));
             
-            m.setColor(255, 198, 31);
+            m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
         
             // Reticles
@@ -221,7 +221,7 @@ public:
     
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, bool largeReticles, Murka& m) {
         m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered) + (2 * (elevation/90))));
-        m.setColor(255, 198, 31);
+        m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         
         if (largeReticles){

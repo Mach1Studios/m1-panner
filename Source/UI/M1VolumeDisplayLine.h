@@ -12,7 +12,7 @@ public:
 
         bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
         
-        m.setColor(63, 63, 63, 255);
+        m.setColor(DISABLED_PARAM);
         m.drawRectangle(shape.size.x / 2 - 2,
                          0,
                          4,
@@ -31,9 +31,7 @@ public:
         }
         
         // Drawing volume & max volume thing
-        
         // v is a volume normalised, 0 to 1
-        
         float v = 1 + (volume) / 144;
         
         // Those are magic numbers that make it fit the volume values we decided. We'll change this math when we go log.
@@ -45,19 +43,18 @@ public:
         
         if (v > 0.9) {
             // reds
-            m.setColor(178, 24, 24, 255);
+            m.setColor(METER_RED);
             m.drawRectangle(shape.size.x / 2 - 2,
                             shape.size.y - v * shape.size.y,
                             4,
                             v * shape.size.y);
-            
         }
 
         if (v > 0.75) {
             // yellows
             float f = v;
             if (f > 0.9) f = 0.9;
-            m.setColor(220, 174, 37, 255);
+            m.setColor(METER_YELLOW);
             m.drawRectangle(shape.size.x / 2 - 2,
                             shape.size.y - f * shape.size.y,
                             4,
@@ -67,7 +64,7 @@ public:
         // greens
         float g = v;
         if (g > 0.75) g = 0.75;
-        m.setColor(67, 174, 56, 255);
+        m.setColor(METER_GREEN);
         m.drawRectangle(shape.size.x / 2 - 2,
                         shape.size.y - g * shape.size.y,
                         4,
@@ -81,7 +78,7 @@ public:
         v *= 8.95;
             
         // Same magic numbers
-        r->setColor(194, 194, 194);
+        r->setColor(ENABLED_PARAM);
         r->drawRectangle(c.getSize().x / 2 - 2,
                          context.getSize().y - d * context.getSize().y,
                          4,
@@ -101,8 +98,6 @@ public:
                     withCoeff, // setter
                     0.0 // default
     )
-
-
     
     float maxVolume = 0;
     double maxVolumeReachedTime = 0;

@@ -55,7 +55,7 @@ public:
                         i * minilineStep + offset);
             
             MurkaShape labelShape = {55, (i * minilineStep + 2), 150, 50};
-            m.setColor(115, 115, 115, 255);
+            m.setColor(REF_LABEL_TEXT_COLOR);
             m.draw<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
             labelValue -= 45;
         }
@@ -65,12 +65,12 @@ public:
 			shape.size.x / 2, shape.size.y - offset);
 
         // Reticle
-        m.setColor(255, 198, 31);
+        m.setColor(M1_ACTION_YELLOW);
         m.drawCircle(shape.size.x / 2, offset + (shape.size.y - offset * 2) * reticlePositionNorm, (6 + 3 * A(reticleHover + externalHovered)));
         
 		/*
         // MIXER - MONITOR DISPLAY
-        r->setColor(200);
+        r->setColor(ENABLED_PARAM);
         //TODO: fix these crazy fixes for monitor->pitch display
         r->drawLine(c.getSize().x / 2 - c.getSize().x/6,
                     (std::max)((float)params->offset,(float)((-params->mixerPitch+90)/180.) * (std::min)(c.getSize().y+params->offset, c.getSize().y-params->offset)),
@@ -104,6 +104,7 @@ public:
             hintPosition = {c.currentViewShape.position.x - 5,
                             c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2))};
             ctx.addOverlay([&]() {
+                m.setColor(LABEL_TEXT_COLOR);
                 m.setFont("Proxima Nova Reg.ttf", 8);
                 m.draw<murka::Label>({hintPosition.x,
                     hintPosition.y,

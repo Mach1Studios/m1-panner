@@ -3,6 +3,7 @@
 #include "MurkaView.h"
 #include "MurkaBasicWidgets.h"
 #include "TextField.h"
+#include "../Config.h"
 
 using namespace murka;
 
@@ -47,11 +48,11 @@ public:
         
         // "Inner" circle
          
-        m.setColor(40, 40, 40, 255);
+        m.setColor(BACKGROUND_GREY);
         m.drawCircle(shape.size.x / 2,
                      shape.size.y * 0.35,
                      shape.size.x * 0.25 - 2 * (width + A(0.5 * hoveredLocal)));
-        m.setColor(40, 40, 40, 255);
+        m.setColor(BACKGROUND_GREY);
        // A grey colored rectangle that rotates
         
         m.pushMatrix();

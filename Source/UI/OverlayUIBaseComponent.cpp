@@ -148,8 +148,7 @@ void OverlayUIBaseComponent::render()
 
 	double time = m.getElapsedTime();
 
-	m.setColor(40, 40, 40);
-
+	m.setColor(BACKGROUND_GREY);
 
 	float knobSpeed = 250; // TODO: if shift pressed, lower speed
 
