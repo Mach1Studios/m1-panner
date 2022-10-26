@@ -11,10 +11,8 @@ public:
         MurkaContext& ctx = m.currentContext;
 
         bool inside = ctx.isHovered() * !areInteractiveChildrenHovered(ctx) * hasMouseFocus(m);
-        
         hovered = inside + draggingNow;
         bool hoveredLocal = hovered + externalHovered; // this variable is not used outside the widget to avoid feedback loop
-
         changed = false; // false unless the user changed a value using this knob
         
         auto& c = ctx;
@@ -59,8 +57,8 @@ public:
             m.draw<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
             labelValue -= 45;
         }
-   
-		m.setColor(122 + 20 * A(reticleHover + externalHovered));
+        
+		m.setColor(133 + 20 * A(reticleHover + externalHovered));
         m.drawLine(c.getSize().x / 2, offset,
 			shape.size.x / 2, shape.size.y - offset);
 
@@ -101,8 +99,8 @@ public:
 
         if (draggingNow) { // drawing tooltip
             dataCache = *((float*)dataToControl);
-            hintPosition = {c.currentViewShape.position.x - 5,
-                            c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2))};
+            hintPosition = {c.currentViewShape.position.x - 1,
+                            c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2) + 4)};
             ctx.addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
                 m.setFont("Proxima Nova Reg.ttf", 8);
@@ -148,10 +146,7 @@ public:
 //        mixerPitch = mixerPitch_;
 //    }
     
-    
-    
     bool hovered = false;
-    
     bool changed = false;
 
     MURKA_PARAMETER(M1PitchWheel, // class name

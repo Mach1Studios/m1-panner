@@ -555,11 +555,11 @@ void PannerUIBaseComponent::render()
                 m.setColor(LABEL_TEXT_COLOR);
                 m.draw<M1Label>({ 560 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
 
-				//                    if ((pannerSettings->inputType > 1) ? true : false) {
-				//                        //drawWidget<M1Label>(m, { ofToString((int)volumes[1]) }, { 580, 10, 30, 30 });
-				//                        drawWidget<M1VolumeDisplayLine>(m, {volumes[1]}, {580, 30, 10, 400});
-				//                        drawWidget<M1Label>(m, {"2"}, {580, 433, 60, 50});
-				//                    }
+//                if ((pannerSettings->inputType > 1) ? true : false) {
+//                    //drawWidget<M1Label>(m, { ofToString((int)volumes[1]) }, { 580, 10, 30, 30 });
+//                    drawWidget<M1VolumeDisplayLine>(m, {volumes[1]}, {580, 30, 10, 400});
+//                    drawWidget<M1Label>(m, {"2"}, {580, 433, 60, 50});
+//                }
 			}
 
 			m.setColor(REF_LABEL_TEXT_COLOR);
@@ -578,9 +578,9 @@ void PannerUIBaseComponent::render()
     /// Bottom bar
 #ifdef STREAMING_PANNER_PLUGIN
     m.setColor(GRID_LINES_3_RGB);
-    m.drawLine(0, m.getSize().height()-31, m.getSize().width(), m.getSize().height()-32); // Divider line
+    m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
     m.setColor(BACKGROUND_GREY);
-    m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 30); // bottom bar
+    m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
     
     // TODO: add dropdown (dropup?) for input
     
@@ -592,7 +592,7 @@ void PannerUIBaseComponent::render()
     m.setFont("Proxima Nova Reg.ttf", 10);
 #ifdef STREAMING_PANNER_PLUGIN
     /// -> label
-    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 40, m.getSize().height() - 20, 80, 20));
+    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 40, m.getSize().height() - 30, 80, 20));
     arrowLabel.label = "->";
     arrowLabel.alignment = TEXT_CENTER;
     arrowLabel.enabled = false;
@@ -600,15 +600,16 @@ void PannerUIBaseComponent::render()
     arrowLabel.commit();
 #endif
     /// Panner label
-    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 20, 80, 20));
+    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
     pannerLabel.label = "PANNER";
     pannerLabel.alignment = TEXT_CENTER;
     pannerLabel.enabled = false;
     pannerLabel.highlighted = false;
     pannerLabel.commit();
     
+    m.setColor(200, 255);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
-    m.drawImage(m1logo, 20, m.getSize().height() - 20, 161 / 3, 39 / 3);
+    m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
     
     /// Temp UI for OrientationDevice management
     /*
