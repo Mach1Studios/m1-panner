@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include <Mach1Encode.h>
+#include "Config.h"
 #include "TypesForDataExchange.h"
 
 //==============================================================================
@@ -81,7 +82,9 @@ public:
     MixerSettings monitorSettings;
     juce::PluginHostType hostType;
     
-private:    
+private:
+    void CreateLayout();
+    
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
     

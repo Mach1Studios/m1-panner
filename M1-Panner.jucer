@@ -20,6 +20,7 @@
           file="Resources/tech_support_icon.png"/>
     <FILE id="Zy9gmZ" name="wi-fi_icon.png" compile="0" resource="1" file="Resources/wi-fi_icon.png"/>
     <GROUP id="{7A7A81D7-A723-FE81-2AAD-D694F318368D}" name="Source">
+      <FILE id="JNusfG" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
       <FILE id="hQY4yG" name="TypesForDataExchange.h" compile="0" resource="0"
             file="Source/TypesForDataExchange.h"/>
       <FILE id="HT1OFv" name="PluginProcessor.cpp" compile="1" resource="0"

@@ -10,9 +10,7 @@ class OverlayReticleField : public murka::View<OverlayReticleField> {
 public:
     void internalDraw(Murka & m) {
             MurkaContext& context = m.currentContext;
-
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
-
             XYRZ *xyrz = (XYRZ*)dataToControl;
 
             m.enableFill();
@@ -170,9 +168,7 @@ public:
     };
     
     bool draggingNow = false;
-    
     bool reticleHoveredLastFrame = false;
-    
     bool changed = false;
     
     XYRZ* dataToControl = nullptr;
