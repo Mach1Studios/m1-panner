@@ -29,6 +29,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
             #ifdef CUSTOM_CHANNEL_LAYOUT
                 .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
+            #elif defined(STREAMING_PANNER_PLUGIN)
+                       .withInput("Input", juce::AudioChannelSet::stereo(), true);
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
                     .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
@@ -40,6 +42,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     //.withInput("Side Chain Mono", juce::AudioChannelSet::mono(), true)
             #ifdef CUSTOM_CHANNEL_LAYOUT
                 .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
+            #elif defined(STREAMING_PANNER_PLUGIN)
+                .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
                     .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)),
@@ -106,8 +110,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
+#ifdef STREAMING_PANNER_PLUGIN
                     std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeB3OAFUMA, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+#endif
                })
 {
     parameters.addParameterListener(paramAzimuth, this);
@@ -122,8 +128,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
+#ifdef STREAMING_PANNER_PLUGIN
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
+#endif
 
     // Setup for Mach1Enecode API
     m1Encode.setInputMode(pannerSettings.inputType);
@@ -202,6 +210,15 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 
 //==============================================================================
 void M1PannerAudioProcessor::CreateLayout(){
+#ifdef STREAMING_PANNER_PLUGIN
+    if (pannerSettings.inputType == Mach1EncodeInputModeMono){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
+    }
+    else if (pannerSettings.inputType == Mach1EncodeInputModeStereo){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
+    }
+    getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
+#else
     if (pannerSettings.inputType == Mach1EncodeInputModeMono){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
         //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
@@ -253,7 +270,7 @@ void M1PannerAudioProcessor::CreateLayout(){
     } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_60){
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(60));
     }
-    
+#endif
     updateHostDisplay();
 }
 
@@ -261,6 +278,7 @@ void M1PannerAudioProcessor::CreateLayout(){
 void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
+    // can still be used to calculate coeffs even in STREAMING_PANNER_PLUGIN mode
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
         smoothedChannelCoeffs[input_channel].resize(m1Encode.getOutputChannelsCount());

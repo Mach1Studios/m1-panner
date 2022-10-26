@@ -23,8 +23,8 @@ public:
             XYRD *xyrd = (XYRD*)dataToControl;
 
             m.setColor(GRID_LINES_1_RGBA);
-            auto linestep = context.getSize().x / (4 * 24);
-            for (int i = 0; i < (4 * 24); i++) {
+            auto linestep = context.getSize().x / (96);
+            for (int i = 0; i < (96); i++) {
                 if (monitorState->monitor_mode != 2){
                     m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
                     m.drawLine(0, linestep * i, shape.size.x, linestep * i);
@@ -38,7 +38,7 @@ public:
                 m.drawLine(0, linestep * i, shape.size.x, linestep * i);
             }
         
-            m.setColor(GRID_LINES_3_RGBA);
+            m.setColor(GRID_LINES_4_RGB);
             m.drawLine(0, 0, context.getSize().x, context.getSize().y);
             m.drawLine(context.getSize().x, 0, 0, context.getSize().y);
         
@@ -62,7 +62,7 @@ public:
             }
         
             // LARGE GRID LINES
-            m.setColor(REF_LABEL_TEXT_COLOR);
+            m.setColor(GRID_LINES_4_RGB);
             linestep = context.getSize().x / 4;
             for (int i = 1; i < 4; i++) {
                 for (int j = 1; j < 4; j++) {

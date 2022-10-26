@@ -102,7 +102,6 @@ public:
             imChildren.erase(idToDelete);
         };
          
-        
         std::string valueText = prefix + displayString + postfix;
  
         auto font = m.getCurrentFont();
@@ -148,7 +147,6 @@ public:
                 .commit();
         }
         
-
         bool hoveredValueText = false;
         if (valueTextShape.inside(m.currentContext.mousePosition) && !editingTextNow) {
             m.drawRectangle(valueTextShape.x() - 2,
@@ -169,7 +167,6 @@ public:
                              2);
             hoveredValueText = true;
         }
-        
         
         // Action
 
@@ -240,7 +237,6 @@ public:
                     *((float*)dataToControl) = rangeFrom;
                 }
             }
-            
             changed = true;
         }
 
@@ -265,20 +261,13 @@ public:
     std::string prefix = "";
     
     float speed = 250.;
-    
     bool enabled = true;
     bool externalHover = false; // for Pitch wheel to control the knob
-    
     int floatingPointPrecision = 0;
-    
     std::function<void()> cursorHide, cursorShow;
-    
     bool isEndlessRotary = false;
-    
     float defaultValue = 0;
-    
     float* dataToControl = nullptr;
-    
     bool changed = false;
     
     M1Knob & withParameters(float rangeFrom_,
@@ -316,5 +305,4 @@ public:
     }
     
     bool hovered = false;
-    
 };
