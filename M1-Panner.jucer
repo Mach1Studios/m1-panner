@@ -43,6 +43,7 @@
             file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1EncodeCAPI.h"/>
       <GROUP id="{9C402C38-70FE-774E-A921-CD4A15433E2C}" name="UI">
         <FILE id="AKmxuq" name="M1Checkbox.h" compile="0" resource="0" file="Source/UI/M1Checkbox.h"/>
+        <FILE id="a3XBbi" name="M1Dropdown.h" compile="0" resource="0" file="Source/UI/M1Dropdown.h"/>
         <FILE id="m10ewU" name="M1Knob.h" compile="0" resource="0" file="Source/UI/M1Knob.h"/>
         <FILE id="xLuRDV" name="M1PitchWheel.h" compile="0" resource="0" file="Source/UI/M1PitchWheel.h"/>
         <FILE id="jLBJft" name="M1VolumeDisplayLine.h" compile="0" resource="0"
