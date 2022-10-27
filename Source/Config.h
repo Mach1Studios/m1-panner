@@ -13,8 +13,6 @@
 #ifndef JucePlugin_PreferredChannelConfigurations
     /// Dynamic I/O plugin mode
 
-    // TODO: Test for cmake i/o descriptions but add to AppConfig.h for naming of plugin
-
     // undefine things for next check
     #ifdef INPUT_CHANNELS
         #undef INPUT_CHANNELS
@@ -38,6 +36,7 @@
 
 #else
     /// Single instance I/O plugin mode
+    // TODO: Test for cmake i/o descriptions but add to AppConfig.h for naming of plugin
 
     // Check for jucer defined input/output config
     #if (JucePlugin_MaxNumInputChannels > 0) || (JucePlugin_MaxNumOutputChannels > 0)
