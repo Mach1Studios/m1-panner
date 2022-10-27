@@ -71,8 +71,10 @@ public:
     static juce::String paramAutoOrbit;
     static juce::String paramIsotropicEncodeMode;
     static juce::String paramEqualPowerEncodeMode;
+#ifdef STREAMING_PANNER_PLUGIN
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
+#endif
         
     // Variables from processor for UI
     juce::Array<float> outputMeterValuedB;
