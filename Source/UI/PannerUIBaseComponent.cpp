@@ -368,10 +368,14 @@ void PannerUIBaseComponent::render()
     zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
     zLabel.commit();
 
-	// S Rotation 
-    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190,
-                                             yOffset + 140, knobWidth, knobHeight))
+	// S Rotation
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
+#else
+    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset + 140, knobWidth, knobHeight))
+                                    .controlling(&pannerState->stereoOrbitAzimuth);
+#endif
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
     srKnob.prefix = "";
@@ -391,8 +395,11 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX,
-                                              yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
+#else
+    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
+#endif
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
     srLabel.enabled = !pannerState->autoOrbit;
@@ -402,9 +409,13 @@ void PannerUIBaseComponent::render()
 	// S Spread
 
 	// TODO didChangeOutsideThisThread ???
-    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280,
-                                             yOffset + 140, knobWidth, knobHeight))
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
+#else
+    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140, knobWidth, knobHeight))
+                                    .controlling(&pannerState->stereoOrbitAzimuth);
+#endif
     ssKnob.rangeFrom = 0;
     ssKnob.rangeTo = 100;
     ssKnob.prefix = "";
@@ -423,11 +434,12 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged("orbitSpread", pannerState->stereoSpread);
     }
 
-	//M1LabelAnimation = A((getLatestDrawnWidget<M1Knob>(m.latestContext)->hovered || reticleHoveredLastFrame) && (pannerSettings->inputType > 1) ? true : false);
 	m.setColor(ENABLED_PARAM);
-    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX,
-                                               yOffset - M1LabelOffsetY + 140,
-                                               knobWidth + 10, knobHeight));
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth + 10, knobHeight));
+#else
+    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth + 10, knobHeight));
+#endif
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
     ssLabel.enabled = (pannerState->inputType > 1) ? true : false;
@@ -435,9 +447,14 @@ void PannerUIBaseComponent::render()
     ssLabel.commit();
 
 	// S Pan
-    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370,
-                                            yOffset + 140, knobWidth, knobHeight))
+    
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset + 140 - 10, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
+#else
+    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset + 140, knobWidth, knobHeight))
+                                            .controlling(&pannerState->stereoInputBalance);
+#endif
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
     spKnob.prefix = "";
@@ -451,16 +468,17 @@ void PannerUIBaseComponent::render()
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
     spKnob.commit();
-    
-//    m.prepare<Label>({100, 100, 500, 100}).text("Label").draw();
-    
+        
     if (spKnob.changed) {
         processor->parameterChanged("orbitBalance", pannerState->stereoInputBalance);
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX,
-                                               yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
+#else
+    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
+#endif
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
     spLabel.enabled = (pannerState->inputType > 1) ? true : false;
