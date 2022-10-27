@@ -32,7 +32,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             #ifdef CUSTOM_CHANNEL_LAYOUT
                 .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
             #elif defined(STREAMING_PANNER_PLUGIN)
-                       .withInput("Input", juce::AudioChannelSet::stereo(), true);
+                       .withInput("Input", juce::AudioChannelSet::stereo(), true)
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
                     .withInput("Default Input", juce::AudioChannelSet::stereo(), true)

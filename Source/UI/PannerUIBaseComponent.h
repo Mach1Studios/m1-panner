@@ -20,6 +20,7 @@
 #include "M1PitchWheel.h"
 #include "M1VolumeDisplayLine.h"
 #include "M1Checkbox.h"
+#include "M1Dropdown.h"
 #include "m1_orientation_client/UI/M1Label.h"
 #include "m1_orientation_client/UI/M1OrientationWindowToggleButton.h"
 #include "m1_orientation_client/UI/M1OrientationClientWindow.h"
