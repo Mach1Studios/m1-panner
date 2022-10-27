@@ -577,14 +577,38 @@ void PannerUIBaseComponent::render()
 
     /// Bottom bar
 #ifdef STREAMING_PANNER_PLUGIN
-    m.setColor(GRID_LINES_3_RGB);
+    m.setColor(GRID_LINES_3_RGBA);
     m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
     m.setColor(BACKGROUND_GREY);
     m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
     
     // TODO: add dropdown (dropup?) for input
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 200, m.getSize().height()-36,
+                                                200, 30 })
+                                                /*.controlling(&pannerState->inputType)*/
+                                                .withLabel("INPUT");
+    inputDropdown.dropdown = false; // dropup
+    inputDropdown.rangeFrom = 0;
+    inputDropdown.rangeTo = 4;
+    inputDropdown.commit();
+    
+    if (inputDropdown.changed) {
+        processor->parameterChanged("inputMode", pannerState->inputType);
+    }
     
     // TODO: add dropdown (dropup?) for output
+    auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 200, m.getSize().height()-36,
+                                                200, 30 })
+                                                /*.controlling(&pannerState->outputType)*/
+                                                .withLabel("OUTPUT");
+    outputDropdown.dropdown = false; // dropup
+    outputDropdown.rangeFrom = 0;
+    outputDropdown.rangeTo = 4;
+    outputDropdown.commit();
+    
+    if (outputDropdown.changed) {
+        processor->parameterChanged("outputMode", pannerState->outputType);
+    }
     
 #endif
     
