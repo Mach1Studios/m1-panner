@@ -430,6 +430,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     float _diverge = parameters.getParameter(paramDiverge)->getValue();
     float _gain = juce::Decibels::decibelsToGain(parameters.getParameter(paramGain)->getValue());
     
+    // TODO: Check for a monitor if none is connected
+    
     if (monitorSettings.monitor_mode == 2) { // StereoSafe mode is on
         //store diverge for gain
         float abs_diverge = fabsf((parameters.getParameter(paramDiverge)->getValue() - -100.0f) / (100.0f - -100.0f));

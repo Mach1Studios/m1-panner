@@ -68,11 +68,11 @@
     <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="$(MY_SPECIAL_LINKER_FLAG)"
                externalLibraries="Mach1EncodeCAPI" extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../../../m1-sdk/mach1spatial-libs/xcode/include/"
-                       libraryPath="../../../../m1-sdk/mach1spatial-libs/xcode/lib/"
+        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/include/"
+                       libraryPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/lib/"
                        macOSDeploymentTarget="10.7" osxCompatibility="10.7 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" libraryPath="../../../../m1-sdk/mach1spatial-libs/xcode/lib/"
-                       headerPath="../../../../m1-sdk/mach1spatial-libs/xcode/include/"
+        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" libraryPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/lib/"
+                       headerPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/include/"
                        macOSDeploymentTarget="10.7" osxCompatibility="10.7 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
@@ -101,10 +101,10 @@
     <VS2017 targetFolder="Builds/VisualStudio2017" externalLibraries="Mach1EncodeCAPI.lib"
             extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="..\..\..\..\m1-sdk\mach1spatial-libs\windows-x86_64\include"
-                       libraryPath="..\..\..\..\m1-sdk\mach1spatial-libs\windows-x86_64"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" libraryPath="..\..\..\..\m1-sdk\mach1spatial-libs\windows-x86_64"
-                       headerPath="..\..\..\..\m1-sdk\mach1spatial-libs\windows-x86_64\include"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64\include"
+                       libraryPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" libraryPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64"
+                       headerPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64\include"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
@@ -132,10 +132,10 @@
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" externalLibraries="Mach1EncodeCAPI"
                 extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../../../m1-sdk/mach1spatial-libs/linux/include/"
-                       libraryPath="../../../../m1-sdk/mach1spatial-libs/linux/lib/"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" headerPath="../../../../m1-sdk/mach1spatial-libs/linux/include/"
-                       libraryPath="../../../../m1-sdk/mach1spatial-libs/linux/lib/"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/linux/include/"
+                       libraryPath="../../Modules/m1-sdk/mach1spatial-libs/linux/lib/"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/linux/include/"
+                       libraryPath="../../Modules/m1-sdk/mach1spatial-libs/linux/lib/"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
