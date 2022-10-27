@@ -253,6 +253,7 @@ void PannerUIBaseComponent::render()
     rKnob.defaultValue = 0;
     rKnob.isEndlessRotary = true;
     rKnob.enabled = true;
+    rKnob.postfix = "º";
     rKnob.externalHover = reticleHoveredLastFrame;
     rKnob.cursorHide = cursorHide;
     rKnob.cursorShow = cursorShowAndTeleportBack;
@@ -311,7 +312,7 @@ void PannerUIBaseComponent::render()
                                 .controlling(&pannerState->gain);
     gKnob.rangeFrom = -90;
     gKnob.rangeTo = 24;
-    gKnob.postfix = "db";
+    gKnob.postfix = "dB";
     gKnob.prefix = std::string(pannerState->gain > 0 ? "+" : "");
     gKnob.floatingPointPrecision = 1;
     gKnob.speed = knobSpeed;
@@ -341,7 +342,7 @@ void PannerUIBaseComponent::render()
     zKnob.rangeFrom = -90;
     zKnob.rangeTo = 90;
     zKnob.prefix = "";
-    zKnob.postfix = "";
+    zKnob.postfix = "º";
     zKnob.floatingPointPrecision = 1;
     zKnob.speed = knobSpeed;
     zKnob.defaultValue = 0;
@@ -373,8 +374,8 @@ void PannerUIBaseComponent::render()
                                     .controlling(&pannerState->stereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
-    srKnob.prefix = "º";
-    srKnob.postfix = "";
+    srKnob.prefix = "";
+    srKnob.postfix = "º";
     srKnob.floatingPointPrecision = 1;
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
@@ -582,12 +583,24 @@ void PannerUIBaseComponent::render()
     m.setColor(BACKGROUND_GREY);
     m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
     
-    // TODO: add dropdown (dropup?) for input
-    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 200, m.getSize().height()-36,
-                                                200, 30 })
+    m.setColor(APP_LABEL_TEXT_COLOR);
+    m.setFont("Proxima Nova Reg.ttf", 10);
+    
+    // Input Channel Mode Selector
+    m.setColor(APP_LABEL_TEXT_COLOR);
+    m.setFont("Proxima Nova Reg.ttf", 10);
+    auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120, m.getSize().height() - 26, 60, 20));
+    inputLabel.label = "INPUT";
+    inputLabel.alignment = TEXT_CENTER;
+    inputLabel.enabled = false;
+    inputLabel.highlighted = false;
+    inputLabel.commit();
+    
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
+                                                40, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
-                                                .withLabel("INPUT");
-    inputDropdown.dropdown = false; // dropup
+                                                .withLabel(std::to_string(pannerState->m1Encode->getInputChannelsCount()));
+    inputDropdown.drawAsDropdown = false; // dropup
     inputDropdown.rangeFrom = 0;
     inputDropdown.rangeTo = 4;
     inputDropdown.commit();
@@ -596,12 +609,21 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged("inputMode", pannerState->inputType);
     }
     
-    // TODO: add dropdown (dropup?) for output
-    auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 200, m.getSize().height()-36,
-                                                200, 30 })
+    // Output Channel Mode Selector
+    m.setColor(APP_LABEL_TEXT_COLOR);
+    m.setFont("Proxima Nova Reg.ttf", 10);
+    auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 70, m.getSize().height() - 26, 60, 20));
+    outputLabel.label = "OUTPUT";
+    outputLabel.alignment = TEXT_CENTER;
+    outputLabel.enabled = false;
+    outputLabel.highlighted = false;
+    outputLabel.commit();
+    
+    auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
+                                                40, 30 })
                                                 /*.controlling(&pannerState->outputType)*/
-                                                .withLabel("OUTPUT");
-    outputDropdown.dropdown = false; // dropup
+                                                .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount()));
+    outputDropdown.drawAsDropdown = false; // dropup
     outputDropdown.rangeFrom = 0;
     outputDropdown.rangeTo = 4;
     outputDropdown.commit();
@@ -616,15 +638,21 @@ void PannerUIBaseComponent::render()
     m.setFont("Proxima Nova Reg.ttf", 10);
 #ifdef STREAMING_PANNER_PLUGIN
     /// -> label
-    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 40, m.getSize().height() - 30, 80, 20));
-    arrowLabel.label = "->";
+    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
+    arrowLabel.label = "-->";
     arrowLabel.alignment = TEXT_CENTER;
     arrowLabel.enabled = false;
     arrowLabel.highlighted = false;
     arrowLabel.commit();
 #endif
     /// Panner label
+    m.setColor(APP_LABEL_TEXT_COLOR);
+    m.setFont("Proxima Nova Reg.ttf", 10);
+#ifdef STREAMING_PANNER_PLUGIN
+    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 26, 80, 20));
+#else
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
+#endif
     pannerLabel.label = "PANNER";
     pannerLabel.alignment = TEXT_CENTER;
     pannerLabel.enabled = false;
@@ -633,7 +661,11 @@ void PannerUIBaseComponent::render()
     
     m.setColor(200, 255);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
+#ifdef STREAMING_PANNER_PLUGIN
+    m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
+#else
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
+#endif
     
     /// Temp UI for OrientationDevice management
     /*
