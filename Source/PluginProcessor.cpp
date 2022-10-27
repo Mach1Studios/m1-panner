@@ -380,8 +380,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         m1Encode.setOutputMode(output);
         pannerSettings.outputType = output;
         CreateLayout();
-    }
 #endif
+    }
     pannerSettings.m1Encode = &m1Encode;
 }
 
