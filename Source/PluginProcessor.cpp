@@ -21,8 +21,10 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
+#ifdef STREAMING_PANNER_PLUGIN
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
+#endif
 
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
@@ -111,7 +113,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
 #ifdef STREAMING_PANNER_PLUGIN
-                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeB3OAFUMA, Mach1EncodeInputModeStereo),
+                    // Limited to stereo input for STREAMING_PANNER_PLUGIN mode
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeStereo, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
 #endif
                })
@@ -332,6 +335,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
+#ifdef STREAMING_PANNER_PLUGIN
     } else if (parameterID == paramInputMode) {
         int inputChannelCount = parameters.getParameter(paramInputMode)->getValue();
         Mach1EncodeInputModeType input;
@@ -377,6 +381,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         pannerSettings.outputType = output;
         CreateLayout();
     }
+#endif
     pannerSettings.m1Encode = &m1Encode;
 }
 
@@ -445,7 +450,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setStereoSpread(parameters.getParameter(paramStereoSpread)->getValue());
     // TODO: logic for usage of `paramStereoInputBalance`
     
-    // IF INTERNAL_SPATIAL_PROCESSING
     m1Encode.generatePointResults();
     auto gainCoeffs = m1Encode.getGains();
 
@@ -454,6 +458,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
     audioDataIn.resize(m1Encode.getInputChannelsCount());
+
+#ifdef STREAMING_PANNER_PLUGIN
+    // TODO: safely block the input from passing to output
+#else
+    /// INTERNAL_SPATIAL_PROCESSING
 
     // vector of output channel buffers
     std::vector<float*> outBuffer(getNumOutputChannels());
@@ -494,6 +503,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
+#endif
     
     // update meters
     juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), buffer.getNumChannels(), buffer.getNumSamples());

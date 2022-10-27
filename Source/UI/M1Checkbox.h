@@ -62,25 +62,20 @@ public:
     
     float animatedData = 0;
     bool didntInitialiseYet = true;
-
     bool changed = false;
     bool checked = true;
     std::string label;
-    
     bool* dataToControl = nullptr;
     
     M1Checkbox & controlling(bool* dataPointer) {
         dataToControl = dataPointer;
-        
         return *this;
     }
     
     M1Checkbox & withLabel(std::string label_) {
         label = label_;
-        
         return *this;
     }
-    
 
     MURKA_PARAMETER(M1Checkbox, // class name
                     bool, // parameter type
@@ -89,6 +84,4 @@ public:
                     true // default
     )
     
-
-
 };

@@ -26,13 +26,15 @@
         #undef JucePlugin_PreferredChannelConfigurations
     #endif
 
-    // DYNAMIC_IO_PLUGIN_MODE active
-    #undef CUSTOM_CHANNEL_LAYOUT
-    #define DYNAMIC_IO_PLUGIN_MODE
-
     // streaming plugin (stereo max) vs multichannel processing plugin
     // Please add in jucer definitions or in cmake via `ADD_DEFINITIONS(-DSTREAMING_PANNER_PLUGIN)`
-    //#define STREAMING_PANNER_PLUGIN
+    #ifdef STREAMING_PANNER_PLUGIN
+        /// STREAMING_PANNER_PLUGIN mode active
+    #else
+        /// DYNAMIC_IO_PLUGIN_MODE active
+        #undef CUSTOM_CHANNEL_LAYOUT
+        #define DYNAMIC_IO_PLUGIN_MODE
+    #endif
 
 #else
     /// Single instance I/O plugin mode
@@ -94,9 +96,15 @@
     #undef STREAMING_PANNER_PLUGIN
     #define CUSTOM_CHANNEL_LAYOUT
 #else
-    // DYNAMIC_IO_PLUGIN_MODE active
     #undef CUSTOM_CHANNEL_LAYOUT
-    #define DYNAMIC_IO_PLUGIN_MODE
+    
+    #ifdef STREAMING_PANNER_PLUGIN
+        /// STREAMING_PANNER_PLUGIN mode active
+    #else
+        /// DYNAMIC_IO_PLUGIN_MODE active
+        #define DYNAMIC_IO_PLUGIN_MODE
+    #endif
+
 #endif
 
 #ifndef PI
