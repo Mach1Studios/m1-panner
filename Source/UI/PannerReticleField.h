@@ -38,7 +38,7 @@ public:
                 m.drawLine(0, linestep * i, shape.size.x, linestep * i);
             }
         
-            m.setColor(GRID_LINES_4_RGB);
+            m.setColor(GRID_LINES_3_RGBA);
             m.drawLine(0, 0, context.getSize().x, context.getSize().y);
             m.drawLine(context.getSize().x, 0, 0, context.getSize().y);
         
@@ -62,7 +62,7 @@ public:
             }
         
             // LARGE GRID LINES
-            m.setColor(GRID_LINES_4_RGB);
+            m.setColor(GRID_LINES_3_RGBA);
             linestep = context.getSize().x / 4;
             for (int i = 1; i < 4; i++) {
                 for (int j = 1; j < 4; j++) {
