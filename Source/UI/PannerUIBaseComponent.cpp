@@ -510,10 +510,12 @@ void PannerUIBaseComponent::render()
                                                 200, 20 })
                                                 .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
-    equalPowerCheckbox.enabled = true;
+    // TODO: update enabled state after .commit() ? 
+    equalPowerCheckbox.enabled = isotropicCheckbox.checked;
     equalPowerCheckbox.commit();
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
+        equalPowerCheckbox.enabled = isotropicCheckbox.checked;
         // update pannerSettings storage of current states
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
