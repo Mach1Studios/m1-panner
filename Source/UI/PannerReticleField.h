@@ -18,6 +18,8 @@ public:
     }
     
     void internalDraw(Murka & m) {
+            results = false; 
+
             MurkaContext& context = m.currentContext;
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
             XYRD *xyrd = (XYRD*)dataToControl;
