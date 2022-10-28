@@ -23,24 +23,25 @@
       <FILE id="JNusfG" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
       <FILE id="hQY4yG" name="TypesForDataExchange.h" compile="0" resource="0"
             file="Source/TypesForDataExchange.h"/>
-      <FILE id="HT1OFv" name="PluginProcessor.cpp" compile="1" resource="0"
-            file="Source/PluginProcessor.cpp"/>
       <FILE id="YRX9cp" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
-      <FILE id="p7J1QJ" name="PluginEditor.cpp" compile="1" resource="0"
-            file="Source/PluginEditor.cpp"/>
-      <FILE id="eMCqlB" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
-      <FILE id="wkdRtA" name="Overlay.cpp" compile="1" resource="0" file="Source/Overlay.cpp"/>
-      <FILE id="ViNtxJ" name="Overlay.h" compile="0" resource="0" file="Source/Overlay.h"/>
-      <FILE id="sqBxtS" name="PannerOSC.cpp" compile="1" resource="0" file="Source/PannerOSC.cpp"/>
+      <FILE id="HT1OFv" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="EMAKoE" name="RingBuffer.h" compile="0" resource="0" file="Source/RingBuffer.h"/>
       <FILE id="G9cQqA" name="PannerOSC.h" compile="0" resource="0" file="Source/PannerOSC.h"/>
-      <FILE id="KBZIHM" name="WindowUtil.cpp" compile="1" resource="0" file="Source/WindowUtil.cpp"/>
-      <FILE id="lnYnW9" name="WindowUtil.h" compile="0" resource="0" file="Source/WindowUtil.h"/>
-      <FILE id="Ij83lH" name="WindowUtil.mm" compile="1" resource="0" file="Source/WindowUtil.mm"/>
-      <FILE id="MtAPRc" name="Mach1Encode.cpp" compile="1" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.cpp"/>
-      <FILE id="uj232a" name="Mach1Encode.h" compile="0" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.h"/>
+      <FILE id="sqBxtS" name="PannerOSC.cpp" compile="1" resource="0" file="Source/PannerOSC.cpp"/>
       <FILE id="cxAfth" name="Mach1EncodeCAPI.h" compile="0" resource="0"
             file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1EncodeCAPI.h"/>
+      <FILE id="uj232a" name="Mach1Encode.h" compile="0" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.h"/>
+      <FILE id="MtAPRc" name="Mach1Encode.cpp" compile="1" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.cpp"/>
+      <FILE id="eMCqlB" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="p7J1QJ" name="PluginEditor.cpp" compile="1" resource="0"
+            file="Source/PluginEditor.cpp"/>
+      <FILE id="ViNtxJ" name="Overlay.h" compile="0" resource="0" file="Source/Overlay.h"/>
+      <FILE id="wkdRtA" name="Overlay.cpp" compile="1" resource="0" file="Source/Overlay.cpp"/>
+      <FILE id="lnYnW9" name="WindowUtil.h" compile="0" resource="0" file="Source/WindowUtil.h"/>
+      <FILE id="KBZIHM" name="WindowUtil.cpp" compile="1" resource="0" file="Source/WindowUtil.cpp"/>
+      <FILE id="Ij83lH" name="WindowUtil.mm" compile="1" resource="0" file="Source/WindowUtil.mm"/>
       <GROUP id="{9C402C38-70FE-774E-A921-CD4A15433E2C}" name="UI">
         <FILE id="AKmxuq" name="M1Checkbox.h" compile="0" resource="0" file="Source/UI/M1Checkbox.h"/>
         <FILE id="a3XBbi" name="M1Dropdown.h" compile="0" resource="0" file="Source/UI/M1Dropdown.h"/>
