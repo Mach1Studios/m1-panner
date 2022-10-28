@@ -21,9 +21,15 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
+#endif
+#ifdef ITD_PARAMETER
+juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
+juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
+juce::String M1PannerAudioProcessor::paramITDClampActive("ITDClamp");
+juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 #endif
 
 //==============================================================================
@@ -32,7 +38,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             #ifdef CUSTOM_CHANNEL_LAYOUT
                 .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
             #elif defined(STREAMING_PANNER_PLUGIN)
-                       .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                .withInput("Input", juce::AudioChannelSet::stereo(), true)
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
                     .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
@@ -112,10 +118,23 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
                     // Limited to stereo input for STREAMING_PANNER_PLUGIN mode
                     std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeStereo, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+#endif
+#ifdef ITD_PARAMETERS
+                    std::make_unique<juce::AudioParameterBool>(paramITDActive, TRANS("ITD"), pannerSettings.itdActive),
+                    std::make_unique<juce::AudioParameterFloat>(paramDelayTime,
+                                                            TRANS("Delay Time (max)"),
+                                                            juce::NormalisableRange<float>(0.0f, 10000.0f, 1.0f), pannerSettings.delayTime, "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + "μS"; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
+                    std::make_unique<juce::AudioParameterFloat>(paramDelayDistance,
+                                                            TRANS("Delay Distance"),
+                                                            juce::NormalisableRange<float>(0.0f, 10000.0f, 0.01f), pannerSettings.delayDistance, "", juce::AudioProcessorParameter::genericParameter,
+                                                            [](float v, int) { return juce::String (v, 1) + ""; },
+                                                            [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
 #endif
                })
 {
@@ -131,18 +150,23 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
 #endif
+#ifdef ITD_PARAMETERS
+    parameters.addParameterListener(paramITDActive, this);
+    parameters.addParameterListener(paramDelayTime, this);
+    parameters.addParameterListener(paramDelayDistance, this);
+#endif
 
-    // Setup for Mach1Enecode API
-    m1Encode.setInputMode(pannerSettings.inputType);
-    m1Encode.setOutputMode(pannerSettings.outputType);
+    // Setup defaults for Mach1Enecode API
     m1Encode.setPannerMode(pannerSettings.pannerMode);
-    
     // assign pointer to Mach1Encode object
     pannerSettings.m1Encode = &m1Encode;
+    
+    // Setup i/o layout this also will setup default for `m1Encode` object
+    createLayout();
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
@@ -212,7 +236,16 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 }
 
 //==============================================================================
-void M1PannerAudioProcessor::CreateLayout(){
+void M1PannerAudioProcessor::createLayout(){
+    int numInChans, numOutChans;
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    numInChans = INPUT_CHANNELS;
+    numOutChans = OUTPUT_CHANNELS;
+#else
+    numInChans = pannerSettings.m1Encode->getInputChannelsCount();
+    numOutChans = pannerSettings.m1Encode->getOutputChannelsCount();
+#endif
+    
 #ifdef STREAMING_PANNER_PLUGIN
     if (pannerSettings.inputType == Mach1EncodeInputModeMono){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
@@ -222,58 +255,101 @@ void M1PannerAudioProcessor::CreateLayout(){
     }
     getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
 #else
-    if (pannerSettings.inputType == Mach1EncodeInputModeMono){
+    //TODO: refactor this so it sets format per type instead of number of channels
+    //TODO: refactor so there is a pool of selections for Quad/LCR, pool for ambisonics and a pool for surround
+    if (numInChans == juce::AudioChannelSet::mono().size()){
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeMono);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
         //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
         //getBus(true, 1)->setCurrentLayout(juce::AudioChannelSet::mono());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeStereo){
+    else if (numInChans == juce::AudioChannelSet::stereo().size()){
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeStereo);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeLCR){
+    else if (numInChans == juce::AudioChannelSet::createLCR().size()){
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCR);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::createLCR());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeQuad){
+    else if (numInChans == juce::AudioChannelSet::quadraphonic().size()){
+        // TODO: Add how we switch using getInputMode?
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
+//        if (mChanInputMode == QUAD) m1Encode.setInputMode(Mach1EncodeInputModeQuad);
+//        if (mChanInputMode == LCRS) m1Encode.setInputMode(Mach1EncodeInputModeLCRS);
+//        if (mChanInputMode == AFORMAT) m1Encode.setInputMode(Mach1EncodeInputModeAFormat);
+//        if (mChanInputMode == BFORMAT_1OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeBFOAACN);
+//        if (mChanInputMode == BFORMAT_1OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeBFOAFUMA);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputMode5dot0){
+    else if (numInChans == juce::AudioChannelSet::create5point0().size()){
+        m1Encode.setInputMode(Mach1EncodeInputMode5dot0);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point0());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputMode5dot1Film){
+    else if (numInChans == juce::AudioChannelSet::create5point1().size()){
+        // TODO: Add how we switch using getInputMode?
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1Film);
+//        if (mChanInputMode == FIVE_ONE_FILM) m1Encode.setInputMode(Mach1EncodeInputMode5dot1Film);
+//        if (mChanInputMode == FIVE_ONE_SMPTE) m1Encode.setInputMode(Mach1EncodeInputMode5dot1SMTPE);
+//        if (mChanInputMode == FIVE_ONE_DTS) m1Encode.setInputMode(Mach1EncodeInputMode5dot1DTS);
+        //        if (inputMode == SIX_ZERO) m1Encode.setInputMode(); //TODO: add this
+        //        if (inputMode == HEXAGON) m1Encode.setInputMode(); //TODO: add this
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point1());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeB2OAACN){
+    else if (numInChans == juce::AudioChannelSet::create7point1point2().size()){
+        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create7point1point2());
+    }
+    else if (numInChans == juce::AudioChannelSet::ambisonic(2).size()){
+        // TODO: Add how we switch using getInputMode?
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAACN);
+//        if (mChanInputMode == BFORMAT_2OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeB2OAACN);
+//        if (mChanInputMode == BFORMAT_2OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeB2OAFUMA);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(2));
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeB3OAACN){
+    else if (numInChans == juce::AudioChannelSet::ambisonic(3).size()){
+        // TODO: Add how we switch using getInputMode?
+        pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAACN);
+//        if (mChanInputMode == BFORMAT_3OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeB3OAACN);
+//        if (mChanInputMode == BFORMAT_3OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeB3OAFUMA);
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(3));
     }
+    pannerSettings.inputType = m1Encode.getInputMode();
     
-    //busArrangement.outputBuses.clear();
-    if(pannerSettings.outputType == Mach1EncodeOutputModeM1Horizon_4){
+    if(numOutChans == juce::AudioChannelSet::quadraphonic().size()){
+        //TODO: add a multiplier to reduce the hot 4 channel signal
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Horizon_4);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
-    } else if (pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_8){
+    } else if (numOutChans == juce::AudioChannelSet::create7point1().size()){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_8);
         if (hostType.isProTools()){
             getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::create7point1());
         } else {
             getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(8));
         }
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_12){
+    } else if(numOutChans == 12){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_12);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(12));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_14){
+    } else if(numOutChans == 14){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_14);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(14));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_18){
+    } else if(numOutChans == 18){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_18);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(18));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_32){
+    } else if(numOutChans == 32){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_32);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(32));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_36){
+    } else if(numOutChans == 36){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_36);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(36));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_48){
+    } else if(numOutChans == 48){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_48);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(48));
-    } else if(pannerSettings.outputType == Mach1EncodeOutputModeM1Spatial_60){
+    } else if(numOutChans == 60){
+        pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_60);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(60));
     }
+    pannerSettings.outputType = m1Encode.getOutputMode();
 #endif
+    
     updateHostDisplay();
 }
 
@@ -281,6 +357,10 @@ void M1PannerAudioProcessor::CreateLayout(){
 void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+    createLayout();
+#endif
+    
     // can still be used to calculate coeffs even in STREAMING_PANNER_PLUGIN mode
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
@@ -289,6 +369,20 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
             smoothedChannelCoeffs[input_channel][output_channel].reset(sampleRate, (double)0.01);
         }
     }
+    
+#ifdef ITD_PARAMETERS
+    mSampleRate = sampleRate;
+    mDelayTimeSmoother.reset(samplesPerBlock);
+    mDelayTimeSmoother.setValue(0);
+    
+    ring.reset(new RingBuffer(m1Encode.getOutputChannelsCount(), 64*sampleRate));
+    ring->clear();
+
+    // sample buffer for 2 seconds + MAX_NUM_CHANNELS buffers safety
+    mDelayBuffer.setSize (m1Encode.getOutputChannelsCount(), (float)m1Encode.getOutputChannelsCount() * (samplesPerBlock + sampleRate), false, false);
+    mDelayBuffer.clear();
+    mExpectedReadPos = -1;
+#endif
 }
 
 void M1PannerAudioProcessor::releaseResources()
@@ -335,7 +429,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     } else if (parameterID == paramInputMode) {
         int inputChannelCount = parameters.getParameter(paramInputMode)->getValue();
         Mach1EncodeInputModeType input;
@@ -414,11 +508,69 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
 }
 #endif
 
+void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
+    orderOfChans.resize(numOutputChannels);
+    chanIndexs.resize(numOutputChannels);
+    if(numOutputChannels == 8) {
+        //Pro Tools
+        if (hostType.isProTools()){
+            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+            orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
+            orderOfChans[2] = juce::AudioChannelSet::ChannelType::right;
+            orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
+            orderOfChans[4] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
+            orderOfChans[5] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
+            orderOfChans[6] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
+            orderOfChans[7] = juce::AudioChannelSet::ChannelType::LFE;
+        } else {
+            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+            orderOfChans[2] = juce::AudioChannelSet::ChannelType::centre;
+            orderOfChans[3] = juce::AudioChannelSet::ChannelType::LFE;
+            orderOfChans[4] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
+            orderOfChans[5] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
+            orderOfChans[6] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
+            orderOfChans[7] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
+        }
+        juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
+        for (int i = 0; i < numOutputChannels; i ++) {
+            chanIndexs[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+        }
+    } else if (numOutputChannels == 4){
+        // Layout for Pro Tools
+        if (hostType.isProTools()) {
+            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+            orderOfChans[2] = juce::AudioChannelSet::ChannelType::rightSurround;
+            orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurround;
+        } else {
+            //Layout for Reaper et al
+            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+            orderOfChans[2] = juce::AudioChannelSet::ChannelType::leftSurround;
+            orderOfChans[3] = juce::AudioChannelSet::ChannelType::rightSurround;
+        }
+
+        juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
+        for (int i = 0; i < numOutputChannels; i ++) {
+            chanIndexs[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+        }
+    } else {
+        for (int i = 0; i < numOutputChannels; ++i){
+            orderOfChans[i] = juce::AudioChannelSet::ChannelType::discreteChannel0;
+            chanIndexs[i] = i;
+        }
+    }
+}
+
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    
+    // Fix host specific channel ordering issues
+    fillChannelOrderArray(totalNumOutputChannels);
 
     // if you've got more output channels than input clears extra outputs
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
@@ -460,21 +612,28 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
     audioDataIn.resize(m1Encode.getInputChannelsCount());
+    
+    juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
+    float ** outBuffer = mainOutput.getArrayOfWritePointers();
+    // vector of output channel buffers
+//    std::vector<float*> outBuffer; // reset vector
+//    for (int output_channel = 0; output_channel < totalNumOutputChannels; output_channel++) {
+//        juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, output_channel);
+//        outBuffer.push_back(mainOutput.getWritePointer(output_channel));
+//
+//        // clear all old output samples
+//        mainOutput.clear();
+//    }
 
+#ifdef ITD_PARAMETERS
+    mDelayTimeSmoother.setTargetValue(delayTimeParameter->get());
+    const float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate/1000000; // number of samples in a microsecond * number of microseconds
+#endif
+    
 #ifdef STREAMING_PANNER_PLUGIN
     // TODO: safely block the input from passing to output
 #else
     /// INTERNAL_SPATIAL_PROCESSING
-
-    // vector of output channel buffers
-    std::vector<float*> outBuffer(getNumOutputChannels());
-    for (int output_channel = 0; output_channel < getNumOutputChannels(); output_channel++) {
-        juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, output_channel);
-        outBuffer[output_channel] = mainOutput.getWritePointer(0);
-
-        // clear all old output samples
-        mainOutput.clear();
-    }
     
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
@@ -493,6 +652,37 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
     
+    // Process Buffer loop section
+    if(pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeMono){
+        buffers[0] = audioDataIn[0].data();
+        // Default alway add side chain bus.
+    } else if(pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeStereo && mainInput.getNumChannels() >= 2){
+        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
+        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
+    } else if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeLCR && mainInput.getNumChannels() >= 3){
+        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
+        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
+        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
+    } else if (pannerSettings.m1Encode->getInputChannelsCount() == 4 && mainInput.getNumChannels() >= 4){
+        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
+        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
+        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
+        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
+    } else if (pannerSettings.m1Encode->getInputChannelsCount() == 5 && mainInput.getNumChannels() >= 5){
+        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
+        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
+        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
+        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
+        buffers[4] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
+    } else if (pannerSettings.m1Encode->getInputChannelsCount() == 6 && mainInput.getNumChannels() >= 6){ // we use this instead of == to ensure HOSTS can support the plugin even when input channel count is > than needed
+        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
+        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
+        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
+        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
+        buffers[4] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
+        buffers[5] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::LFE)].data();
+    }
+
     // processing loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         for (int sample = 0; sample < buffer.getNumSamples(); sample++){
@@ -505,7 +695,37 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-#endif
+    
+#ifdef ITD_PARAMETERS
+    //SIMPLE DELAY
+    // scale delayCoeffs to be normalized
+    for (int i = 0; i < m_i_numInChans; i++) {
+        for (int o = 0; o < m_i_numOutChans; o++) {
+            delayCoeffs[i][o] = std::min(0.25f, delayCoeffs[i][o]); // clamp maximum to .25f
+            delayCoeffs[i][o] *= 4.0f; // rescale range to 0.0->1.0
+            // Incorporate the distance delay multiplier
+            // using min to correlate delayCoeffs as multiplier increases
+            //delayCoeffs[i][o] = std::min<float>(1.0f, (delayCoeffs[i][o]+0.01f) * (float)delayDistanceParameter->get()/100.);
+            //delayCoeffs[i][o] *= delayDistanceParameter->get()/10.;
+        }
+    }
+    
+    if ((bool)*itdParameter) {
+        for (int sample = 0; sample < numSamples; sample++) {
+            // write original to delay
+            float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
+            for (auto channel = 0; channel < m_i_numOutChans; channel++) {
+                ring->pushSample(channel, outBuffer[channel][sample]);
+            }
+            for (int channel = 0; channel < m_i_numOutChans; channel++) {
+                outBuffer[channel][sample] = (outBuffer[channel][sample] * 0.707106781) + (ring->getSampleAtDelay(channel, udtime * delayCoeffs[0][channel]) * 0.707106781); // pan-law applied via `0.707106781`
+            }
+            ring->increment();
+        }
+    }
+#endif // end of ITD_PARAMETERS
+    
+#endif // end of processing flow
     
     // update meters
     juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), buffer.getNumChannels(), buffer.getNumSamples());

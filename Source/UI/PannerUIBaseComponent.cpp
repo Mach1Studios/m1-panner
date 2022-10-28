@@ -524,6 +524,7 @@ void PannerUIBaseComponent::render()
         } else {
             processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
         }
+        pannerState->m1Encode->setPannerMode(pannerState->pannerMode);
     }
 
     auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,

@@ -9,7 +9,6 @@
 #pragma message "Value of INPUTS: " XSTR(JucePlugin_MaxNumInputChannels)
 #pragma message "Value of OUTPUTS: " XSTR(JucePlugin_MaxNumOutputChannels)
 
-
 #ifndef JucePlugin_PreferredChannelConfigurations
     /// Dynamic I/O plugin mode
 
@@ -105,6 +104,22 @@
     #endif
 
 #endif
+
+// Debug
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    #pragma message "CUSTOM_CHANNEL_LAYOUT Active"
+#endif
+#ifdef DYNAMIC_IO_PLUGIN_MODE
+    #pragma message "DYNAMIC_IO_PLUGIN_MODE Active"
+#endif
+#ifdef STREAMING_PANNER_PLUGIN
+    #pragma message "STREAMING_PANNER_PLUGIN Active"
+#endif
+#ifdef ITD_PARAMETERS
+    #pragma message "ITD_PARAMETERS Active"
+#endif
+
+// ---
 
 #ifndef PI
 #define PI       3.14159265358979323846
