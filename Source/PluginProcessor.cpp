@@ -748,23 +748,105 @@ juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 }
 
 //==============================================================================
+juce::XmlElement* addXmlElement(juce::XmlElement& root, juce::String paramName, juce::String value)
+{
+    juce::XmlElement* el = root.createNewChildElement("param_" + paramName);
+    el->setAttribute("value", juce::String(value));
+    return el;
+}
+
+double getParameterDoubleFromXmlElement(juce::XmlElement* xml, juce::String paramName, double defVal)
+{
+    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value")) {
+        double val = xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
+        if (std::isnan(val)) {
+            return defVal;
+        }
+        return val;
+    }
+    return defVal;
+}
+
+int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName, int defVal)
+{
+    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value")) {
+        return xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
+    }
+    return defVal;
+}
+
 void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    // You should use this method to store your parameters in the memory block.
     juce::MemoryOutputStream stream(destData, false);
-    parameters.state.writeToStream(stream);
+    // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version threshold for supporting
+    // backwards compatible automation data in PT
+    stream.writeString("1.5.1"); // write current prefix
+
+    juce::XmlElement root("Root");
+
+    addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
+    addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation));
+    addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge));
+    addXmlElement(root, paramGain, juce::String(pannerSettings.gain));
+    addXmlElement(root, paramX, juce::String(pannerSettings.x));
+    addXmlElement(root, paramY, juce::String(pannerSettings.y));
+    addXmlElement(root, paramStereoOrbitAzimuth, juce::String(pannerSettings.stereoOrbitAzimuth));
+    addXmlElement(root, paramStereoSpread, juce::String(pannerSettings.stereoSpread));
+    addXmlElement(root, paramStereoInputBalance, juce::String(pannerSettings.stereoInputBalance));
+    addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit ? 1 : 0));
+    addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode ? 1 : 0));
+    addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode ? 1 : 0));
+
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+    addXmlElement(root, paramInputMode, juce::String(pannerSettings.inputType));
+    addXmlElement(root, paramOutputMode, juce::String(pannerSettings.outputType));
+#endif
+
+    juce::String strDoc = root.createDocument(juce::String(""), false, false);
+    stream.writeString(strDoc);
 }
 
 void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
-    if (tree.isValid()) {
-        parameters.state = tree;
-        //TODO: restore settings back to pannerSettings?
+       // whose contents will have been created by the getStateInformation() call.
+    juce::MemoryInputStream input(data, sizeInBytes, false);
+    auto prefix = input.readString();
+    /*
+     This prefix string check is to define when we swap from mState parameters to newer AVPTS, using this to check if the plugin
+     was made before this release version (1.5.1) since it would still be using mState, if it is a M1-Panner made before "1.5.1"
+     then we use the mState tree to call the saved automation and values of all our parameters in those older sessions.
+
+     WARNING: Do not update this string value unless there is a specific reason, it is not designed to be updated with each
+     release version update.
+    */
+
+    if (!prefix.isEmpty() && prefix == "1.5.1") {
+        // new method
+        juce::XmlDocument doc(input.readString());
+        std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
+    
+        pannerSettings.azimuth = getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth);
+        pannerSettings.elevation = getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation);
+        pannerSettings.diverge = getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge);
+        pannerSettings.gain = getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain);
+        pannerSettings.x = getParameterDoubleFromXmlElement(root.get(), paramX, pannerSettings.x);
+        pannerSettings.y = getParameterDoubleFromXmlElement(root.get(), paramY, pannerSettings.y);
+        pannerSettings.stereoOrbitAzimuth = getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth);
+        pannerSettings.stereoSpread = getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread);
+        pannerSettings.stereoInputBalance = getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance);
+        pannerSettings.autoOrbit = getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
+        pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
+        pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
+
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+        pannerSettings.inputType = getParameterDoubleFromXmlElement(root.get(), paramQuadMode, pannerSettings.inputType);
+        pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+#endif
     }
 }
 
