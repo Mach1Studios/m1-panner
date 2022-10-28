@@ -531,7 +531,7 @@ void PannerUIBaseComponent::render()
                                                 200, 20 })
                                                 .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
-    autoOrbitCheckbox.enabled = true;
+    autoOrbitCheckbox.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
     autoOrbitCheckbox.commit();
     
     if (autoOrbitCheckbox.changed) {
@@ -652,7 +652,6 @@ void PannerUIBaseComponent::render()
     if (outputDropdown.changed) {
         processor->parameterChanged(processor->paramOutputMode, pannerState->outputType);
     }
-    
 #endif
     
     m.setColor(APP_LABEL_TEXT_COLOR);
@@ -667,7 +666,7 @@ void PannerUIBaseComponent::render()
     arrowLabel.commit();
 #endif
     /// Panner label
-    m.setColor(APP_LABEL_TEXT_COLOR);
+    m.setColor(200, 255);
     m.setFont("Proxima Nova Reg.ttf", 10);
 #ifdef STREAMING_PANNER_PLUGIN
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 26, 80, 20));

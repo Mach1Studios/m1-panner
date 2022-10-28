@@ -148,7 +148,7 @@ public:
         }
         
         bool hoveredValueText = false;
-        if (valueTextShape.inside(m.currentContext.mousePosition) && !editingTextNow) {
+        if (valueTextShape.inside(m.currentContext.mousePosition) && !editingTextNow && enabled) {
             m.drawRectangle(valueTextShape.x() - 2,
                              valueTextShape.y(),
                              2,
@@ -177,7 +177,7 @@ public:
         }
         
         std::string debugStr = "";
-        if ((hoveredValueText) && (m.currentContext.doubleClick)) {
+        if ((hoveredValueText) && (m.currentContext.doubleClick) && (enabled)) {
             editingTextNow = true;
             shouldForceEditorToSelectAll = true;
         }

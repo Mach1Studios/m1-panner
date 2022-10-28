@@ -23,17 +23,23 @@ struct PannerSettings {
 	bool overlay = false;
     bool isotropicMode = true;
     bool equalpowerMode = false;
-	 
+    
+#ifdef ITD_PARAMETERS
+    bool itdActive = false;
+    int delayTime = 600;
+    float delayDistance = 1.0;
+#endif
+
 	Mach1Encode* m1Encode = nullptr;
 };
 
 struct MixerSettings {
-	int monitor_input_channel_count = 8;
-	int monitor_output_channel_count = 2;
-	float yaw = 0;
-	float pitch = 0;
-	float roll = 0;
-    int monitor_mode = 0;
+	int monitor_input_channel_count;
+	int monitor_output_channel_count;
+	float yaw;
+	float pitch;
+	float roll;
+    int monitor_mode;
 };
 
 #endif

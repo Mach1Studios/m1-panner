@@ -845,8 +845,8 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
 
 #if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
-        pannerSettings.inputType = getParameterDoubleFromXmlElement(root.get(), paramQuadMode, pannerSettings.inputType);
-        pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+        //pannerSettings.inputType = getParameterDoubleFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+        //pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
 #endif
     }
 }

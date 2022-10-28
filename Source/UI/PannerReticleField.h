@@ -24,6 +24,9 @@ public:
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
             XYRD *xyrd = (XYRD*)dataToControl;
 
+            // Increase circle resolution
+            m.setCircleResolution(64);
+        
             m.setColor(GRID_LINES_1_RGBA);
             auto linestep = context.getSize().x / (96);
             for (int i = 0; i < (96); i++) {
