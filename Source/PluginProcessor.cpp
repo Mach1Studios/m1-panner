@@ -448,7 +448,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
         m1Encode.setInputMode(input);
         pannerSettings.inputType = input;
-        CreateLayout();
+        createLayout();
     } else if (parameterID == paramOutputMode) {
         int outputChannelCount = parameters.getParameter(paramOutputMode)->getValue();
         Mach1EncodeOutputModeType output;
@@ -473,7 +473,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
         m1Encode.setOutputMode(output);
         pannerSettings.outputType = output;
-        CreateLayout();
+        createLayout();
 #endif
     }
     pannerSettings.m1Encode = &m1Encode;
