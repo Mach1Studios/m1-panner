@@ -388,36 +388,39 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 {
     if (parameterID == paramAzimuth) {
         parameters.getParameter(paramAzimuth)->setValue(newValue);
-        m1Encode.setAzimuthDegrees(newValue);
+        pannerSettings.azimuth = newValue;
     } else if (parameterID == paramElevation) {
         parameters.getParameter(paramElevation)->setValue(newValue);
-        m1Encode.setElevationDegrees(newValue);
+        pannerSettings.elevation = newValue;
     } else if (parameterID == paramDiverge) {
         parameters.getParameter(paramDiverge)->setValue(newValue);
-        m1Encode.setDiverge(newValue);
+        pannerSettings.diverge = newValue;
     } else if (parameterID == paramGain) {
         parameters.getParameter(paramGain)->setValue(newValue);
-        m1Encode.setOutputGain(newValue, true);
+        pannerSettings.gain = newValue;
     } else if (parameterID == paramX) {
         parameters.getParameter(paramX)->setValue(newValue);
+        pannerSettings.x = newValue;
         //TODO: XYtoRD
     } else if (parameterID == paramY) {
         parameters.getParameter(paramY)->setValue(newValue);
+        pannerSettings.y = newValue;
         //TODO: XYtoRD
     } else if (parameterID == paramAutoOrbit) {
         parameters.getParameter(paramAutoOrbit)->setValue(newValue);
-        m1Encode.setAutoOrbit(newValue);
+        pannerSettings.autoOrbit = newValue;
     } else if (parameterID == paramStereoOrbitAzimuth) {
         parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
-        m1Encode.setOrbitRotationDegrees(newValue);
+        pannerSettings.stereoOrbitAzimuth = newValue;
     } else if (parameterID == paramStereoSpread) {
         parameters.getParameter(paramStereoSpread)->setValue(newValue);
-        m1Encode.setStereoSpread(newValue);
+        pannerSettings.stereoSpread = newValue;
     } else if (parameterID == paramStereoInputBalance) {
         parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
         //TODO: add this via processing?
     } else if (parameterID == paramIsotropicEncodeMode) {
         parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
+        pannerSettings.isotropicMode = newValue;
         // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
@@ -570,16 +573,14 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         buffer.clear (i, 0, buffer.getNumSamples());
     
     // Set temp values for processing
-    float _azimuth = parameters.getParameter(paramAzimuth)->getValue();
-    float _elevation = parameters.getParameter(paramElevation)->getValue();
-    float _diverge = parameters.getParameter(paramDiverge)->getValue();
-    float _gain = juce::Decibels::decibelsToGain(parameters.getParameter(paramGain)->getValue());
-    
+    float _diverge = pannerSettings.diverge;
+    float _gain = juce::Decibels::decibelsToGain(pannerSettings.gain);
+
     // TODO: Check for a monitor if none is connected
     
     if (monitorSettings.monitor_mode == 2) { // StereoSafe mode is on
         //store diverge for gain
-        float abs_diverge = fabsf((parameters.getParameter(paramDiverge)->getValue() - -100.0f) / (100.0f - -100.0f));
+        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f)); // ?
         //Setup for stereoSafe diverge range to gain
         _gain = _gain - (abs_diverge * 6.0);
         //Set Diverge to 0 after using Diverge for Gain
@@ -587,14 +588,14 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // parameters that can be automated will get their values updated from PannerSettings->Parameter
-    m1Encode.setAzimuthDegrees(parameters.getParameter(paramAzimuth)->getValue());
-    m1Encode.setElevationDegrees(parameters.getParameter(paramElevation)->getValue());
+    m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
+    m1Encode.setElevationDegrees(pannerSettings.elevation);
     m1Encode.setDiverge(_diverge); // using _diverge in case monitorMode was used
 
-    m1Encode.setAutoOrbit(parameters.getParameter(paramAutoOrbit)->getValue());
-    m1Encode.setOutputGain(parameters.getParameter(paramGain)->getValue(), true);
-    m1Encode.setOrbitRotationDegrees(parameters.getParameter(paramStereoOrbitAzimuth)->getValue());
-    m1Encode.setStereoSpread(parameters.getParameter(paramStereoSpread)->getValue());
+    m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
+    m1Encode.setOutputGain(_gain, true);
+    m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
+    m1Encode.setStereoSpread(pannerSettings.stereoSpread);
     // TODO: logic for usage of `paramStereoInputBalance`
     
     m1Encode.generatePointResults();
