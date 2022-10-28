@@ -160,7 +160,7 @@ void PannerUIBaseComponent::render()
     if (reticleField.results) {
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramElevation, pannerState->diverge);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
         processor->parameterChanged(processor->paramX, pannerState->x);
         processor->parameterChanged(processor->paramY, pannerState->y);
     }
