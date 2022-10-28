@@ -13,6 +13,10 @@
 #include "Config.h"
 #include "TypesForDataExchange.h"
 
+#ifdef ITD_PARAMETERS
+#include "RingBuffer.h"
+#endif
+
 //==============================================================================
 /**
 */
@@ -28,11 +32,28 @@ public:
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
 
-   #ifndef JucePlugin_PreferredChannelConfigurations
+#ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-   #endif
-
+#endif
+    // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
+    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans;
+    std::vector<int> chanIndexs;
+    void fillChannelOrderArray(int numOutputChannels);
+    
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+#ifdef ITD_PARAMETERS
+    void writeToDelayBuffer (juce::AudioSampleBuffer& buffer,
+                             const int channelIn, const int channelOut,
+                             const int writePos,
+                             float startGain, float endGain,
+                             bool replacing);
+    
+    void readFromDelayBuffer (juce::AudioSampleBuffer& buffer,
+                              const int channelIn, const int channelOut,
+                              const int readPos,
+                              float startGain, float endGain,
+                              bool replacing);
+#endif
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -75,6 +96,16 @@ public:
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
 #endif
+
+#ifdef ITD_PARAMETERS
+    // Delay init
+    static juce::String paramITDActive;
+    static juce::String paramDelayTime;
+    static juce::String paramITDClampActive;
+    static juce::String paramDelayDistance;
+    
+    int mSliderDelayTime;
+#endif
         
     // Variables from processor for UI
     juce::Array<float> outputMeterValuedB;
@@ -85,7 +116,7 @@ public:
     juce::PluginHostType hostType;
     
 private:
-    void CreateLayout();
+    void createLayout();
     
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
@@ -93,6 +124,25 @@ private:
     // Channel input
     std::vector<std::vector<float>> audioDataIn;
     std::vector<std::vector<juce::LinearSmoothedValue<float>>> smoothedChannelCoeffs;
+    
+#ifdef ITD_PARAMETERS
+    inline void processBuffers (AudioSampleBuffer& buffer,
+                        std::vector<int> orderChans, std::vector<std::vector<float> > delayCoeffs);
+#else
+    inline void processBuffers (juce::AudioSampleBuffer& buffer,
+                        std::vector<int> orderChans);
+#endif
+    
+#ifdef ITD_PARAMETERS
+    // Delay init
+    juce::AudioSampleBuffer mDelayBuffer;
+    std::unique_ptr<RingBuffer> ring;
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> mDelayTimeSmoother; // smoothing for parameters
+    float mLastInputGain    = 0.0f;
+    int    mWritePos        = 0;
+    int    mExpectedReadPos = -1;
+    double mSampleRate      = 0;
+#endif
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (M1PannerAudioProcessor)

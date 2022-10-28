@@ -4,9 +4,12 @@
 #include "Mach1Encode.h"
 
 struct PannerSettings {
+    // Should we remove these to force setup through `m1Encode` object instead?
     Mach1EncodeInputModeType inputType = Mach1EncodeInputModeStereo;
     Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeM1Spatial_8;
     Mach1EncodePannerMode pannerMode = Mach1EncodePannerModeIsotropicLinear;
+    // ?
+    
     float x = 0.;
 	float y = 1.;
 	float azimuth = 0.;
