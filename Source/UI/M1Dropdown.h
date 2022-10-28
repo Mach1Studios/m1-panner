@@ -37,35 +37,54 @@ public:
         m.setFont("Proxima Nova Reg.ttf", 10);
         // centered interior text
         m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, shape.size.y/2-shape.size.y/4, shape.size.x, shape.size.y}).text(label).commit();
-        m.popStyle();
 
         // Action
         if ((context.mouseDownPressed[0]) && (inside)) {
             // open menu
             open = true;
-            float yStep = (float)c.getSize().y / (float)numberOfOptions;
-            selectedOption = context.mousePosition.y / yStep;
-            float val = (float)selectedOption / (float)(numberOfOptions-1);
-
+            
             if (drawAsDropdown) {
                 // draw menu downwards
-                
+                for (int i = 0; i < numberOfOptions; i++) {
+                    m.setColor(ENABLED_PARAM);
+                    m.drawRectangle(0, i * optionHeight, c.getSize().x, optionHeight);
+                    m.setColor(BACKGROUND_GREY);
+                    m.drawRectangle(1, 1 + i * optionHeight, c.getSize().x - 2, optionHeight - 2);
+                    m.setColor(LABEL_TEXT_COLOR);
+                    m.setFont("Proxima Nova Reg.ttf", 10);
+                    m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, i * optionHeight, shape.size.x, optionHeight}).text(label).commit();
+                }
             } else {
                 // draw menu upwards
-                
+                for (int i = 0; i < numberOfOptions; i++) {
+                    m.setColor(ENABLED_PARAM);
+                    m.drawRectangle(0, i * -optionHeight, c.getSize().x, optionHeight);
+                    m.setColor(BACKGROUND_GREY);
+                    m.drawRectangle(1, 1 + i * -optionHeight, c.getSize().x - 2, optionHeight - 2);
+                    m.setColor(LABEL_TEXT_COLOR);
+                    m.setFont("Proxima Nova Reg.ttf", 10);
+                    m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, i * -optionHeight, shape.size.x, optionHeight}).text(label).commit();
+                }
             }
             
-//            *((int*)dataToControl) = !*((int*)dataToControl);
+            // TODO: find where mouse clicks while open
+            // TODO: find where mouse highlights and change background color of each option
+//            float yStep = (float)c.getSize().y / (float)numberOfOptions;
+//            selectedOption = context.mousePosition.y / yStep;
+//            float val = (float)selectedOption / (float)(numberOfOptions-1);
+//            *((int*)dataToControl) = val;
             changed = true;
-        }
-        else {
+        } else {
+            open = false;
             changed = false;
         }
+        m.popStyle();
     };
     
     bool didntInitialiseYet = true;
     bool changed = false;
     bool open = false;
+    int optionHeight = 20;
     int selectedOption = 0;
     std::string label;
     

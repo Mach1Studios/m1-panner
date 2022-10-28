@@ -619,8 +619,9 @@ void PannerUIBaseComponent::render()
                                                 /*.controlling(&pannerState->inputType)*/
                                                 .withLabel(std::to_string(pannerState->m1Encode->getInputChannelsCount()));
     inputDropdown.drawAsDropdown = false; // dropup
-    inputDropdown.rangeFrom = 0;
-    inputDropdown.rangeTo = 4;
+    inputDropdown.optionHeight = 40;
+    inputDropdown.rangeFrom = (int)Mach1EncodeInputModeMono;
+    inputDropdown.rangeTo = (int)Mach1EncodeInputModeB3OAFUMA;
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
@@ -642,8 +643,9 @@ void PannerUIBaseComponent::render()
                                                 /*.controlling(&pannerState->outputType)*/
                                                 .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount()));
     outputDropdown.drawAsDropdown = false; // dropup
+    outputDropdown.optionHeight = 40;
     outputDropdown.rangeFrom = 0;
-    outputDropdown.rangeTo = 4;
+    outputDropdown.rangeTo = (int)Mach1EncodeOutputModeM1Spatial_60;
     outputDropdown.commit();
     
     if (outputDropdown.changed) {
