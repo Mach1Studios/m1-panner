@@ -325,7 +325,7 @@ void PannerUIBaseComponent::render()
     gKnob.commit();
     
     if (gKnob.changed) {
-        processor->parameterChanged("gain", pannerState->gain);
+        processor->parameterChanged(processor->paramGain, pannerState->gain);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -354,7 +354,7 @@ void PannerUIBaseComponent::render()
     zKnob.commit();
     
     if (zKnob.changed) {
-        processor->parameterChanged("elevation", pannerState->elevation);
+        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
     }
 
     bool zHovered = zKnob.hovered;
@@ -391,7 +391,7 @@ void PannerUIBaseComponent::render()
     srKnob.commit();
     
     if (srKnob.changed) {
-        processor->parameterChanged("orbitAzimuth", pannerState->stereoOrbitAzimuth);
+        processor->parameterChanged(processor->paramStereoOrbitAzimuth, pannerState->stereoOrbitAzimuth);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -431,7 +431,7 @@ void PannerUIBaseComponent::render()
     ssKnob.commit();
     
     if (ssKnob.changed) {
-        processor->parameterChanged("orbitSpread", pannerState->stereoSpread);
+        processor->parameterChanged(processor->paramStereoSpread, pannerState->stereoSpread);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -470,7 +470,7 @@ void PannerUIBaseComponent::render()
     spKnob.commit();
         
     if (spKnob.changed) {
-        processor->parameterChanged("orbitBalance", pannerState->stereoInputBalance);
+        processor->parameterChanged(processor->paramStereoInputBalance, pannerState->stereoInputBalance);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -517,12 +517,12 @@ void PannerUIBaseComponent::render()
         // update pannerSettings storage of current states
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
-                processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
             } else {
-                processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
             }
         } else {
-            processor->parameterChanged("isotropicEncodeMode", pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+            processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
         }
         pannerState->m1Encode->setPannerMode(pannerState->pannerMode);
     }
@@ -535,7 +535,7 @@ void PannerUIBaseComponent::render()
     autoOrbitCheckbox.commit();
     
     if (autoOrbitCheckbox.changed) {
-        processor->parameterChanged("autoOrbit", pannerState->autoOrbit);
+        processor->parameterChanged(processor->paramAutoOrbit, pannerState->autoOrbit);
     }
     
 	//TODO: why are pitch ranges inversed?
@@ -553,7 +553,7 @@ void PannerUIBaseComponent::render()
     pitchWheel.commit();
     
     if (pitchWheel.changed) {
-        processor->parameterChanged("elevation", pannerState->elevation);
+        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
     }
     
 //	if (m.drawWidget<M1PitchWheel>(m, &pannerSettings->elevation, { cursorHide, cursorShow, 10., 90., -90., zHovered, mixerState.pitch }, { 445, 30 - 10, 80, 400 + 20 })) {
@@ -626,7 +626,7 @@ void PannerUIBaseComponent::render()
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
-        processor->parameterChanged("inputMode", pannerState->inputType);
+        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
     }
     
     // Output Channel Mode Selector
@@ -650,7 +650,7 @@ void PannerUIBaseComponent::render()
     outputDropdown.commit();
     
     if (outputDropdown.changed) {
-        processor->parameterChanged("outputMode", pannerState->outputType);
+        processor->parameterChanged(processor->paramOutputMode, pannerState->outputType);
     }
     
 #endif
