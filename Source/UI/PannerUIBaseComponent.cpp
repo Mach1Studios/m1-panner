@@ -510,7 +510,7 @@ void PannerUIBaseComponent::render()
                                                 200, 20 })
                                                 .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
-    // TODO: update enabled state after .commit() ? 
+    // TODO: update enabled state after .commit() ?
     equalPowerCheckbox.enabled = isotropicCheckbox.checked;
     equalPowerCheckbox.commit();
 
@@ -598,6 +598,7 @@ void PannerUIBaseComponent::render()
 	}
 
     /// Bottom bar
+    /// TODO: DYNAMIC I/O FOR NON-AAX ?
 #ifdef STREAMING_PANNER_PLUGIN
     m.setColor(GRID_LINES_3_RGBA);
     m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
