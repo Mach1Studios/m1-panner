@@ -35,7 +35,9 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
-            #if defined(CUSTOM_CHANNEL_LAYOUT) || defined(STREAMING_PANNER_PLUGIN)
+            #ifdef CUSTOM_CHANNEL_LAYOUT
+                .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
+            #elif defined(STREAMING_PANNER_PLUGIN)
                 .withInput("Input", juce::AudioChannelSet::stereo(), true)
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
@@ -46,7 +48,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             #endif
                     //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
                     //.withInput("Side Chain Mono", juce::AudioChannelSet::mono(), true)
-            #if defined(CUSTOM_CHANNEL_LAYOUT) || defined(STREAMING_PANNER_PLUGIN)
+            #ifdef CUSTOM_CHANNEL_LAYOUT
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
+            #elif defined(STREAMING_PANNER_PLUGIN)
                 .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
             #else
                 #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
