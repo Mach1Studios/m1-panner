@@ -30,7 +30,12 @@
     #else
         /// DYNAMIC_IO_PLUGIN_MODE active
         #undef CUSTOM_CHANNEL_LAYOUT
-        #define DYNAMIC_IO_PLUGIN_MODE
+        #if (JucePlugin_Build_AAX == 1) || (JucePlugin_Build_RTAS == 1)
+            #undef DYNAMIC_IO_PLUGIN_MODE
+            #define CUSTOM_CHANNEL_LAYOUT_BY_HOST // This is used for AAX/RTAS style hosts that declare the bus type on creation from host side
+        #else
+            #define DYNAMIC_IO_PLUGIN_MODE
+        #endif
     #endif
 
 #else
@@ -65,7 +70,8 @@
         #ifdef JucePlugin_PreferredChannelConfigurations
             #undef JucePlugin_PreferredChannelConfigurations
         #endif
-        #define DYNAMIC_IO_PLUGIN_MODE
+        #undef DYNAMIC_IO_PLUGIN_MODE
+        #define CUSTOM_CHANNEL_LAYOUT_BY_HOST // This is used for AAX/RTAS style hosts that declare the bus type on creation from host side
         #pragma message("Build AAX -> Disable Custom layout chanel")
     #endif
     #if (JucePlugin_Build_RTAS == 1)
@@ -78,7 +84,8 @@
         #ifdef JucePlugin_PreferredChannelConfigurations
             #undef JucePlugin_PreferredChannelConfigurations
         #endif
-        #define DYNAMIC_IO_PLUGIN_MODE
+        #undef DYNAMIC_IO_PLUGIN_MODE
+        #define CUSTOM_CHANNEL_LAYOUT_BY_HOST // This is used for AAX/RTAS style hosts that declare the bus type on creation from host side
         #pragma message("Build RTAS -> Disable Custom layout chanel")
     #endif
 
@@ -100,21 +107,28 @@
         /// STREAMING_PANNER_PLUGIN mode active
     #else
         /// DYNAMIC_IO_PLUGIN_MODE active
-        #define DYNAMIC_IO_PLUGIN_MODE
+        #if (JucePlugin_Build_AAX == 1) || (JucePlugin_Build_RTAS == 1)
+            #undef DYNAMIC_IO_PLUGIN_MODE
+            #define CUSTOM_CHANNEL_LAYOUT_BY_HOST // This is used for AAX/RTAS style hosts that declare the bus type on creation from host side
+        #else
+            #define DYNAMIC_IO_PLUGIN_MODE
+        #endif
     #endif
 
 #endif
 
-// Debug
-#ifdef CUSTOM_CHANNEL_LAYOUT
+#if defined(CUSTOM_CHANNEL_LAYOUT) && (!defined(CUSTOM_CHANNEL_LAYOUT_BY_HOST) || !defined(DYNAMIC_IO_PLUGIN_MODE) || !defined(STREAMING_PANNER_PLUGIN))
     #pragma message "CUSTOM_CHANNEL_LAYOUT Active"
-#endif
-#ifdef DYNAMIC_IO_PLUGIN_MODE
+#elif defined(CUSTOM_CHANNEL_LAYOUT_BY_HOST) && (!defined(CUSTOM_CHANNEL_LAYOUT) || !defined(DYNAMIC_IO_PLUGIN_MODE) || !defined(STREAMING_PANNER_PLUGIN))
+    #pragma message "CUSTOM_CHANNEL_LAYOUT_BY_HOST Active"
+#elif defined(DYNAMIC_IO_PLUGIN_MODE) && (!defined(CUSTOM_CHANNEL_LAYOUT) || !defined(CUSTOM_CHANNEL_LAYOUT_BY_HOST) || !defined(STREAMING_PANNER_PLUGIN))
     #pragma message "DYNAMIC_IO_PLUGIN_MODE Active"
-#endif
-#ifdef STREAMING_PANNER_PLUGIN
+#elif defined(STREAMING_PANNER_PLUGIN) && (!defined(CUSTOM_CHANNEL_LAYOUT) || !defined(CUSTOM_CHANNEL_LAYOUT_BY_HOST) || !defined(DYNAMIC_IO_PLUGIN_MODE))
     #pragma message "STREAMING_PANNER_PLUGIN Active"
+#else
+    #error ERROR: Either too many macros defined or none defined!
 #endif
+
 #ifdef ITD_PARAMETERS
     #pragma message "ITD_PARAMETERS Active"
 #endif
