@@ -369,7 +369,7 @@ void PannerUIBaseComponent::render()
     zLabel.commit();
 
 	// S Rotation
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
 #else
@@ -395,7 +395,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
 #else
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
@@ -409,7 +409,7 @@ void PannerUIBaseComponent::render()
 	// S Spread
 
 	// TODO didChangeOutsideThisThread ???
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
 #else
@@ -435,7 +435,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth + 10, knobHeight));
 #else
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth + 10, knobHeight));
@@ -448,7 +448,7 @@ void PannerUIBaseComponent::render()
 
 	// S Pan
     
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset + 140 - 10, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
 #else
@@ -474,7 +474,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
 #else
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
@@ -599,7 +599,7 @@ void PannerUIBaseComponent::render()
 
     /// Bottom bar
     /// TODO: DYNAMIC I/O FOR NON-AAX ?
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     m.setColor(GRID_LINES_3_RGBA);
     m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
     m.setColor(BACKGROUND_GREY);
@@ -659,7 +659,7 @@ void PannerUIBaseComponent::render()
     
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     /// -> label
     auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
     arrowLabel.label = "-->";
@@ -671,7 +671,7 @@ void PannerUIBaseComponent::render()
     /// Panner label
     m.setColor(200, 255);
     m.setFont("Proxima Nova Reg.ttf", 10);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 26, 80, 20));
 #else
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
@@ -684,7 +684,7 @@ void PannerUIBaseComponent::render()
     
     m.setColor(200, 255);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
 #else
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
