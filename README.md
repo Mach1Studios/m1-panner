@@ -22,10 +22,22 @@ Add `STREAMING_PANNER_PLUGIN` in the .jucer's Exporters->[Target]->Extra Preproc
 
 ### - CUSTOM_CHANNEL_LAYOUT
 
+##### CMake
+Add as a preprocess definition via `-DCUSTOM_CHANNEL_LAYOUT` and also define the `INPUTS` and `OUTPUTS`
+
+Example:
+`-DCUSTOM_CHANNEL_LAYOUT -DINPUTS=1 -DOUTPUTS=8`
+
+### - CUSTOM_CHANNEL_LAYOUT_BY_HOST
+This should not be set manually, this is determined for specific CUSTOM_CHANNEL_LAYOUT requirements on DAWs like AAX or RTAS
+
 ##### JUCE
 Defining the `Plugin Channel Configuration` into the .jucer will automatically define the `CUSTOM_CHANNEL_LAYOUT` definition
 
 ![Custom_CHANNEL_LAYOUT JUCE Setup](./.readme/setup_custom_channel_layout.gif)
+
+### - DYNAMIC_IO_PLUGIN_MODE
+This is for plugin hosts that can support re-initializing the input/output bussing and exposing the I/O UI for users to take advantage of this. This should not be set manually in most cases.
 
 ### - ITD_PARAMETERS
 Enables the Interaural Time Difference processing parameters for the M1-Panner for simulating creative headshadowing effects while panning.
