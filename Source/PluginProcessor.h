@@ -101,9 +101,7 @@ public:
     // Delay init
     static juce::String paramITDActive;
     static juce::String paramDelayTime;
-    static juce::String paramITDClampActive;
     static juce::String paramDelayDistance;
-    
     int mSliderDelayTime;
 #endif
         
@@ -114,6 +112,7 @@ public:
     PannerSettings pannerSettings;
     MixerSettings monitorSettings;
     juce::PluginHostType hostType;
+    bool layoutCreated = false;
     
 private:
     void createLayout();

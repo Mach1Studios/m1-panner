@@ -20,6 +20,7 @@ OPTION(BUILD_DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code 
 OPTION(BUILD_ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF) # Disabled by default
 OPTION(BUILD_VST3 "Compile VST3 plugin type" ON) # Enabled by default
 
+# These are used to re-apply brackets for the JucePlugin_PreferredChannelConfig
 SET(LBRACKET_LITERAL "{")
 SET(RBRACKET_LITERAL "}")
 

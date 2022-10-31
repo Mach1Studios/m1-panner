@@ -170,10 +170,12 @@ public:
 			//float widgetSpaceSpread = float(shape.size.x) / 200.;
 			std::vector<std::string> pointsNames = m1Encode->getPointsNames();
 			std::vector<Mach1Point3D> points = m1Encode->getPoints();
-			for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-				drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, false, m);
-			}
-
+            if (m1Encode->getInputChannelsCount() > 1) {
+                for (int i = 0; i < m1Encode->getPointsCount(); i++) {
+                    drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, false, m);
+                }
+            }
+            
             reticleHoveredLastFrame = reticleHovered;
         
             // Action

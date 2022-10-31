@@ -28,7 +28,6 @@ juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 #ifdef ITD_PARAMETER
 juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
 juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
-juce::String M1PannerAudioProcessor::paramITDClampActive("ITDClamp");
 juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 #endif
 
@@ -346,7 +345,7 @@ void M1PannerAudioProcessor::createLayout(){
     }
     pannerSettings.outputType = m1Encode.getOutputMode();
 #endif
-    
+    layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
 }
 
@@ -354,10 +353,10 @@ void M1PannerAudioProcessor::createLayout(){
 void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
-    createLayout();
-#endif
-    
+    if (!layoutCreated) {
+        createLayout();
+    }
+
     // can still be used to calculate coeffs even in STREAMING_PANNER_PLUGIN mode
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
@@ -448,6 +447,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
         m1Encode.setInputMode(input);
         pannerSettings.inputType = input;
+        layoutCreated = false;
         createLayout();
     } else if (parameterID == paramOutputMode) {
         int outputChannelCount = parameters.getParameter(paramOutputMode)->getValue();
@@ -473,6 +473,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
         m1Encode.setOutputMode(output);
         pannerSettings.outputType = output;
+        layoutCreated = false;
         createLayout();
 #endif
     }
