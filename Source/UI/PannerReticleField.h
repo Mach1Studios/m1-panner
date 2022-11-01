@@ -169,7 +169,7 @@ public:
 			std::vector<Mach1Point3D> points = m1Encode->getPoints();
             if (m1Encode->getInputChannelsCount() > 1) {
                 for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-                    drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, false, m);
+                    drawAdditionalReticle((points[i].z + 1.0) * shape.size.x/2, (-points[i].x + 1.0) * shape.size.y/2, pointsNames[i], reticleHovered, false, m);
                 }
             }
             
