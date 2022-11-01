@@ -35,7 +35,11 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
             #ifdef CUSTOM_CHANNEL_LAYOUT
-                .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
+                #if (JucePlugin_Build_VST3 == 1)
+                    .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                #else
+                    .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
+                #endif
             #elif defined(STREAMING_PANNER_PLUGIN)
                 .withInput("Input", juce::AudioChannelSet::stereo(), true)
             #else
@@ -48,7 +52,11 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
                     //.withInput("Side Chain Mono", juce::AudioChannelSet::mono(), true)
             #ifdef CUSTOM_CHANNEL_LAYOUT
-                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
+                #if (JucePlugin_Build_VST3 == 1)
+                    .withOutput("Mach1 Out", juce::AudioChannelSet::stereo(), true)),
+                #else
+                    .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
+                #endif
             #elif defined(STREAMING_PANNER_PLUGIN)
                 .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
             #else
@@ -316,7 +324,7 @@ void M1PannerAudioProcessor::createLayout(){
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
     } else if (numOutChans == juce::AudioChannelSet::create7point1().size()){
         pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_8);
-        if (hostType.isProTools()){
+        if (hostType.isProTools() || (JucePlugin_Build_VST3 == 1)){
             getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::create7point1());
         } else {
             getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(8));
