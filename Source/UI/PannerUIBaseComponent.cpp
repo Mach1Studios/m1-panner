@@ -118,7 +118,10 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::render()
 {
-	currentMousePosition = m.currentContext.mousePosition * 0.7;
+    // This clears the context with our background.
+    //juce::OpenGLHelpers::clear(juce::Colour(255.0, 198.0, 30.0));
+
+    currentMousePosition = m.currentContext.mousePosition * 0.7;
     
     float scale = (float)openGLContext.getRenderingScale() * 0.7; // (Desktop::getInstance().getMainMouseSource().getScreenPosition().x / 300.0); //  0.7;
 
@@ -128,11 +131,8 @@ void PannerUIBaseComponent::render()
         m.clearFontsTextures();
     }
 
-   // This clears the context with a black background.
-	//OpenGLHelpers::clear (Colours::black);
-
-	m.setFont("Proxima Nova Reg.ttf", 10);
 	m.begin();
+    m.setFont("Proxima Nova Reg.ttf", 10);
 
 	m.setColor(BACKGROUND_GREY);
 	m.clear();
