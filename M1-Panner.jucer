@@ -31,9 +31,9 @@
       <FILE id="G9cQqA" name="PannerOSC.h" compile="0" resource="0" file="Source/PannerOSC.h"/>
       <FILE id="sqBxtS" name="PannerOSC.cpp" compile="1" resource="0" file="Source/PannerOSC.cpp"/>
       <FILE id="cxAfth" name="Mach1EncodeCAPI.h" compile="0" resource="0"
-            file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1EncodeCAPI.h"/>
-      <FILE id="uj232a" name="Mach1Encode.h" compile="0" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.h"/>
-      <FILE id="MtAPRc" name="Mach1Encode.cpp" compile="1" resource="0" file="../../m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.cpp"/>
+            file="Modules/m1-sdk/mach1spatial-libs/xcode/include/Mach1EncodeCAPI.h"/>
+      <FILE id="uj232a" name="Mach1Encode.h" compile="0" resource="0" file="Modules/m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.h"/>
+      <FILE id="MtAPRc" name="Mach1Encode.cpp" compile="1" resource="0" file="Modules/m1-sdk/mach1spatial-libs/xcode/include/Mach1Encode.cpp"/>
       <FILE id="eMCqlB" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
       <FILE id="p7J1QJ" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>

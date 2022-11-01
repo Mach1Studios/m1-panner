@@ -14,7 +14,6 @@ typedef std::tuple<float&, float&, float&, float&> XYRD;
 class PannerReticleField : public murka::View<PannerReticleField> {
 public:
     PannerReticleField() {
-
     }
     
     void internalDraw(Murka & m) {
@@ -92,9 +91,7 @@ public:
 			// MIXER - MONITOR DISPLAY
 			/*
 			{
-				MurkaPoint center = { c.getSize().x / 2,
-									   c.getSize().x / 2 };
-
+				MurkaPoint center = { c.getSize().x / 2, c.getSize().x / 2 };
 				std::vector< MurkaPoint> vects;
 				// arc
 				{
