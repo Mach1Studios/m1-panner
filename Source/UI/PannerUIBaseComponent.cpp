@@ -292,6 +292,7 @@ void PannerUIBaseComponent::render()
     dKnob.commit();
     
     if (dKnob.changed) {
+        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
         processor->parameterChanged(processor->paramX, pannerState->x);
@@ -411,10 +412,10 @@ void PannerUIBaseComponent::render()
 	// TODO didChangeOutsideThisThread ???
 #if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140 - 10, knobWidth, knobHeight))
-                                    .controlling(&pannerState->stereoOrbitAzimuth);
+                                    .controlling(&pannerState->stereoSpread);
 #else
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140, knobWidth, knobHeight))
-                                    .controlling(&pannerState->stereoOrbitAzimuth);
+                                    .controlling(&pannerState->stereoSpread);
 #endif
     ssKnob.rangeFrom = 0;
     ssKnob.rangeTo = 100;

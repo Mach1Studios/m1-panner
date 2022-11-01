@@ -600,6 +600,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         _diverge = 0;
     }
     
+    _diverge = _diverge / 100;
+
     // parameters that can be automated will get their values updated from PannerSettings->Parameter
     m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
     m1Encode.setElevationDegrees(pannerSettings.elevation);
