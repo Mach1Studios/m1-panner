@@ -17,7 +17,7 @@ struct PannerSettings {
     float diverge = 70.7;
 	float gain = 6.;
 	float stereoOrbitAzimuth = 0.;
-	float stereoSpread = 0.5;
+	float stereoSpread = 50.;
 	float stereoInputBalance = 0.;
     bool autoOrbit = true;
 	bool overlay = false;
