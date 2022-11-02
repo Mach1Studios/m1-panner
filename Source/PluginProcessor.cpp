@@ -35,8 +35,13 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 M1PannerAudioProcessor::M1PannerAudioProcessor()
      : AudioProcessor (BusesProperties()
             #ifdef CUSTOM_CHANNEL_LAYOUT
-                #if (JucePlugin_Build_VST3 == 1)
-                    .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                #if (JucePlugin_Build_VST3 == 1) // VST3 does not currently support `discreteChannels()`
+                    #if (INPUT_CHANNELS < 9)
+                       .withInput("Input", juce::AudioChannelSet::namedChannelSet(INPUT_CHANNELS), true)
+                    #else
+                       // TODO: expand for 9+ channel inputs here, for now fallback to stereo()
+                       .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                    #endif
                 #else
                     .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
                 #endif
@@ -49,11 +54,18 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
                 #endif
             #endif
-                    //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
-                    //.withInput("Side Chain Mono", juce::AudioChannelSet::mono(), true)
             #ifdef CUSTOM_CHANNEL_LAYOUT
-                #if (JucePlugin_Build_VST3 == 1)
-                    .withOutput("Mach1 Out", juce::AudioChannelSet::stereo(), true)),
+                #if (JucePlugin_Build_VST3 == 1) // VST3 does not currently support `discreteChannels()`
+                    #if (OUTPUT_CHANNELS == 4)
+                        .withOutput("Mach1 Out", juce::AudioChannelSet::quadraphonic(), true)),
+                    #elif (OUTPUT_CHANNELS == 8)
+                        .withOutput("Mach1 Out", juce::AudioChannelSet::create7point1(), true)),
+                    #elif (OUTPUT_CHANNELS == 36)
+                        .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true)),
+                    #else
+                       // No supported input bus, revert to 7.1?
+                       .withOutput("Mach1 Out", juce::AudioChannelSet::create7point1(), true)),
+                    #endif
                 #else
                     .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
                 #endif
@@ -624,15 +636,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     
     juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
     float ** outBuffer = mainOutput.getArrayOfWritePointers();
-    // vector of output channel buffers
-//    std::vector<float*> outBuffer; // reset vector
-//    for (int output_channel = 0; output_channel < totalNumOutputChannels; output_channel++) {
-//        juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, output_channel);
-//        outBuffer.push_back(mainOutput.getWritePointer(output_channel));
-//
-//        // clear all old output samples
-//        mainOutput.clear();
-//    }
 
 #ifdef ITD_PARAMETERS
     mDelayTimeSmoother.setTargetValue(delayTimeParameter->get());
@@ -800,8 +803,7 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::MemoryOutputStream stream(destData, false);
     // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version threshold for supporting
     // backwards compatible automation data in PT
-    stream.writeString("1.5.1"); // write current prefix
-
+    stream.writeString("2.0.0"); // write current prefix
     juce::XmlElement root("Root");
 
     addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
@@ -816,10 +818,14 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit ? 1 : 0));
     addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode ? 1 : 0));
     addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode ? 1 : 0));
-
 #if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     addXmlElement(root, paramInputMode, juce::String(pannerSettings.inputType));
     addXmlElement(root, paramOutputMode, juce::String(pannerSettings.outputType));
+#endif
+#ifdef ITD_PARAMETERS
+    addXmlElement(root, paramITDActive, juce::String(pannerSettings.itdActive));
+    addXmlElement(root, paramDelayTime, juce::String(pannerSettings.delayTime));
+    addXmlElement(root, paramDelayDistance, juce::String(pannerSettings.delayDistance));
 #endif
 
     juce::String strDoc = root.createDocument(juce::String(""), false, false);
@@ -841,7 +847,7 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
      release version update.
     */
 
-    if (!prefix.isEmpty() && prefix == "1.5.1") {
+    if (!prefix.isEmpty() && (prefix == "1.5.1" || prefix == "2.0.0")) {
         // new method
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
@@ -858,10 +864,14 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.autoOrbit = getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
         pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
-
 #if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
-        //pannerSettings.inputType = getParameterDoubleFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
-        //pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+        pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+        pannerSettings.outputType = getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+#endif
+#ifdef ITD_PARAMETERS
+        pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
+        pannerSettings.outputType = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
+        pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
 #endif
     }
 }
