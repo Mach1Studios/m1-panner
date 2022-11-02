@@ -209,6 +209,9 @@ public:
                 
                 results = true;
             }
+
+            clamp(std::get<0>(*xyrd), -100, 100);
+            clamp(std::get<1>(*xyrd), -100, 100);
     }
     
     void clampPoint(MurkaPoint& input, float min, float max) {
@@ -217,7 +220,12 @@ public:
         if (input.y < min) input.y = min;
         if (input.y > max) input.y = max;
     };
-    
+
+    void clamp(float& input, float min, float max) {
+        if (input < min) input = min;
+        if (input > max) input = max;
+    };
+
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, bool largeReticles, Murka& m) {
         m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered) + (2 * (elevation/90))));
         m.setColor(M1_ACTION_YELLOW);
