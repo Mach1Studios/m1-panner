@@ -89,9 +89,8 @@ public:
             }
  
 			// MIXER - MONITOR DISPLAY
-			/*
 			{
-				MurkaPoint center = { c.getSize().x / 2, c.getSize().x / 2 };
+				MurkaPoint center = { context.getSize().x / 2, context.getSize().x / 2 };
 				std::vector< MurkaPoint> vects;
 				// arc
 				{
@@ -100,30 +99,29 @@ public:
 					float radiusX = center.x - 1;
 					float radiusY = center.y - 1;
 					for (int i = 45; i <= 90 + 45; i += 5) {
-						float x = centerX + (radiusX * cosf(degreesToRadians(1.0 * i)));
-						float y = centerY + (radiusY * sinf(degreesToRadians(1.0 * i)));
+						float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
+						float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
 						vects.push_back(MurkaPoint(x, y));
 					}
 				}
 
-				r->pushStyle();
-				r->pushMatrix();
-				r->translate(center.x, center.y, 0);
-				r->rotateZRad(degreesToRadians(params->mixerYaw - 180)); //TODO: Why do we need -180?
-				r->setColor(ENABLED_PARAM);
+                m.pushStyle();
+                m.pushMatrix();
+                m.translate(center.x, center.y, 0);
+                m.rotateZRad(juce::degreesToRadians(monitorState->yaw - 180)); //TODO: Why do we need -180?
+				m.setColor(ENABLED_PARAM);
 
 				// temp
 				for (size_t i = 1; i < vects.size(); i++) {
-					r->drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
-				} 
-				//r->drawPath(*(vector<MurkaPoint>*)&vects);
-
-				r->drawLine(0, 0, 0, center.y - 10);
-				r->popMatrix();
-				r->popStyle();
+                    m.drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
+				}
+                
+                m.drawLine(0, 0, 0, center.y - 10);
+                m.popMatrix();
+                m.popStyle();
 			}
-			*/
-        
+            // MIXER - MONITOR DISPLAY - END
+
             MurkaPoint reticlePositionInWidgetSpace = {context.getSize().x / 2 + (std::get<0>(*xyrd) / 100.) * context.getSize().x / 2,
                 context.getSize().y / 2 + (-std::get<1>(*xyrd) / 100.) * context.getSize().y / 2};
             auto center = MurkaPoint(context.getSize().x / 2,
@@ -163,10 +161,8 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
         
             // Reticles
-			float angle = autoOrbit ? -atan2((reticlePositionInWidgetSpace - center).x, (reticlePositionInWidgetSpace - center).y) : juce::degreesToRadians(sRotate);
-			//float widgetSpaceSpread = float(shape.size.x) / 200.;
-			std::vector<std::string> pointsNames = m1Encode->getPointsNames();
 			std::vector<Mach1Point3D> points = m1Encode->getPoints();
+            std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             if (m1Encode->getInputChannelsCount() > 1) {
                 for (int i = 0; i < m1Encode->getPointsCount(); i++) {
                     drawAdditionalReticle((points[i].z + 1.0) * shape.size.x/2, (-points[i].x + 1.0) * shape.size.y/2, pointsNames[i], reticleHovered, false, m);
@@ -202,7 +198,6 @@ public:
                 results = true;
             }
         
-            //TODO: make double click only within the bounds of the reticlegrid
             if ((context.doubleClick) && (inside)) {
                 MurkaPoint normalisedMouse = {context.mousePosition.x / shape.size.x,
                                               context.mousePosition.y / shape.size.y};

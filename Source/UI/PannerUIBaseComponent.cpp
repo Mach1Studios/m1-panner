@@ -555,10 +555,6 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramElevation, pannerState->elevation);
     }
     
-//	if (m.drawWidget<M1PitchWheel>(m, &pannerSettings->elevation, { cursorHide, cursorShow, 10., 90., -90., zHovered, mixerState.pitch }, { 445, 30 - 10, 80, 400 + 20 })) {
-//		// update this parameter here, notifying host
-//		processor->updateCustomParameter(&pannerSettings->elevation);
-//	}
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
