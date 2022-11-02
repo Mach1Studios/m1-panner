@@ -531,9 +531,9 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
 
 void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     orderOfChans.resize(numOutputChannels);
-    chanIndexs.resize(numOutputChannels);
+    output_channel_indices.resize(numOutputChannels);
     if(numOutputChannels == 8) {
-        //Pro Tools
+        // Layout for Pro Tools
         if (hostType.isProTools()){
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
             orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
@@ -555,7 +555,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
         }
         juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
         for (int i = 0; i < numOutputChannels; i ++) {
-            chanIndexs[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+            output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
         }
     } else if (numOutputChannels == 4){
         // Layout for Pro Tools
@@ -565,21 +565,19 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
             orderOfChans[2] = juce::AudioChannelSet::ChannelType::rightSurround;
             orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurround;
         } else {
-            //Layout for Reaper et al
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
             orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
             orderOfChans[2] = juce::AudioChannelSet::ChannelType::leftSurround;
             orderOfChans[3] = juce::AudioChannelSet::ChannelType::rightSurround;
         }
-
         juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
         for (int i = 0; i < numOutputChannels; i ++) {
-            chanIndexs[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+            output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
         }
     } else {
         for (int i = 0; i < numOutputChannels; ++i){
             orderOfChans[i] = juce::AudioChannelSet::ChannelType::discreteChannel0;
-            chanIndexs[i] = i;
+            output_channel_indices[i] = i;
         }
     }
 }
@@ -660,7 +658,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         // output channel setup loop
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
             // TODO: add channel reorder here?
-            smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
+            int output_channel_reordered = output_channel_indices[output_channel];
+            smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel_reordered] * _gain);
         }
     }
     

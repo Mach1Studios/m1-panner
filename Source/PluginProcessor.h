@@ -37,7 +37,7 @@ public:
 #endif
     // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<juce::AudioChannelSet::ChannelType> orderOfChans;
-    std::vector<int> chanIndexs;
+    std::vector<int> output_channel_indices;
     void fillChannelOrderArray(int numOutputChannels);
     
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
