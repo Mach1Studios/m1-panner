@@ -644,7 +644,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // TODO: safely block the input from passing to output
 #else
     /// INTERNAL_SPATIAL_PROCESSING
-    
+
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         // Copy input data to additional buffer
@@ -657,9 +657,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         
         // output channel setup loop
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
-            // TODO: add channel reorder here?
+            // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
+            // Output channel reordering from fillChannelOrder()
             int output_channel_reordered = output_channel_indices[output_channel];
-            smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel_reordered] * _gain);
+            smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
         }
     }
     
@@ -667,10 +668,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     if(pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeMono){
         buffers[0] = audioDataIn[0].data();
         // Default alway add side chain bus.
-    } else if(pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeStereo && mainInput.getNumChannels() >= 2){
+    } else if(pannerSettings.m1Encode->getInputChannelsCount() == 2 && mainInput.getNumChannels() >= 2){
         buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
         buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-    } else if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeLCR && mainInput.getNumChannels() >= 3){
+    } else if (pannerSettings.m1Encode->getInputChannelsCount() == 3 && mainInput.getNumChannels() >= 3){
         buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
         buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
         buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
@@ -699,19 +700,22 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int sample = 0; sample < buffer.getNumSamples(); sample++){
             float inValue = buffers[input_channel][sample];
             for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
-                // TODO: add channel reorder here?
                 float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
-
-                outBuffer[output_channel][sample] = inValue * inGain;
+                
+                // TODO: check if `output_channel_reordered` is appropriate here
+                // Output channel reordering from fillChannelOrder()
+                int output_channel_reordered = output_channel_indices[output_channel];
+                outBuffer[output_channel_reordered][sample] = inValue * inGain;
             }
         }
     }
     
+// TODO: Disable if STREAMING_PANNER_PLUGIN
 #ifdef ITD_PARAMETERS
     //SIMPLE DELAY
     // scale delayCoeffs to be normalized
-    for (int i = 0; i < m_i_numInChans; i++) {
-        for (int o = 0; o < m_i_numOutChans; o++) {
+    for (int i = 0; i < m1Encode.getInputChannelsCount(); i++) {
+        for (int o = 0; o < m1Encode.getOutputChannelsCount(); o++) {
             delayCoeffs[i][o] = std::min(0.25f, delayCoeffs[i][o]); // clamp maximum to .25f
             delayCoeffs[i][o] *= 4.0f; // rescale range to 0.0->1.0
             // Incorporate the distance delay multiplier
@@ -725,10 +729,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int sample = 0; sample < numSamples; sample++) {
             // write original to delay
             float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
-            for (auto channel = 0; channel < m_i_numOutChans; channel++) {
+            for (auto channel = 0; channel < m1Encode.getOutputChannelsCount(); channel++) {
                 ring->pushSample(channel, outBuffer[channel][sample]);
             }
-            for (int channel = 0; channel < m_i_numOutChans; channel++) {
+            for (int channel = 0; channel < m1Encode.getOutputChannelsCount(); channel++) {
                 outBuffer[channel][sample] = (outBuffer[channel][sample] * 0.707106781) + (ring->getSampleAtDelay(channel, udtime * delayCoeffs[0][channel]) * 0.707106781); // pan-law applied via `0.707106781`
             }
             ring->increment();
@@ -739,10 +743,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 #endif // end of processing flow
     
     // update meters
-    juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), buffer.getNumChannels(), buffer.getNumSamples());
-    outputMeterValuedB.resize(buffer.getNumChannels());
-    for (int j = 0; j < buffer.getNumChannels(); j++) {
-        outputMeterValuedB.set(j, j < buffer.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(j, 0, buffer.getNumSamples())) : -144 );
+    // TODO: scale this for STREAMING_PANNER_PLUGIN
+    juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
+    outputMeterValuedB.resize(m1Encode.getOutputChannelsCount());
+    for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
+        outputMeterValuedB.set(output_channel, output_channel < m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
     }
     
     // update m1encode for UI

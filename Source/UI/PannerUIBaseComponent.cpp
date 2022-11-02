@@ -558,23 +558,17 @@ void PannerUIBaseComponent::render()
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
-	std::vector<float> volumesInDb(processor->getNumOutputChannels() , -10);
+	std::vector<float> volumesInDb(processor->m1Encode.getOutputChannelsCount() , -10);
 	if (volumesInDb.size() > 0) {
 		std::vector<float> volumes = volumesInDb;
 
 		if (processor->m1Encode.getOutputChannelsCount() > 0) {
             m.setFont("Proxima Nova Reg.ttf", 7);
 			for (int channelIndex = 0; channelIndex < processor->m1Encode.getOutputChannelsCount(); channelIndex++) {
-                auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 560 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(processor->outputMeterValuedB[channelIndex]).commit();
+                auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(processor->outputMeterValuedB[channelIndex]).commit();
 
                 m.setColor(LABEL_TEXT_COLOR);
-                m.draw<M1Label>({ 560 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
-
-//                if ((pannerSettings->inputType > 1) ? true : false) {
-//                    //drawWidget<M1Label>(m, { ofToString((int)volumes[1]) }, { 580, 10, 30, 30 });
-//                    drawWidget<M1VolumeDisplayLine>(m, {volumes[1]}, {580, 30, 10, 400});
-//                    drawWidget<M1Label>(m, {"2"}, {580, 433, 60, 50});
-//                }
+                m.draw<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
 			}
 
 			m.setColor(REF_LABEL_TEXT_COLOR);
@@ -583,9 +577,9 @@ void PannerUIBaseComponent::render()
 				float db = -i + 12;
 
 				float y = i * 7;
-                m.draw<M1Label>({ 520 + 40 + 15 * processor->m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
+                // Background line
+                m.draw<M1Label>({ 555 + 15 * processor->m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
                     30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
-				//m.drawLine(600, 30 + y, 600 + 20, 30 + y);
 			}
 		}
 	}
