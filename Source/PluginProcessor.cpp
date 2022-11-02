@@ -115,7 +115,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(paramStereoSpread,
                                                             TRANS("Stereo Spread"),
-                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.stereoSpread, "", juce::AudioProcessorParameter::genericParameter,
+                                                            juce::NormalisableRange<float>(0.0f, 100.0f, 0.01f), pannerSettings.stereoSpread, "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1); },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(paramStereoInputBalance,
@@ -610,7 +610,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
     m1Encode.setOutputGain(_gain, true);
     m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
-    m1Encode.setStereoSpread(pannerSettings.stereoSpread);
+    m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
     // TODO: logic for usage of `paramStereoInputBalance`
     
     m1Encode.generatePointResults();

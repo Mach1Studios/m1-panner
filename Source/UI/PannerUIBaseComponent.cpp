@@ -56,7 +56,6 @@ inline MurkaPoint intersection_point(const Line2D& a, const Line2D& b) {
 	return a.p() + a.v() * (intersection(a, b));
 }
 
-
 void PannerUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &y) {
 	x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
 	y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
@@ -385,7 +384,7 @@ void PannerUIBaseComponent::render()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = !pannerState->autoOrbit;
+    srKnob.enabled = ((pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
@@ -403,7 +402,7 @@ void PannerUIBaseComponent::render()
 #endif
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = !pannerState->autoOrbit;
+    srLabel.enabled = ((pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
     srLabel.commit();
 
@@ -417,15 +416,15 @@ void PannerUIBaseComponent::render()
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoSpread);
 #endif
-    ssKnob.rangeFrom = 0;
-    ssKnob.rangeTo = 100;
+    ssKnob.rangeFrom = 0.0;
+    ssKnob.rangeTo = 100.0;
     ssKnob.prefix = "";
     ssKnob.postfix = "";
     ssKnob.floatingPointPrecision = 1;
     ssKnob.speed = knobSpeed;
-    ssKnob.defaultValue = 50;
+    ssKnob.defaultValue = 50.;
     ssKnob.isEndlessRotary = false;
-    ssKnob.enabled = (pannerState->inputType > 1) ? true : false;
+    ssKnob.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
@@ -443,7 +442,7 @@ void PannerUIBaseComponent::render()
 #endif
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerState->inputType > 1) ? true : false;
+    ssLabel.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
     ssLabel.commit();
 
@@ -464,7 +463,7 @@ void PannerUIBaseComponent::render()
     spKnob.speed = knobSpeed;
     spKnob.defaultValue = 0;
     spKnob.isEndlessRotary = false;
-    spKnob.enabled = (pannerState->inputType > 1) ? true : false;
+    spKnob.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
     spKnob.externalHover = false;
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
@@ -482,7 +481,7 @@ void PannerUIBaseComponent::render()
 #endif
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
-    spLabel.enabled = (pannerState->inputType > 1) ? true : false;
+    spLabel.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
     spLabel.commit();
 
@@ -511,13 +510,10 @@ void PannerUIBaseComponent::render()
                                                 200, 20 })
                                                 .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
-    // TODO: update enabled state after .commit() ?
-    equalPowerCheckbox.enabled = isotropicCheckbox.checked;
+    equalPowerCheckbox.enabled = (pannerState->isotropicMode);
     equalPowerCheckbox.commit();
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
-        equalPowerCheckbox.enabled = isotropicCheckbox.checked;
-        // update pannerSettings storage of current states
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
                 processor->parameterChanged(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
