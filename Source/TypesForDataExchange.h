@@ -11,17 +11,17 @@ struct PannerSettings {
     // ?
     
     float x = 0.;
-	float y = 1.;
+	float y = 70.7;
 	float azimuth = 0.;
     float elevation = 0.; // also known as `z`
-    float diverge = 70.7;
+    float diverge = 50;
 	float gain = 6.;
 	float stereoOrbitAzimuth = 0.;
 	float stereoSpread = 50.;
 	float stereoInputBalance = 0.;
     bool autoOrbit = true;
 	bool overlay = false;
-    bool isotropicMode = true;
+    bool isotropicMode = false;
     bool equalpowerMode = false;
     
 #ifdef ITD_PARAMETERS
