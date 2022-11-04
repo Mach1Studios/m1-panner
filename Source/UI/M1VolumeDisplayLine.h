@@ -32,14 +32,7 @@ public:
         
         // Drawing volume & max volume thing
         // v is a volume normalised, 0 to 1
-        float v = 1 + (volume) / 144;
-        
-        // Those are magic numbers that make it fit the volume values we decided. We'll change this math when we go log.
-        
-        v -= 0.65;
-        v *= 8.95;
-        
-        v *= coeff;
+        float v = clamp(map(volume, -48, 6, 0, 1), 0, 1);
         
         if (v > 0.9) {
             // reds
@@ -86,19 +79,25 @@ public:
         */
     };
 
+    float map(float value, float low1, float high1, float low2, float high2) {
+        return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+    }
+
+    float lerp(float a, float b, float f) {
+        return a + f * (b - a);
+    }
+
+    float clamp(float x, float a, float b) {
+        return x < a ? a : (x > b ? b : x);
+    }
+
     MURKA_PARAMETER(M1VolumeDisplayLine, // class name
                     float, // parameter type
                     volume, // parameter variable name
                     withVolume, // setter
                     0.0 // default
     )
-    MURKA_PARAMETER(M1VolumeDisplayLine, // class name
-                    float, // parameter type
-                    coeff, // parameter variable name
-                    withCoeff, // setter
-                    0.0 // default
-    )
-    
+   
     float maxVolume = 0;
     double maxVolumeReachedTime = 0;
 
