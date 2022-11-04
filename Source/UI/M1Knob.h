@@ -196,8 +196,8 @@ public:
         
         // Setting knob value to default if double clicked or pressed alt while clicking
         
-        bool shouldSetDefault = (m.currentContext.doubleClick ||
-                                false // (context.isKeyPressed(ofKey::OF_KEY_ALT) && context.mouseDownPressed[0])
+        bool shouldSetDefault = ((m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && m.currentContext.mouseDownPressed[0]) ||
+                                false
 								);
         
         // Don't set default by doubleclick if the mouse is in the Label/Text editor zone
@@ -214,13 +214,11 @@ public:
             if (abs(m.currentContext.mouseDelta.y) >= 1) {
                 
                 float s = speed;  // TODO: check if this speed constant should be dependent on UIScale
-                /*
-                if (context.isKeyPressed(OF_KEY_SHIFT) ||
-                    context.isKeyPressed(OF_KEY_LEFT_SHIFT) ||
-                    context.isKeyPressed(OF_KEY_RIGHT_SHIFT)) {
+                
+                if (m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
                     speed *= 4;
                 }
-                */
+
                 *((float*)dataToControl) += (m.currentContext.mouseDelta.y / s) * (rangeTo - rangeFrom);
             }
             if (*((float*)dataToControl) > rangeTo) {

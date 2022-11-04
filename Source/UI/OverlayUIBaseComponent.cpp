@@ -133,7 +133,7 @@ void OverlayUIBaseComponent::render()
         m.clearFontsTextures();
     }
 
-   // This clears the context with a black background.
+    // This clears the context with a black background.
 	//OpenGLHelpers::clear (Colours::black);
 
 	// TODO
@@ -145,8 +145,6 @@ void OverlayUIBaseComponent::render()
 
 	m.pushView();
 	m.pushStyle();
-
-	double time = m.getElapsedTime();
 
 	m.setColor(BACKGROUND_GREY);
 
@@ -174,7 +172,6 @@ void OverlayUIBaseComponent::render()
 			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
-
 	}
 
 	int xOffset = 20;
