@@ -623,6 +623,12 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
     // TODO: logic for usage of `paramStereoInputBalance`
     
+    if (pannerSettings.isotropicMode) {
+        if (pannerSettings.equalpowerMode) m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
+        else m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicLinear);
+    }
+    else m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
+
     m1Encode.generatePointResults();
     auto gainCoeffs = m1Encode.getGains();
 
