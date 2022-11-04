@@ -41,7 +41,7 @@ public:
     void initialise() override;
     void render() override;
 
-	void convertRCtoXYRaw(float r, float d, float & x, float & y);
+	void convertRCtoXYRaw(float r, float d, float &x, float &y);
 	void convertXYtoRCRaw(float x, float y, float &r, float &d);
 	//==============================================================================
     void paint (juce::Graphics& g) override;
