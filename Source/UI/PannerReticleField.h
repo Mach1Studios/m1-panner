@@ -165,7 +165,10 @@ public:
             std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             if (m1Encode->getInputChannelsCount() > 1) {
                 for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-                    drawAdditionalReticle((points[i].z + 1.0) * shape.size.x/2, (-points[i].x + 1.0) * shape.size.y/2, pointsNames[i], reticleHovered, false, m);
+                    MurkaPoint point((points[i].z + 1.0)* shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
+                    clamp(point.x, 0, shape.size.x);
+                    clamp(point.y, 0, shape.size.y);
+                    drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, false, m);
                 }
             }
             
