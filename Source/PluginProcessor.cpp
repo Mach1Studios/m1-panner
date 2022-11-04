@@ -610,12 +610,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         _diverge = 0;
     }
     
-    _diverge = _diverge / 100;
-
     // parameters that can be automated will get their values updated from PannerSettings->Parameter
     m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
     m1Encode.setElevationDegrees(pannerSettings.elevation);
-    m1Encode.setDiverge(_diverge); // using _diverge in case monitorMode was used
+    m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
 
     m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
     m1Encode.setOutputGain(_gain, true);
@@ -702,16 +700,22 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
 
     // processing loop
+    for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
+        for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+            outBuffer[output_channel][sample] = 0;
+        }
+    }
+    
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         for (int sample = 0; sample < buffer.getNumSamples(); sample++){
             float inValue = buffers[input_channel][sample];
             for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                 float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
-                
+
                 // TODO: check if `output_channel_reordered` is appropriate here
                 // Output channel reordering from fillChannelOrder()
                 int output_channel_reordered = output_channel_indices[output_channel];
-                outBuffer[output_channel_reordered][sample] = inValue * inGain;
+                outBuffer[output_channel_reordered][sample] += inValue * inGain;
             }
         }
     }
@@ -875,8 +879,8 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
 #if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
-        pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
-        pannerSettings.outputType = getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+        pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+        pannerSettings.outputType = (Mach1EncodeOutputModeType)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
 #endif
 #ifdef ITD_PARAMETERS
         pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
