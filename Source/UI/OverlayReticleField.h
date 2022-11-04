@@ -25,7 +25,6 @@ public:
              if ((draggingNow) || (shouldDrawDivergeLine)) {
                 m.setColor(GRID_LINES_1_RGBA);
                 m.disableFill();
-				auto x = context.getSize().x;
                 m.drawLine(reticlePositionInWidgetSpace.x, 0, reticlePositionInWidgetSpace.x, context.getSize().y);
 				m.drawLine(0, reticlePositionInWidgetSpace.y, context.getSize().x, reticlePositionInWidgetSpace.y);
 			 }
@@ -49,7 +48,19 @@ public:
             std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             std::vector<Mach1Point3D> points = m1Encode->getPoints();
             for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-                drawAdditionalReticle((points[i].z) * shape.size.x, (1.0-points[i].x) * shape.size.y, pointsNames[i], reticleHovered, m, context);
+                float r, d;
+                float x = points[i].z;
+                float y = points[i].x;
+                if (x == 0 && y == 0) {
+                    r = 0;
+                    d = 0;
+                } else {
+                    d = sqrtf(x*x + y * y) / sqrt(2.0);
+                    float rotation_radian = atan2(x, y);//acos(x/d);
+                    float rotation_degree = juce::radiansToDegrees(rotation_radian);
+                    r = (rotation_degree/360.) + 0.5; // normalize 0->1
+                }
+                drawAdditionalReticle(r * shape.size.x, (-points[i].y + 1.0)/2 * shape.size.y, pointsNames[i], reticleHovered, m, context);
             }
 
             // MIXER - MONITOR DISPLAY
@@ -146,7 +157,7 @@ public:
         float yaw = normalize(yawAngle, -180., 180.); //TODO: fix this
         float pitch = pitchAngle + 90.; //TODO: fix this
         float divider = 4.; // Diameter/width of drawn object
-        m.setColor(REF_LABEL_TEXT_COLOR);
+        m.setColor(OVERLAY_YAW_REF_RGBA);
         float halfWidth = context.getSize().x/(divider*2);
         float halfHeight = context.getSize().y/(divider*2);
         float centerPos = fmod(yaw+0.5, 1.) * context.getSize().x;
