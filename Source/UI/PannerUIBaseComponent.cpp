@@ -558,32 +558,27 @@ void PannerUIBaseComponent::render()
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
-	std::vector<float> volumesInDb(processor->m1Encode.getOutputChannelsCount() , -10);
-	if (volumesInDb.size() > 0) {
-		std::vector<float> volumes = volumesInDb;
+	if (processor->m1Encode.getOutputChannelsCount() > 0) {
+        m.setFont("Proxima Nova Reg.ttf", 7);
+		for (int channelIndex = 0; channelIndex < processor->m1Encode.getOutputChannelsCount(); channelIndex++) {
+            auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
 
-		if (processor->m1Encode.getOutputChannelsCount() > 0) {
-            m.setFont("Proxima Nova Reg.ttf", 7);
-			for (int channelIndex = 0; channelIndex < processor->m1Encode.getOutputChannelsCount(); channelIndex++) {
-                auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(volumes[channelIndex]).withCoeff(processor->outputMeterValuedB[channelIndex]).commit();
+            m.setColor(LABEL_TEXT_COLOR);
+            m.draw<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
+		}
 
-                m.setColor(LABEL_TEXT_COLOR);
-                m.draw<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
-			}
+		m.setColor(REF_LABEL_TEXT_COLOR);
+		for (int i = 0; i <= 56; i += 6) {
+			//float db = ofMap(i, 0, 100, 0, -144); // 144 from M1VolumeDisplayLine math
+			float db = -i + 12;
 
-			m.setColor(REF_LABEL_TEXT_COLOR);
-			for (int i = 0; i <= 56; i += 6) {
-				//float db = ofMap(i, 0, 100, 0, -144); // 144 from M1VolumeDisplayLine math
-				float db = -i + 12;
-
-				float y = i * 7;
-                // Background line
-                m.draw<M1Label>({ 555 + 15 * processor->m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
-                    30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
-			}
+			float y = i * 7;
+            // Background line
+            m.draw<M1Label>({ 555 + 15 * processor->m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
+                30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
 		}
 	}
-
+	
     /// Bottom bar
     /// TODO: DYNAMIC I/O FOR NON-AAX ?
 #if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
