@@ -64,8 +64,8 @@ M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 //==============================================================================
 void M1PannerAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff333333));
-    g.setColour (juce::Colours::black);
+    g.fillAll (juce::Colour (40, 40, 40));
+    g.setColour (juce::Colour (40, 40, 40));
 }
 
 void M1PannerAudioProcessorEditor::resized()
