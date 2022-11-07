@@ -92,8 +92,10 @@ public:
     static juce::String paramAutoOrbit;
     static juce::String paramIsotropicEncodeMode;
     static juce::String paramEqualPowerEncodeMode;
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     static juce::String paramInputMode;
+#endif
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     static juce::String paramOutputMode;
 #endif
 

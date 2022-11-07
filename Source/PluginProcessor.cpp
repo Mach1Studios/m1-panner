@@ -21,8 +21,10 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
+#endif
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 #endif
 #ifdef ITD_PARAMETER
@@ -137,10 +139,16 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if defined(DYNAMIC_IO_PLUGIN_MODE)
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeStereo),
+                    std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+#elif defined (STREAMING_PANNER_PLUGIN)
                     // Limited to stereo input for STREAMING_PANNER_PLUGIN mode
                     std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeStereo, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+                    // Configurations with same number of channels can be defined via this parameter
+#elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, 4, 0),
 #endif
 #ifdef ITD_PARAMETERS
                     std::make_unique<juce::AudioParameterBool>(paramITDActive, TRANS("ITD"), pannerSettings.itdActive),
@@ -169,8 +177,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     parameters.addParameterListener(paramInputMode, this);
+#endif
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     parameters.addParameterListener(paramOutputMode, this);
 #endif
 #ifdef ITD_PARAMETERS
@@ -263,69 +273,108 @@ void M1PannerAudioProcessor::createLayout(){
 #endif
     
 #ifdef STREAMING_PANNER_PLUGIN
-    if (pannerSettings.inputType == Mach1EncodeInputModeMono){
+    if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeMono){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
     }
-    else if (pannerSettings.inputType == Mach1EncodeInputModeStereo){
+    else if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeStereo){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     }
     getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
 #else
-    //TODO: refactor this so it sets format per type instead of number of channels
-    //TODO: refactor so there is a pool of selections for Quad/LCR, pool for ambisonics and a pool for surround
     if (numInChans == juce::AudioChannelSet::mono().size()){
+    #if defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeMono);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
-        //removing this to solve mono/stereo plugin build issue on VST/AU/VST3
-        //getBus(true, 1)->setCurrentLayout(juce::AudioChannelSet::mono());
     }
     else if (numInChans == juce::AudioChannelSet::stereo().size()){
+    #if defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeStereo);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     }
     else if (numInChans == juce::AudioChannelSet::createLCR().size()){
+    #if defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCR);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::createLCR());
     }
     else if (numInChans == juce::AudioChannelSet::quadraphonic().size()){
-        // TODO: Add how we switch using getInputMode?
+    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
+        if (parameters.getParameter(paramInputMode)->getValue() == 0) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
+        } else if (parameters.getParameter(paramInputMode)->getValue() == 1) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCRS);
+        } else if (parameters.getParameter(paramInputMode)->getValue() == 2) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeAFormat);
+        } else if (parameters.getParameter(paramInputMode)->getValue() == 3) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAACN);
+        } else if (parameters.getParameter(paramInputMode)->getValue() == 4) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
+        }
+    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
-//        if (mChanInputMode == QUAD) m1Encode.setInputMode(Mach1EncodeInputModeQuad);
-//        if (mChanInputMode == LCRS) m1Encode.setInputMode(Mach1EncodeInputModeLCRS);
-//        if (mChanInputMode == AFORMAT) m1Encode.setInputMode(Mach1EncodeInputModeAFormat);
-//        if (mChanInputMode == BFORMAT_1OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeBFOAACN);
-//        if (mChanInputMode == BFORMAT_1OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeBFOAFUMA);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
     }
     else if (numInChans == juce::AudioChannelSet::create5point0().size()){
+    #if defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         m1Encode.setInputMode(Mach1EncodeInputMode5dot0);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point0());
     }
     else if (numInChans == juce::AudioChannelSet::create5point1().size()){
-        // TODO: Add how we switch using getInputMode?
+    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 6
+        if (parameters.getParameter(paramInputMode).getValue() == 0) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1Film);
+        } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1DTS);
+        } else if (parameters.getParameter(paramInputMode).getValue() == 2) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1SMTPE);
+        }
+    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1Film);
-//        if (mChanInputMode == FIVE_ONE_FILM) m1Encode.setInputMode(Mach1EncodeInputMode5dot1Film);
-//        if (mChanInputMode == FIVE_ONE_SMPTE) m1Encode.setInputMode(Mach1EncodeInputMode5dot1SMTPE);
-//        if (mChanInputMode == FIVE_ONE_DTS) m1Encode.setInputMode(Mach1EncodeInputMode5dot1DTS);
-        //        if (inputMode == SIX_ZERO) m1Encode.setInputMode(); //TODO: add this
-        //        if (inputMode == HEXAGON) m1Encode.setInputMode(); //TODO: add this
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point1());
     }
-    else if (numInChans == juce::AudioChannelSet::create7point1point2().size()){
-        getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create7point1point2());
-    }
     else if (numInChans == juce::AudioChannelSet::ambisonic(2).size()){
-        // TODO: Add how we switch using getInputMode?
+    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 9
+        if (parameters.getParameter(paramInputMode).getValue() == 0) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAACN);
+        } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAFUMA);
+        }
+    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAACN);
-//        if (mChanInputMode == BFORMAT_2OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeB2OAACN);
-//        if (mChanInputMode == BFORMAT_2OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeB2OAFUMA);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(2));
     }
     else if (numInChans == juce::AudioChannelSet::ambisonic(3).size()){
-        // TODO: Add how we switch using getInputMode?
+    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 16
+        if (parameters.getParameter(paramInputMode).getValue() == 0) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAACN);
+        } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
+            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAFUMA);
+        }
+    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
+        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
+    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAACN);
-//        if (mChanInputMode == BFORMAT_3OA_ACN) m1Encode.setInputMode(Mach1EncodeInputModeB3OAACN);
-//        if (mChanInputMode == BFORMAT_3OA_FUMA) m1Encode.setInputMode(Mach1EncodeInputModeB3OAFUMA);
+    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(3));
     }
     pannerSettings.inputType = m1Encode.getInputMode();
@@ -424,11 +473,9 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     } else if (parameterID == paramX) {
         parameters.getParameter(paramX)->setValue(newValue);
         pannerSettings.x = newValue;
-        //TODO: XYtoRD
     } else if (parameterID == paramY) {
         parameters.getParameter(paramY)->setValue(newValue);
         pannerSettings.y = newValue;
-        //TODO: XYtoRD
     } else if (parameterID == paramAutoOrbit) {
         parameters.getParameter(paramAutoOrbit)->setValue(newValue);
         pannerSettings.autoOrbit = newValue;
@@ -448,49 +495,34 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     } else if (parameterID == paramInputMode) {
-        int inputChannelCount = parameters.getParameter(paramInputMode)->getValue();
+        int inputQuadType = parameters.getParameter(paramInputMode)->getValue();
         Mach1EncodeInputModeType input;
-        if (inputChannelCount == 1) {
-            input = Mach1EncodeInputModeMono;
-        } else if (inputChannelCount == 2) {
-            input = Mach1EncodeInputModeStereo;
-        } else if (inputChannelCount == 3) {
-            input = Mach1EncodeInputModeLCR;
-        } else if (inputChannelCount == 4) {
+        if (inputQuadType == 0) {
             input = Mach1EncodeInputModeQuad;
-        } else if (inputChannelCount == 5) {
-            input = Mach1EncodeInputMode5dot0;
-        } else if (inputChannelCount == 6) {
-            input = Mach1EncodeInputMode5dot1Film;
+        } else if (inputQuadType == 1) {
+            input = Mach1EncodeInputModeLCRS;
+        } else if (inputQuadType == 2) {
+            input = Mach1EncodeInputModeAFormat;
+        } else if (inputQuadType == 3) {
+            input = Mach1EncodeInputModeBFOAACN;
+        } else if (inputQuadType == 4) {
+            input = Mach1EncodeInputModeBFOAFUMA;
         }
         m1Encode.setInputMode(input);
         pannerSettings.inputType = input;
         layoutCreated = false;
         createLayout();
+#elif defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+    } else if (parameterID == paramInputMode) {
+        Mach1EncodeInputModeType input = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->getValue();
+        m1Encode.setInputMode(input);
+        pannerSettings.inputType = input;
+        layoutCreated = false;
+        createLayout();
     } else if (parameterID == paramOutputMode) {
-        int outputChannelCount = parameters.getParameter(paramOutputMode)->getValue();
-        Mach1EncodeOutputModeType output;
-        if (outputChannelCount == 1) {
-            output = Mach1EncodeOutputModeM1Spatial_8;
-        } else if (outputChannelCount == 2) {
-            output = Mach1EncodeOutputModeM1Horizon_4;
-        } else if (outputChannelCount == 3) {
-            output = Mach1EncodeOutputModeM1Spatial_12;
-        } else if (outputChannelCount == 4) {
-            output = Mach1EncodeOutputModeM1Spatial_14;
-        } else if (outputChannelCount == 5) {
-            output = Mach1EncodeOutputModeM1Spatial_18;
-        } else if (outputChannelCount == 6) {
-            output = Mach1EncodeOutputModeM1Spatial_32;
-        } else if (outputChannelCount == 7) {
-            output = Mach1EncodeOutputModeM1Spatial_36;
-        } else if (outputChannelCount == 8) {
-            output = Mach1EncodeOutputModeM1Spatial_48;
-        } else if (outputChannelCount == 9) {
-            output = Mach1EncodeOutputModeM1Spatial_60;
-        }
+        Mach1EncodeOutputModeType output = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->getValue();
         m1Encode.setOutputMode(output);
         pannerSettings.outputType = output;
         layoutCreated = false;
@@ -832,7 +864,9 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit ? 1 : 0));
     addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode ? 1 : 0));
     addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode ? 1 : 0));
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+#if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
+    addXmlElement(root, paramInputMode, juce::String(pannerSettings.inputType));
+#elif defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     addXmlElement(root, paramInputMode, juce::String(pannerSettings.inputType));
     addXmlElement(root, paramOutputMode, juce::String(pannerSettings.outputType));
 #endif
@@ -849,7 +883,7 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
-       // whose contents will have been created by the getStateInformation() call.
+    // whose contents will have been created by the getStateInformation() call.
     juce::MemoryInputStream input(data, sizeInBytes, false);
     auto prefix = input.readString();
     /*
@@ -862,7 +896,6 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
     */
 
     if (!prefix.isEmpty() && (prefix == "1.5.1" || prefix == "2.0.0")) {
-        // new method
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
     
@@ -878,14 +911,41 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.autoOrbit = getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
         pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
-        pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
-        pannerSettings.outputType = (Mach1EncodeOutputModeType)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
-#endif
 #ifdef ITD_PARAMETERS
         pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
         pannerSettings.outputType = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
         pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
+#endif
+    
+// Parsing old plugin QUADMODE and applying to new inputType structure
+#if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
+        if (prefix == "1.5.1") {
+            // Get QUAD input type
+            int quadStoredInput = (int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+            Mach1EncodeInputModeType tempInputType;
+            if (quadStoredInput == 0) {
+                tempInputType = Mach1EncodeInputModeQuad; // 3
+            } else if (quadStoredInput == 1) {
+                tempInputType = Mach1EncodeInputModeLCRS; // 4
+            } else if (quadStoredInput == 2) {
+                tempInputType = Mach1EncodeInputModeAFormat; // 5
+            } else if (quadStoredInput == 3) {
+                tempInputType = Mach1EncodeInputModeBFOAACN; // 10
+            } else if (quadStoredInput == 4) {
+                tempInputType = Mach1EncodeInputModeBFOAFUMA; // 11
+            } else {
+                // error
+            }
+            pannerSettings.inputType = tempInputType;
+        } else if (prefix == "2.0.0") {
+            pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+        }
+#endif
+#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
+        if (prefix == "2.0.0") {
+            pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
+            pannerSettings.outputType = (Mach1EncodeOutputModeType)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+        }
 #endif
     }
 }
