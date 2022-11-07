@@ -12,6 +12,7 @@
 #include <Mach1Encode.h>
 #include "Config.h"
 #include "TypesForDataExchange.h"
+//#include "LegacyParameters.h"
 
 #ifdef ITD_PARAMETERS
 #include "RingBuffer.h"
