@@ -435,6 +435,14 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
         }
     }
     
+    if (m1Encode.getOutputChannelsCount() != getMainBusNumOutputChannels()){
+        bool channel_io_error = -1;
+        // error handling here?
+    }
+    
+    // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
+    fillChannelOrderArray(m1Encode.getOutputChannelsCount());
+    
 #ifdef ITD_PARAMETERS
     mSampleRate = sampleRate;
     mDelayTimeSmoother.reset(samplesPerBlock);
@@ -564,7 +572,10 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
 void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     orderOfChans.resize(numOutputChannels);
     output_channel_indices.resize(numOutputChannels);
-    if(numOutputChannels == 8) {
+    
+    juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
+    
+    if(!chanset.isDiscreteLayout() && numOutputChannels == 8) {
         // Layout for Pro Tools
         if (hostType.isProTools()){
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
@@ -585,11 +596,12 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
             orderOfChans[6] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
             orderOfChans[7] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
         }
-        juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
-        for (int i = 0; i < numOutputChannels; i ++) {
-            output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+        if (chanset.size() >= 8) {
+            for (int i = 0; i < numOutputChannels; i ++) {
+                output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+            }
         }
-    } else if (numOutputChannels == 4){
+    } else if (!chanset.isDiscreteLayout() && numOutputChannels == 4){
         // Layout for Pro Tools
         if (hostType.isProTools()) {
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
@@ -602,9 +614,10 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
             orderOfChans[2] = juce::AudioChannelSet::ChannelType::leftSurround;
             orderOfChans[3] = juce::AudioChannelSet::ChannelType::rightSurround;
         }
-        juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
-        for (int i = 0; i < numOutputChannels; i ++) {
-            output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+        if (chanset.size() >= 4) {
+            for (int i = 0; i < numOutputChannels; i ++) {
+                output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+            }
         }
     } else {
         for (int i = 0; i < numOutputChannels; ++i){
@@ -619,9 +632,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-    
-    // Fix host specific channel ordering issues
-    fillChannelOrderArray(totalNumOutputChannels);
 
     // if you've got more output channels than input clears extra outputs
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
