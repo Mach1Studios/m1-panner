@@ -196,9 +196,7 @@ public:
         
         // Setting knob value to default if double clicked or pressed alt while clicking
         
-        bool shouldSetDefault = ((m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && m.currentContext.mouseDownPressed[0]) ||
-                                false
-								);
+        bool shouldSetDefault = m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && m.currentContext.mouseDownPressed[0];
         
         // Don't set default by doubleclick if the mouse is in the Label/Text editor zone
         if (m.currentContext.mousePosition.y >= labelPositionY) shouldSetDefault = false;
