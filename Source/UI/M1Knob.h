@@ -216,7 +216,7 @@ public:
                 float s = speed;  // TODO: check if this speed constant should be dependent on UIScale
                 
                 if (m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
-                    speed *= 4;
+                    s *= 4;
                 }
 
                 *((float*)dataToControl) += (m.currentContext.mouseDelta.y / s) * (rangeTo - rangeFrom);
