@@ -369,7 +369,7 @@ void PannerUIBaseComponent::render()
     zLabel.commit();
 
 	// S Rotation
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoOrbitAzimuth);
 #else
@@ -395,7 +395,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
 #else
     auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
@@ -409,7 +409,7 @@ void PannerUIBaseComponent::render()
 	// S Spread
 
 	// TODO didChangeOutsideThisThread ???
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140 - 10, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoSpread);
 #else
@@ -435,7 +435,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth + 10, knobHeight));
 #else
     auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth + 10, knobHeight));
@@ -448,7 +448,7 @@ void PannerUIBaseComponent::render()
 
 	// S Pan
     
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset + 140 - 10, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
 #else
@@ -474,7 +474,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
 #else
     auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140, knobWidth, knobHeight));
@@ -580,8 +580,7 @@ void PannerUIBaseComponent::render()
 	}
 	
     /// Bottom bar
-    /// TODO: DYNAMIC I/O FOR NON-AAX ?
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     m.setColor(GRID_LINES_3_RGBA);
     m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
     m.setColor(BACKGROUND_GREY);
@@ -600,20 +599,69 @@ void PannerUIBaseComponent::render()
     inputLabel.highlighted = false;
     inputLabel.commit();
     
+    std::string inputLabelText;
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeStereo) inputLabelText = "STEREO";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCR) inputLabelText = "LCR";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeQuad) inputLabelText = "QUAD";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCRS) inputLabelText = "LCRS";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) inputLabelText = "AFORMAT";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot0) inputLabelText = "5.0 Film";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1Film) inputLabelText = "5.1 Film";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1DTS) inputLabelText = "5.1 DTS";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1SMTPE) inputLabelText = "5.1 SMPTE";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1st Order ACNSN3D";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1st Order FuMa";
+
+    #if defined(STREAMING_PANNER_PLUGIN)
+    // MONO & STEREO only
     auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
                                                 40, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
-                                                .withLabel(std::to_string(pannerState->m1Encode->getInputChannelsCount()));
+                                                .withLabel(inputLabelText);
     inputDropdown.drawAsDropdown = false; // dropup
     inputDropdown.optionHeight = 40;
     inputDropdown.rangeFrom = (int)Mach1EncodeInputModeMono;
-    inputDropdown.rangeTo = (int)Mach1EncodeInputModeB3OAFUMA;
+    inputDropdown.rangeTo = (int)Mach1EncodeInputModeStereo;
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
         processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
     }
+    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
+                                                40, 30 })
+                                                /*.controlling(&pannerState->inputType)*/
+                                                .withLabel(inputLabelText);
+    inputDropdown.drawAsDropdown = false; // dropup
+    inputDropdown.optionHeight = 40;
+    inputDropdown.rangeFrom = (int)Mach1EncodeInputModeMono;
+    inputDropdown.rangeTo = (int)Mach1EncodeInputModeBFOAFUMA;
+    inputDropdown.commit();
     
+    if (inputDropdown.changed) {
+        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+    }
+    #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
+    // Dropdown is used for QUADMODE indication only
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
+                                                40, 30 })
+                                                /*.controlling(&pannerState->inputType)*/
+                                                .withLabel(inputLabelText);
+    inputDropdown.drawAsDropdown = false; // dropup
+    inputDropdown.optionHeight = 40;
+    inputDropdown.rangeFrom = 0;
+    inputDropdown.rangeTo = 4;
+    inputDropdown.commit();
+    
+    if (inputDropdown.changed) {
+        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+    }
+    #endif
+
+    // BLOCK OUTPUT DROPDOWN & LABEL IF CUSTOM_CHANNEL_LAYOUT
+    // TODO: expand so it shows label as output format but without dropdown functionality
+    #if !(defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     // Output Channel Mode Selector
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
@@ -637,11 +685,13 @@ void PannerUIBaseComponent::render()
     if (outputDropdown.changed) {
         processor->parameterChanged(processor->paramOutputMode, pannerState->outputType);
     }
+    #endif
+    
 #endif
     
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     /// -> label
     auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
     arrowLabel.label = "-->";
@@ -653,7 +703,7 @@ void PannerUIBaseComponent::render()
     /// Panner label
     m.setColor(200, 255);
     m.setFont("Proxima Nova Reg.ttf", 10);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 26, 80, 20));
 #else
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
@@ -666,7 +716,7 @@ void PannerUIBaseComponent::render()
     
     m.setColor(200, 255);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
-#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE)
+#if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
 #else
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
