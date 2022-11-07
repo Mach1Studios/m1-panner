@@ -592,7 +592,7 @@ void PannerUIBaseComponent::render()
     // Input Channel Mode Selector
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120, m.getSize().height() - 26, 60, 20));
+    auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
     inputLabel.label = "INPUT";
     inputLabel.alignment = TEXT_CENTER;
     inputLabel.enabled = false;
@@ -615,7 +615,7 @@ void PannerUIBaseComponent::render()
 
     #if defined(STREAMING_PANNER_PLUGIN)
     // MONO & STEREO only
-    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
                                                 40, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
                                                 .withLabel(inputLabelText);
@@ -629,7 +629,7 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
     }
     #elif defined(DYNAMIC_IO_PLUGIN_MODE)
-    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
                                                 40, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
                                                 .withLabel(inputLabelText);
@@ -644,8 +644,8 @@ void PannerUIBaseComponent::render()
     }
     #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
     // Dropdown is used for QUADMODE indication only
-    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60, m.getSize().height()-33,
-                                                40, 30 })
+    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
+                                                80, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
                                                 .withLabel(inputLabelText);
     inputDropdown.drawAsDropdown = false; // dropup
@@ -659,9 +659,6 @@ void PannerUIBaseComponent::render()
     }
     #endif
 
-    // BLOCK OUTPUT DROPDOWN & LABEL IF CUSTOM_CHANNEL_LAYOUT
-    // TODO: expand so it shows label as output format but without dropdown functionality
-    #if !(defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     // Output Channel Mode Selector
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
@@ -672,6 +669,9 @@ void PannerUIBaseComponent::render()
     outputLabel.highlighted = false;
     outputLabel.commit();
     
+    // BLOCK OUTPUT DROPDOWN & LABEL IF CUSTOM_CHANNEL_LAYOUT
+    // TODO: expand so it shows label as output format but without dropdown functionality
+    #if !defined(CUSTOM_CHANNEL_LAYOUT)
     auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                 40, 30 })
                                                 /*.controlling(&pannerState->outputType)*/
@@ -684,6 +684,21 @@ void PannerUIBaseComponent::render()
     
     if (outputDropdown.changed) {
         processor->parameterChanged(processor->paramOutputMode, pannerState->outputType);
+    }
+    #else
+    // DISABLE DROPDOWN UI
+    auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
+                                                40, 30 })
+                                                /*.controlling(&pannerState->outputType)*/
+                                                .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount()));
+    outputDropdown.drawAsDropdown = false; // dropup
+    outputDropdown.optionHeight = 40;
+    outputDropdown.rangeFrom = 0;
+    outputDropdown.rangeTo = 0;
+    outputDropdown.commit();
+    
+    if (outputDropdown.changed) {
+        // do nothing
     }
     #endif
     
