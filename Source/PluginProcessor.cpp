@@ -857,7 +857,7 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // as intermediaries to make it easy to save and load complex data.
     // You should use this method to store your parameters in the memory block.
     juce::MemoryOutputStream stream(destData, false);
-    // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version threshold for supporting
+    // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version tag threshold for supporting
     // backwards compatible automation data in PT
     stream.writeString("2.0.0"); // write current prefix
     juce::XmlElement root("Root");
@@ -957,6 +957,9 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             pannerSettings.outputType = (Mach1EncodeOutputModeType)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
         }
 #endif
+    } else {
+        // Legacy recall
+        //legacyParametersRecall(input, *this);
     }
 }
 
