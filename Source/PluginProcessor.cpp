@@ -505,34 +505,44 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         // set in UI
 #if (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     } else if (parameterID == paramInputMode) {
-        int inputQuadType = parameters.getParameter(paramInputMode)->getValue();
-        Mach1EncodeInputModeType input;
-        if (inputQuadType == 0) {
+        parameters.getParameter(paramInputMode)->setValue((int)newValue);
+        if ((int)newValue == 0) {
+            Mach1EncodeInputModeType input;
             input = Mach1EncodeInputModeQuad;
-        } else if (inputQuadType == 1) {
+            m1Encode.setInputMode(input);
+        } else if ((int)newValue == 1) {
+            Mach1EncodeInputModeType input;
             input = Mach1EncodeInputModeLCRS;
-        } else if (inputQuadType == 2) {
+            m1Encode.setInputMode(input);
+        } else if ((int)newValue == 2) {
+            Mach1EncodeInputModeType input;
             input = Mach1EncodeInputModeAFormat;
-        } else if (inputQuadType == 3) {
+            m1Encode.setInputMode(input);
+        } else if ((int)newValue == 3) {
+            Mach1EncodeInputModeType input;
             input = Mach1EncodeInputModeBFOAACN;
-        } else if (inputQuadType == 4) {
+            m1Encode.setInputMode(input);
+        } else if ((int)newValue == 4) {
+            Mach1EncodeInputModeType input;
             input = Mach1EncodeInputModeBFOAFUMA;
+            m1Encode.setInputMode(input);
         }
-        m1Encode.setInputMode(input);
-        pannerSettings.inputType = input;
+        pannerSettings.inputType = m1Encode.getInputMode();
         layoutCreated = false;
         createLayout();
 #elif defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     } else if (parameterID == paramInputMode) {
+        parameters.getParameter(paramInputMode)->setValue((int)newValue);
         Mach1EncodeInputModeType input = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->getValue();
         m1Encode.setInputMode(input);
-        pannerSettings.inputType = input;
+        pannerSettings.inputType = m1Encode.getInputMode();
         layoutCreated = false;
         createLayout();
     } else if (parameterID == paramOutputMode) {
+        parameters.getParameter(paramOutputMode)->setValue((int)newValue);
         Mach1EncodeOutputModeType output = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->getValue();
         m1Encode.setOutputMode(output);
-        pannerSettings.outputType = output;
+        pannerSettings.outputType = m1Encode.getOutputMode();
         layoutCreated = false;
         createLayout();
 #endif
@@ -922,9 +932,9 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
 #ifdef ITD_PARAMETERS
-        pannerSettings.inputType = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
-        pannerSettings.outputType = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
-        pannerSettings.outputType = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
+        pannerSettings.itdActive = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
+        pannerSettings.delayTime = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
+        pannerSettings.delayDistance = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
 #endif
     
 // Parsing old plugin QUADMODE and applying to new inputType structure
@@ -946,7 +956,8 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             } else {
                 // error
             }
-            pannerSettings.inputType = tempInputType;
+            m1Encode.setInputMode(tempInputType);
+            pannerSettings.inputType = m1Encode.getInputMode();
         } else if (prefix == "2.0.0") {
             pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
         }

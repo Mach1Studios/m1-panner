@@ -296,7 +296,6 @@ public:
     
     M1Knob & controlling(float* dataPointer) {
         dataToControl = dataPointer;
-        
         return *this;
     }
     
