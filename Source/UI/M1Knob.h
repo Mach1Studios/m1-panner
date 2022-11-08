@@ -194,8 +194,7 @@ public:
             cursorShow();
         }
         
-        // Setting knob value to default if double clicked or pressed alt while clicking
-        
+        // Setting knob value to default if pressed alt while clicking
         bool shouldSetDefault = m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && m.currentContext.mouseDownPressed[0];
         
         // Don't set default by doubleclick if the mouse is in the Label/Text editor zone
@@ -211,14 +210,14 @@ public:
         if (draggingNow) {
             if (abs(m.currentContext.mouseDelta.y) >= 1) {
                 
+                // Shift key fine-tune mode
                 float s = speed;  // TODO: check if this speed constant should be dependent on UIScale
-                
                 if (m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
-                    s *= 4;
+                    s *= 10;
                 }
-
-                *((float*)dataToControl) += (m.currentContext.mouseDelta.y / s) * (rangeTo - rangeFrom);
+                *((float*)dataToControl) += ( m.currentContext.mouseDelta.y / s) * (rangeTo - rangeFrom);
             }
+            
             if (*((float*)dataToControl) > rangeTo) {
                 if (isEndlessRotary) {
                     *((float*)dataToControl) -= (rangeTo - rangeFrom);
@@ -226,6 +225,7 @@ public:
                     *((float*)dataToControl) = rangeTo;
                 }
             }
+            
             if (*((float*)dataToControl) < rangeFrom) {
                 if (isEndlessRotary) {
                     *((float*)dataToControl) += (rangeTo - rangeFrom);

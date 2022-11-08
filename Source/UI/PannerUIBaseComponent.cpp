@@ -218,7 +218,7 @@ void PannerUIBaseComponent::render()
     yKnob.rangeTo = 100;
     yKnob.floatingPointPrecision = 1;
     yKnob.speed = knobSpeed;
-    yKnob.defaultValue = 0;
+    yKnob.defaultValue = 70.7;
     yKnob.isEndlessRotary = false;
     yKnob.enabled = true;
     yKnob.externalHover = reticleHoveredLastFrame;
@@ -282,7 +282,7 @@ void PannerUIBaseComponent::render()
     dKnob.rangeTo = 100;
     dKnob.floatingPointPrecision = 1;
     dKnob.speed = knobSpeed;
-    dKnob.defaultValue = 0;
+    dKnob.defaultValue = 50;
     dKnob.isEndlessRotary = false;
     dKnob.enabled = true;
     dKnob.externalHover = reticleHoveredLastFrame;
@@ -316,7 +316,7 @@ void PannerUIBaseComponent::render()
     gKnob.prefix = std::string(pannerState->gain > 0 ? "+" : "");
     gKnob.floatingPointPrecision = 1;
     gKnob.speed = knobSpeed;
-    gKnob.defaultValue = 0;
+    gKnob.defaultValue = 6;
     gKnob.isEndlessRotary = false;
     gKnob.enabled = true;
     gKnob.externalHover = false;
