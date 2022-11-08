@@ -34,9 +34,9 @@ public:
         m.drawRectangle(1, 1, c.getSize().x - 2, c.getSize().y - 2);
 
         m.setColor(LABEL_TEXT_COLOR);
-        m.setFont("Proxima Nova Reg.ttf", 10);
+        m.setFont("Proxima Nova Reg.ttf", fontSize);
         // centered interior text
-        m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, shape.size.y/2-shape.size.y/4, shape.size.x, shape.size.y}).text(label).commit();
+        m.draw<murka::Label>({(shape.size.x/2)-(shape.size.x/4), (shape.size.y/2)-(shape.size.y/4), shape.size.x, shape.size.y}).text(label).commit();
 
         // Action
         if ((context.mouseDownPressed[0]) && (inside)) {
@@ -51,7 +51,7 @@ public:
                     m.setColor(BACKGROUND_GREY);
                     m.drawRectangle(1, 1 + i * optionHeight, c.getSize().x - 2, optionHeight - 2);
                     m.setColor(LABEL_TEXT_COLOR);
-                    m.setFont("Proxima Nova Reg.ttf", 10);
+                    m.setFont("Proxima Nova Reg.ttf", fontSize);
                     m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, i * optionHeight, shape.size.x, optionHeight}).text(label).commit();
                 }
             } else {
@@ -62,7 +62,7 @@ public:
                     m.setColor(BACKGROUND_GREY);
                     m.drawRectangle(1, 1 + i * -optionHeight, c.getSize().x - 2, optionHeight - 2);
                     m.setColor(LABEL_TEXT_COLOR);
-                    m.setFont("Proxima Nova Reg.ttf", 10);
+                    m.setFont("Proxima Nova Reg.ttf", fontSize);
                     m.draw<murka::Label>({shape.size.x/2-shape.size.x/4, i * -optionHeight, shape.size.x, optionHeight}).text(label).commit();
                 }
             }
@@ -84,8 +84,14 @@ public:
     bool didntInitialiseYet = true;
     bool changed = false;
     bool open = false;
-    int optionHeight = 20;
+    int rangeFrom = 0;
+    int rangeTo = 0;
     int selectedOption = 0;
+    int* dataToControl = nullptr;
+    bool drawAsDropdown = false;
+    int optionHeight = 20;
+    int fontSize = 10;
+    bool enabled = true;
     std::string label;
     
     M1Dropdown & withLabel(std::string label_) {
@@ -93,30 +99,27 @@ public:
         return *this;
     }
     
-    MURKA_PARAMETER(M1Dropdown, // class name
-                    int, // parameter type
-                    rangeFrom, // parameter variable name
-                    withRangeFrom, // setter
-                    0 // default
-    )
-    MURKA_PARAMETER(M1Dropdown, // class name
-                    int, // parameter type
-                    rangeTo, // parameter variable name
-                    withRangeTo, // setter
-                    1 // default
-    )
-    // When drawing menu orientation: True = Dropdown, False = Dropup
-    MURKA_PARAMETER(M1Dropdown, // class name
-                    bool, // parameter type
-                    drawAsDropdown, // parameter variable name
-                    shouldDrawAsDropdown, // setter
-                    true // default
-    )
-    MURKA_PARAMETER(M1Dropdown, // class name
-                    int*, // parameter type
-                    dataToControl, // parameter variable name
-                    controlling, // setter
-                    nullptr // default
-    )
+    M1Dropdown & withParameters(float rangeFrom_,
+                            float rangeTo_,
+                            int selectedOption_ = 0,
+                            bool drawAsDropdown_ = true,
+                            int optionHeight_ = 0,
+                            int fontSize_ = 10,
+                            bool enabled_ = true) {
+        rangeFrom = rangeFrom_;
+        rangeTo = rangeTo_;
+        selectedOption = selectedOption_;
+        drawAsDropdown = drawAsDropdown_;
+        optionHeight = optionHeight_;
+        fontSize = fontSize_;
+        enabled = enabled_;
+        
+        return *this;
+    }
+    
+    M1Dropdown & controlling(int* dataPointer) {
+        dataToControl = dataPointer;
+        return *this;
+    }
     
 };

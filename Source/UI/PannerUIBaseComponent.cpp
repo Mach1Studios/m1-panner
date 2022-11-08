@@ -600,11 +600,11 @@ void PannerUIBaseComponent::render()
     inputLabel.commit();
     
     std::string inputLabelText;
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO ";
     if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeStereo) inputLabelText = "STEREO";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCR) inputLabelText = "LCR";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeQuad) inputLabelText = "QUAD";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCRS) inputLabelText = "LCRS";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCR) inputLabelText = "LCR ";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeQuad) inputLabelText = "QUAD ";
+    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCRS) inputLabelText = "LCRS ";
     if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) inputLabelText = "AFORMAT";
     if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot0) inputLabelText = "5.0 Film";
     if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1Film) inputLabelText = "5.1 Film";
@@ -623,10 +623,11 @@ void PannerUIBaseComponent::render()
     inputDropdown.optionHeight = 40;
     inputDropdown.rangeFrom = (int)Mach1EncodeInputModeMono;
     inputDropdown.rangeTo = (int)Mach1EncodeInputModeStereo;
+    inputDropdown.fontSize = 9;
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
-        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
     }
     #elif defined(DYNAMIC_IO_PLUGIN_MODE)
     auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
@@ -637,11 +638,13 @@ void PannerUIBaseComponent::render()
     inputDropdown.optionHeight = 40;
     inputDropdown.rangeFrom = (int)Mach1EncodeInputModeMono;
     inputDropdown.rangeTo = (int)Mach1EncodeInputModeBFOAFUMA;
+    inputDropdown.fontSize = 9;
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
-        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
     }
+    // Displaying options only available as 4 channel INPUT
     #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
     // Dropdown is used for QUADMODE indication only
     auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
@@ -652,10 +655,11 @@ void PannerUIBaseComponent::render()
     inputDropdown.optionHeight = 40;
     inputDropdown.rangeFrom = 0;
     inputDropdown.rangeTo = 4;
+    inputDropdown.fontSize = 9;
     inputDropdown.commit();
     
     if (inputDropdown.changed) {
-        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
     }
     #endif
 
@@ -680,6 +684,7 @@ void PannerUIBaseComponent::render()
     outputDropdown.optionHeight = 40;
     outputDropdown.rangeFrom = 0;
     outputDropdown.rangeTo = (int)Mach1EncodeOutputModeM1Spatial_60;
+    outputDropdown.fontSize = 10;
     outputDropdown.commit();
     
     if (outputDropdown.changed) {
@@ -695,6 +700,7 @@ void PannerUIBaseComponent::render()
     outputDropdown.optionHeight = 40;
     outputDropdown.rangeFrom = 0;
     outputDropdown.rangeTo = 0;
+    outputDropdown.fontSize = 10;
     outputDropdown.commit();
     
     if (outputDropdown.changed) {
@@ -736,100 +742,7 @@ void PannerUIBaseComponent::render()
 #else
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #endif
-    
-    /// Temp UI for OrientationDevice management
-    /*
-    std::vector<M1OrientationClientWindowDeviceSlot> slots;
-    
-    slots.push_back({"bt", "bluetooth device 1", 0 == DEBUG_orientationDeviceSelected, 0, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 0;
-        }
-    });
-    slots.push_back({"bt", "bluetooth device 2", 1 == DEBUG_orientationDeviceSelected, 1, [&](int idx)
-        {
-           DEBUG_orientationDeviceSelected = 1;
-        }
-    });
-    slots.push_back({"bt", "bluetooth device 3", 2 == DEBUG_orientationDeviceSelected, 2, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 2;
-        }
-    });
-    slots.push_back({"bt", "bluetooth device 4", 3 == DEBUG_orientationDeviceSelected, 3, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 3;
-        }
-    });
-    slots.push_back({"wifi", "osc device 1", 4 == DEBUG_orientationDeviceSelected, 4, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 4;
-        }
-    });
-    slots.push_back({"wifi", "osc device 2", 5 == DEBUG_orientationDeviceSelected, 5, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 5;
-        }
-    });
-    slots.push_back({"wifi", "osc device 3", 6 == DEBUG_orientationDeviceSelected, 6, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 6;
-        }
-    });
-    slots.push_back({"wifi", "osc device 4", 7 == DEBUG_orientationDeviceSelected, 7, [&](int idx)
-        {
-            DEBUG_orientationDeviceSelected = 7;
-        }
-    });
 
-    //TODO: set size with getWidth()
-    auto& orientationControlButton = m.draw<M1OrientationWindowToggleButton>({getWidth() - 40 - 5, 5, 40, 40}).onClick([&](M1OrientationWindowToggleButton& b){
-        showOrientationControlMenu = !showOrientationControlMenu;
-    })
-        .withInteractiveOrientationGimmick(DEBUG_orientationDeviceSelected >= 0, m.getElapsedTime() * 100)
-        .commit();
-    
-    if (orientationControlButton.hovered && (DEBUG_orientationDeviceSelected >= 0)) {
-        m.setFont("Proxima Nova Reg.ttf", 12);
-        std::string deviceReportString = "Tracking device:" + slots[DEBUG_orientationDeviceSelected].deviceName;
-        auto font = m.getCurrentFont();
-        auto bbox = font->getStringBoundingBox(deviceReportString, 0, 0);
-        m.setColor(BACKGROUND_GREY);
-        m.drawRectangle(678 + 40 - bbox.width - 5, 45, bbox.width + 10, 30);
-        m.setColor(ENABLED_PARAM);
-        m.draw<M1Label>({678 + 40 - bbox.width - 5, 48, bbox.width + 10, 30}).text(deviceReportString).commit();
-    }
-
-    if (showOrientationControlMenu) {
-        bool showOrientationSettingsPanelInsideWindow = (DEBUG_orientationDeviceSelected >= 0);
-        orientationControlWindow = m.draw<M1OrientationClientWindow>({500, 45, 218, 300 + 100 * showOrientationSettingsPanelInsideWindow}).withDeviceList(slots)
-            .withSettingsPanelEnabled(showOrientationSettingsPanelInsideWindow)
-            .onClickOutside([&]() {
-                if (!orientationControlButton.hovered) { // Only switch showing the orientation control if we didn't click on the button
-                    showOrientationControlMenu = !showOrientationControlMenu;
-                    if (showOrientationControlMenu && !showedOrientationControlBefore) {
-                        orientationControlWindow.startRefreshing();
-                    }
-                }
-            })
-            .onDisconnectClicked([&](){
-                std::cout << "Now disconnect from the device";
-                DEBUG_orientationDeviceSelected = -1;
-            })
-            .onYPRSwitchesClicked([&](int whichone){
-                if (whichone == 0) DEBUG_trackYaw = !DEBUG_trackYaw;
-                if (whichone == 1) DEBUG_trackPitch = !DEBUG_trackPitch;
-                if (whichone == 2) DEBUG_trackRoll = !DEBUG_trackRoll;
-            })
-            .withYPRTrackingSettings(DEBUG_trackYaw,
-                                     DEBUG_trackPitch,
-                                     DEBUG_trackRoll, std::pair<int, int>(0, 180),
-                                     std::pair<int, int>(0, 180),
-                                     std::pair<int, int>(0, 180));
-        
-        orientationControlWindow.commit();
-    }
-    */
 	m.end();
 } 
 
