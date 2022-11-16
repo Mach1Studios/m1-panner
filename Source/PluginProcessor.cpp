@@ -970,7 +970,7 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
 #endif
     } else {
         // Legacy recall
-        //legacyParametersRecall(input, *this);
+        //legacyParametersRecall(data, sizeInBytes, *this);
     }
 }
 

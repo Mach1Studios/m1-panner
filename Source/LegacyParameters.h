@@ -154,7 +154,6 @@ AudioParameterCustomBool *isotropicEncodeParameter = nullptr; // bool ?
 AudioParameterCustomFloat *pannerModeParameter = nullptr; // int ?
 AudioParameterCustomFloat *quadModeParameter = nullptr; // int ?
 AudioParameterCustomFloat *surroundModeParameter = nullptr; // int ?
-//    AudioParameterCustomFloat *ambiModeParameter = nullptr; // int ?
 AudioParameterCustomFloat *divergeParameter = nullptr;
 AudioParameterCustomBool *ghostParameter = nullptr; // bool ?
 AudioParameterCustomBool *equalPowerEncodeParameter = nullptr; // bool ?
@@ -168,8 +167,9 @@ float getParameterFromValueTreeState(juce::AudioProcessorValueTreeState* mState,
     return range.convertFrom0to1(mState->getParameter(parameterIO)->getValue());
 }
 
-void legacyParametersRecall(juce::MemoryInputStream input, juce::AudioProcessor& processorToConnectTo)
+void legacyParametersRecall(const void* data, int sizeInBytes, juce::AudioProcessor& processorToConnectTo)
 {
+    juce::MemoryInputStream input(data, sizeInBytes, false);
     input.setPosition(0);
     juce::ValueTree tree = juce::ValueTree::readFromStream(input);
     if (tree.isValid()) {
