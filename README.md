@@ -12,6 +12,8 @@ The M1-Panner can be compiled into two "modes"
 
 ## Compiler Options
 
+**WARNING: When changing the compiler options make sure to clean the build folder**
+
 ### `STREAMING_PANNER_PLUGIN`
 
 #### CMake
