@@ -86,7 +86,8 @@ void PannerUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &
 }
 
 void PannerUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float &d) {
-	if (x == 0 && y == 0) {
+	// TODO: issue with automating X Y and R C
+    if (x == 0 && y == 0) {
 		r = 0;
 		d = 0;
 	} else {
