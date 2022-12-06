@@ -135,7 +135,7 @@ void PannerUIBaseComponent::render()
 
 	m.setColor(BACKGROUND_GREY);
 	m.clear();
-
+    
 	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
     auto & reticleField = m.drawWidget<PannerReticleField>(MurkaShape(25, 30, 400, 400));
     reticleField.controlling(&xyrd);
@@ -164,6 +164,8 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramY, pannerState->y);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
+    
+
     
 //    m.end();
 //    return;
@@ -578,6 +580,9 @@ void PannerUIBaseComponent::render()
                 30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
 		}
 	}
+    
+
+
 	
     /// Bottom bar
 #if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
@@ -647,20 +652,31 @@ void PannerUIBaseComponent::render()
     // Displaying options only available as 4 channel INPUT
     #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
     // Dropdown is used for QUADMODE indication only
-    auto& inputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
+    auto& inputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 - 60 - 40, m.getSize().height()-33,
                                                 80, 30 })
                                                 /*.controlling(&pannerState->inputType)*/
-                                                .withLabel(inputLabelText);
-    inputDropdown.drawAsDropdown = false; // dropup
-    inputDropdown.optionHeight = 40;
-    inputDropdown.rangeFrom = 0;
-    inputDropdown.rangeTo = 4;
-    inputDropdown.fontSize = 9;
-    inputDropdown.commit();
-    
-    if (inputDropdown.changed) {
-        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
+                                                .withLabel(inputLabelText).commit();
+    std::vector<std::string> options = {"Option1", "Option2", "Option3"};
+    auto& inputDropdownMenu = m.draw<M1DropdownMenu>({ m.getSize().width()/2 - 60 - 160,
+        m.getSize().height() - 33 - options.size() * 20,
+        200, options.size() * 30 }).withOptions(options);
+
+    if (inputDropdownButton.pressed) {
+        inputDropdownMenu.open();
     }
+
+    inputDropdownMenu.commit();
+
+//    inputDropdown.drawAsDropdown = false; // dropup
+//    inputDropdown.optionHeight = 40;
+//    inputDropdown.rangeFrom = 0;
+//    inputDropdown.rangeTo = 4;
+//    inputDropdown.fontSize = 9;
+//    inputDropdown.commit();
+//
+//    if (inputDropdown.changed) {
+//        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
+//    }
     #endif
 
     // Output Channel Mode Selector
@@ -692,23 +708,27 @@ void PannerUIBaseComponent::render()
     }
     #else
     // DISABLE DROPDOWN UI
-    auto& outputDropdown = m.draw<M1Dropdown>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
-                                                40, 30 })
-                                                /*.controlling(&pannerState->outputType)*/
-                                                .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount()));
-    outputDropdown.drawAsDropdown = false; // dropup
-    outputDropdown.optionHeight = 40;
-    outputDropdown.rangeFrom = 0;
-    outputDropdown.rangeTo = 0;
-    outputDropdown.fontSize = 10;
-    outputDropdown.commit();
-    
-    if (outputDropdown.changed) {
-        // do nothing
-    }
+//    auto& outputDropdown = m.draw<M1DropdownMenu>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
+//                                                40, 30 })
+//                                                /*.controlling(&pannerState->outputType)*/
+//                                                .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount()));
+//    outputDropdown.drawAsDropdown = false; // dropup
+//    outputDropdown.optionHeight = 40;
+//    outputDropdown.rangeFrom = 0;
+//    outputDropdown.rangeTo = 0;
+//    outputDropdown.fontSize = 10;
+//    outputDropdown.commit();
+//
+//    if (outputDropdown.changed) {
+//        // do nothing
+//    }
     #endif
     
 #endif
+    
+    m.end();
+    
+    return;
     
     m.setColor(APP_LABEL_TEXT_COLOR);
     m.setFont("Proxima Nova Reg.ttf", 10);
