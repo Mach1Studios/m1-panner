@@ -34,7 +34,6 @@ public:
         }
         
         if (opened) {
-
             // outline border
             m.setColor(ENABLED_PARAM);
             m.drawRectangle(0, 0, shape.size.x, shape.size.y);
@@ -55,19 +54,29 @@ public:
                     if (closingMode == mouseDown) {
                         if (c.mouseDownPressed[0]) {
                             opened = false; // Closing the menu
+                            if (selectedOption != i) {
+                                changed = true;
+                            }
+                            selectedOption = i;
                         }
                     }
                     if (closingMode == mouseUp) {
                         if (c.mouseReleased[0]) {
                             opened = false; // Closing the menu
+                            if (selectedOption != i) {
+                                changed = true;
+                            }
+                            selectedOption = i;
                         }
                     }
                 } else {
                     m.setColor(LABEL_TEXT_COLOR);
                     m.setFont("Proxima Nova Reg.ttf", fontSize);
-                    m.draw<murka::Label>({0, optionHeight * i + 5, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
+                    m.draw<murka::Label>({0, optionHeight * i, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
                 }
             }
+        } else {
+            changed = false;
         }
     };
     
@@ -79,16 +88,20 @@ public:
     
     bool changed = false;
     bool opened = false;
-    
     int selectedOption = 0;
-    
     std::vector<std::string> options;
+    Mach1EncodeInputModeType* dataToControl = nullptr;
     
     int optionHeight = 30;
     int fontSize = 10;
     bool enabled = true;
     std::string label;
     MurkaShape triggerButtonShape;
+    
+    M1DropdownMenu & controlling(Mach1EncodeInputModeType* dataPointer) {
+        dataToControl = dataPointer;
+        return *this;
+    }
     
     M1DropdownMenu & withLabel(std::string label_) {
         label = label_;
