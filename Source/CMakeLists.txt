@@ -1,0 +1,27 @@
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE    Config.h
+                                    TypesForDataExchange.h
+                                    PluginEditor.cpp
+                                    PluginEditor.h
+                                    PluginProcessor.cpp
+                                    PluginProcessor.h
+                                    LegacyParameters.h
+                                    Overlay.h
+                                    Overlay.cpp
+                                    PannerOSC.h
+                                    PannerOSC.cpp
+                                    RingBuffer.h
+                                    WindowUtil.h
+                                    WindowUtil.cpp
+                                    WindowUtil.mm
+                                    UI/M1Checkbox.h
+                                    UI/M1DropdownButton.h
+                                    UI/M1DropdownMenu.h
+                                    UI/M1Knob.h
+                                    UI/M1PitchWheel.h
+                                    UI/M1VolumeDisplayLine.h
+                                    UI/OverlayReticleField.h
+                                    UI/OverlayUIBaseComponent.h
+                                    UI/OVerlayUIBaseComponent.cpp
+                                    UI/PannerReticleField.h
+                                    UI/PannerUIBaseComponent.h
+                                    UI/PannerUIBaseComponent.cpp)
