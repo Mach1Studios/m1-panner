@@ -17,7 +17,7 @@ juce::String M1PannerAudioProcessor::paramX("x");
 juce::String M1PannerAudioProcessor::paramY("y");
 juce::String M1PannerAudioProcessor::paramStereoOrbitAzimuth("orbitAzimuth");
 juce::String M1PannerAudioProcessor::paramStereoSpread("orbitSpread");
-juce::String M1PannerAudioProcessor::paramStereoInputBalance("orbitBalance");
+juce::String M1PannerAudioProcessor::paramStereoInputBalance("stereoInputBalance");
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
@@ -686,6 +686,15 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     const float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate/1000000; // number of samples in a microsecond * number of microseconds
 #endif
     
+    // Multiply input buffer by inputGain parameter
+    mainInput.applyGain(pannerSettings.gain);
+    // input pan balance for stereo input
+    if (m1Encode.getInputChannelsCount() == 2) {
+        float p = PI * (pannerSettings.stereoInputBalance + 1)/4;
+        mainInput.applyGain(0, 0, mainInput.getNumSamples(), std::cos(p)); // gain for Left
+        mainInput.applyGain(1, 0, mainInput.getNumSamples(), std::sin(p)); // gain for Right
+    }
+    
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         // Copy input data to additional buffer
@@ -783,7 +792,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
     
-// TODO: Disable if STREAMING_PANNER_PLUGIN
 #ifdef ITD_PARAMETERS
     //SIMPLE DELAY
     // scale delayCoeffs to be normalized

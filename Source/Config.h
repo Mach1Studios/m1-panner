@@ -48,14 +48,14 @@
         #if JucePlugin_MaxNumInputChannels > 0
             #define INPUT_CHANNELS JucePlugin_MaxNumInputChannels
         #else
-            #pragma message "ERROR: Undefined Input Configuration"
+            #error ERROR: Undefined Input Configuration
         #endif
 
         #if JucePlugin_MaxNumOutputChannels > 0
             #define OUTPUT_CHANNELS JucePlugin_MaxNumOutputChannels
             #define MAX_NUM_CHANNELS JucePlugin_MaxNumOutputChannels
         #else
-            #pragma message "ERROR: Undefined Output Configuration"
+            #error ERROR: Undefined Output Configuration
         #endif
     #endif
 
@@ -131,6 +131,9 @@
 
 #ifdef ITD_PARAMETERS
     #pragma message "ITD_PARAMETERS Active"
+    #if defined(STREAMING_PANNER_PLUGIN)
+        #error Cannot Compile with ITD_PARAMETERS and STREAMING_PANNER_PLUGIN
+    #endif
 #endif
 
 // ---
