@@ -148,7 +148,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
                     // Configurations with same number of channels can be defined via this parameter
 #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
-                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, 4, 0),
+                    std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, 20, 0),
 #endif
 #ifdef ITD_PARAMETERS
                     std::make_unique<juce::AudioParameterBool>(paramITDActive, TRANS("ITD"), pannerSettings.itdActive),
@@ -307,17 +307,22 @@ void M1PannerAudioProcessor::createLayout(){
     }
     else if (numInChans == juce::AudioChannelSet::quadraphonic().size()){
     #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4
-        if (parameters.getParameter(paramInputMode)->getValue() == 0) {
-            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
-        } else if (parameters.getParameter(paramInputMode)->getValue() == 1) {
-            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCRS);
-        } else if (parameters.getParameter(paramInputMode)->getValue() == 2) {
-            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeAFormat);
-        } else if (parameters.getParameter(paramInputMode)->getValue() == 3) {
-            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAACN);
-        } else if (parameters.getParameter(paramInputMode)->getValue() == 4) {
-            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
-        }
+        juce::RangedAudioParameter* inputModeParameter = parameters.getParameter(paramInputMode);
+        auto inputTypeParamValue = inputModeParameter->convertFrom0to1(inputModeParameter->getValue());
+        
+        auto inputType = Mach1EncodeInputModeType(inputTypeParamValue);
+        pannerSettings.m1Encode->setInputMode(inputType);
+//        if (parameters.getParameter(paramInputMode)->getValue() == 0) {
+//            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
+//        } else if (parameters.getParameter(paramInputMode)->getValue() == 1) {
+//            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCRS);
+//        } else if (parameters.getParameter(paramInputMode)->getValue() == 2) {
+//            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeAFormat);
+//        } else if (parameters.getParameter(paramInputMode)->getValue() == 3) {
+//            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAACN);
+//        } else if (parameters.getParameter(paramInputMode)->getValue() == 4) {
+//            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
+//        }
     #elif defined(DYNAMIC_IO_PLUGIN_MODE)
         pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
     #else
@@ -464,77 +469,62 @@ void M1PannerAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
+void M1PannerAudioProcessor::updateParameter(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
         parameters.getParameter(paramAzimuth)->setValue(newValue);
-        pannerSettings.azimuth = newValue;
+//        pannerSettings.azimuth = newValue;
     } else if (parameterID == paramElevation) {
         parameters.getParameter(paramElevation)->setValue(newValue);
-        pannerSettings.elevation = newValue;
+//        pannerSettings.elevation = newValue;
     } else if (parameterID == paramDiverge) {
         parameters.getParameter(paramDiverge)->setValue(newValue);
-        pannerSettings.diverge = newValue;
+//        pannerSettings.diverge = newValue;
     } else if (parameterID == paramGain) {
         parameters.getParameter(paramGain)->setValue(newValue);
-        pannerSettings.gain = newValue;
+//        pannerSettings.gain = newValue;
     } else if (parameterID == paramX) {
         parameters.getParameter(paramX)->setValue(newValue);
-        pannerSettings.x = newValue;
+//        pannerSettings.x = newValue;
     } else if (parameterID == paramY) {
         parameters.getParameter(paramY)->setValue(newValue);
-        pannerSettings.y = newValue;
+//        pannerSettings.y = newValue;
     } else if (parameterID == paramAutoOrbit) {
         parameters.getParameter(paramAutoOrbit)->setValue(newValue);
-        pannerSettings.autoOrbit = newValue;
+//        pannerSettings.autoOrbit = newValue;
     } else if (parameterID == paramStereoOrbitAzimuth) {
         parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
-        pannerSettings.stereoOrbitAzimuth = newValue;
+//        pannerSettings.stereoOrbitAzimuth = newValue;
     } else if (parameterID == paramStereoSpread) {
         parameters.getParameter(paramStereoSpread)->setValue(newValue);
-        pannerSettings.stereoSpread = newValue;
+//        pannerSettings.stereoSpread = newValue;
     } else if (parameterID == paramStereoInputBalance) {
         parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
         //TODO: add this via processing?
     } else if (parameterID == paramIsotropicEncodeMode) {
         parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
-        pannerSettings.isotropicMode = newValue;
+//        pannerSettings.isotropicMode = newValue;
         // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
 #if (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     } else if (parameterID == paramInputMode) {
-        parameters.getParameter(paramInputMode)->setValue((int)newValue);
-        if ((int)newValue == 0) {
-            Mach1EncodeInputModeType input;
-            input = Mach1EncodeInputModeQuad;
-            m1Encode.setInputMode(input);
-        } else if ((int)newValue == 1) {
-            Mach1EncodeInputModeType input;
-            input = Mach1EncodeInputModeLCRS;
-            m1Encode.setInputMode(input);
-        } else if ((int)newValue == 2) {
-            Mach1EncodeInputModeType input;
-            input = Mach1EncodeInputModeAFormat;
-            m1Encode.setInputMode(input);
-        } else if ((int)newValue == 3) {
-            Mach1EncodeInputModeType input;
-            input = Mach1EncodeInputModeBFOAACN;
-            m1Encode.setInputMode(input);
-        } else if ((int)newValue == 4) {
-            Mach1EncodeInputModeType input;
-            input = Mach1EncodeInputModeBFOAFUMA;
-            m1Encode.setInputMode(input);
-        }
+        juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
+        parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
+        Mach1EncodeInputModeType inputType;
+        inputType = Mach1EncodeInputModeType((int)newValue);
+        m1Encode.setInputMode(inputType);
         pannerSettings.inputType = m1Encode.getInputMode();
         layoutCreated = false;
         createLayout();
 #elif defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     } else if (parameterID == paramInputMode) {
-        parameters.getParameter(paramInputMode)->setValue((int)newValue);
-        Mach1EncodeInputModeType input = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->getValue();
-        m1Encode.setInputMode(input);
+        juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
+        parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
+        Mach1EncodeInputModeType inputType;
+        inputType = Mach1EncodeInputModeType((int)newValue);
+        m1Encode.setInputMode(inputType);
         pannerSettings.inputType = m1Encode.getInputMode();
         layoutCreated = false;
         createLayout();
