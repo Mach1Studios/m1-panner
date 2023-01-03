@@ -31,7 +31,7 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
-    void updateParameter(const juce::String &parameterID, float newValue);
+    void parameterChanged(const juce::String &parameterID, float newValue) override;
 
 #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;

@@ -469,7 +469,7 @@ void M1PannerAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-void M1PannerAudioProcessor::updateParameter(const juce::String &parameterID, float newValue)
+void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
         parameters.getParameter(paramAzimuth)->setValue(newValue);
@@ -661,7 +661,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setOutputGain(_gain, true);
     m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
     m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
-    // TODO: logic for usage of `paramStereoInputBalance`
     
     if (pannerSettings.isotropicMode) {
         if (pannerSettings.equalpowerMode) m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
