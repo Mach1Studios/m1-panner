@@ -159,10 +159,10 @@ void PannerUIBaseComponent::render()
     
     if (reticleField.results) {
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-        processor->updateParameter(processor->paramDiverge, pannerState->diverge);
-        processor->updateParameter(processor->paramX, pannerState->x);
-        processor->updateParameter(processor->paramY, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -199,10 +199,10 @@ void PannerUIBaseComponent::render()
     if (xKnob.changed) {
 		// update this parameter here, notifying host
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-        processor->updateParameter(processor->paramDiverge, pannerState->diverge);
-        processor->updateParameter(processor->paramX, pannerState->x);
-        processor->updateParameter(processor->paramY, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
 	}
     
 	m.setColor(ENABLED_PARAM);
@@ -230,10 +230,10 @@ void PannerUIBaseComponent::render()
     
     if (yKnob.changed) {
         convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-        processor->updateParameter(processor->paramDiverge, pannerState->diverge);
-        processor->updateParameter(processor->paramX, pannerState->x);
-        processor->updateParameter(processor->paramY, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	m.setColor(ENABLED_PARAM);
@@ -262,10 +262,10 @@ void PannerUIBaseComponent::render()
 
     if (rKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-        processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-        processor->updateParameter(processor->paramDiverge, pannerState->diverge);
-        processor->updateParameter(processor->paramX, pannerState->x);
-        processor->updateParameter(processor->paramY, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	rotateKnobDraggingNow = rKnob.draggingNow;
@@ -294,10 +294,10 @@ void PannerUIBaseComponent::render()
     
     if (dKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-        processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-        processor->updateParameter(processor->paramDiverge, pannerState->diverge);
-        processor->updateParameter(processor->paramX, pannerState->x);
-        processor->updateParameter(processor->paramY, pannerState->y);
+        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        processor->parameterChanged(processor->paramX, pannerState->x);
+        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
@@ -327,7 +327,7 @@ void PannerUIBaseComponent::render()
     gKnob.commit();
     
     if (gKnob.changed) {
-        processor->updateParameter(processor->paramGain, pannerState->gain);
+        processor->parameterChanged(processor->paramGain, pannerState->gain);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -356,7 +356,7 @@ void PannerUIBaseComponent::render()
     zKnob.commit();
     
     if (zKnob.changed) {
-        processor->updateParameter(processor->paramElevation, pannerState->elevation);
+        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
     }
 
     bool zHovered = zKnob.hovered;
@@ -393,7 +393,7 @@ void PannerUIBaseComponent::render()
     srKnob.commit();
     
     if (srKnob.changed) {
-        processor->updateParameter(processor->paramStereoOrbitAzimuth, pannerState->stereoOrbitAzimuth);
+        processor->parameterChanged(processor->paramStereoOrbitAzimuth, pannerState->stereoOrbitAzimuth);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -433,7 +433,7 @@ void PannerUIBaseComponent::render()
     ssKnob.commit();
     
     if (ssKnob.changed) {
-        processor->updateParameter(processor->paramStereoSpread, pannerState->stereoSpread);
+        processor->parameterChanged(processor->paramStereoSpread, pannerState->stereoSpread);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -472,7 +472,7 @@ void PannerUIBaseComponent::render()
     spKnob.commit();
         
     if (spKnob.changed) {
-        processor->updateParameter(processor->paramStereoInputBalance, pannerState->stereoInputBalance);
+        processor->parameterChanged(processor->paramStereoInputBalance, pannerState->stereoInputBalance);
     }
 
 	m.setColor(ENABLED_PARAM);
@@ -518,12 +518,12 @@ void PannerUIBaseComponent::render()
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
-                processor->updateParameter(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
             } else {
-                processor->updateParameter(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
             }
         } else {
-            processor->updateParameter(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+            processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
         }
         pannerState->m1Encode->setPannerMode(pannerState->pannerMode);
     }
@@ -536,7 +536,7 @@ void PannerUIBaseComponent::render()
     autoOrbitCheckbox.commit();
     
     if (autoOrbitCheckbox.changed) {
-        processor->updateParameter(processor->paramAutoOrbit, pannerState->autoOrbit);
+        processor->parameterChanged(processor->paramAutoOrbit, pannerState->autoOrbit);
     }
     
 	//TODO: why are pitch ranges inversed?
@@ -554,7 +554,7 @@ void PannerUIBaseComponent::render()
     pitchWheel.commit();
     
     if (pitchWheel.changed) {
-        processor->updateParameter(processor->paramElevation, pannerState->elevation);
+        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
     }
     
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
@@ -737,7 +737,7 @@ void PannerUIBaseComponent::render()
             pannerState->m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
             pannerState->inputType = Mach1EncodeInputModeBFOAFUMA;
         }
-        processor->updateParameter(processor->paramInputMode, pannerState->inputType);
+        processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
     }
     #endif
 

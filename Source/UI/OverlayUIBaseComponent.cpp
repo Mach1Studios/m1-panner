@@ -167,8 +167,8 @@ void OverlayUIBaseComponent::render()
 
         if (overlayReticleField.changed) {
 			convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-            processor->updateParameter(processor->paramAzimuth, pannerState->azimuth);
-            processor->updateParameter(processor->paramElevation, pannerState->elevation);
+            processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
+            processor->parameterChanged(processor->paramElevation, pannerState->elevation);
 			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
@@ -202,7 +202,7 @@ void OverlayUIBaseComponent::render()
         if (divergeKnob.changed) {
             // update this parameter here, notifying host
             convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-            processor->updateParameter(processor->paramDiverge, pannerState->diverge);
+            processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
             //?
         }
         
