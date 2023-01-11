@@ -1,4 +1,4 @@
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE    Config.h
+target_sources(${PANNER_NAME} PRIVATE    Config.h
                                     TypesForDataExchange.h
                                     PluginEditor.cpp
                                     PluginEditor.h

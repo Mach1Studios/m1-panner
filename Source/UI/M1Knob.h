@@ -25,7 +25,6 @@ public:
         hovered = inside + draggingNow; // for external views to be highlighted too if needed
         bool hoveredLocal = hovered + externalHover; // shouldn't propel hoveredLocal outside so it doesn't feedback
 
-        
         if (!enabled) {
             hoveredLocal = false;
         }
@@ -86,7 +85,6 @@ public:
 
         std::string displayString = float_to_string(*data, floatingPointPrecision);
         
-        
         std::function<void()> deleteTheTextField = [&]() {
             // Temporary solution to delete the TextField:
             // Searching for an id to delete the text field widget.
@@ -103,7 +101,6 @@ public:
         };
          
         std::string valueText = prefix + displayString + postfix;
- 
         auto font = m.getCurrentFont();
         auto valueTextBbox = font->getStringBoundingBox(valueText, 0, 0);
 
@@ -182,7 +179,6 @@ public:
             shouldForceEditorToSelectAll = true;
         }
         
-        
         if ((m.currentContext.mouseDownPressed[0]) && (inside) && (m.currentContext.mousePosition.y < labelPositionY) &&
             (!draggingNow) && (enabled)) {
             draggingNow = true;
@@ -235,7 +231,6 @@ public:
             }
             changed = true;
         }
-
     };
     
     std::stringstream converterStringStream;

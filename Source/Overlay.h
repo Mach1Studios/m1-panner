@@ -1,7 +1,7 @@
 #ifndef __JUCE_HEADER_B57065F632DEFA52__
 #define __JUCE_HEADER_B57065F632DEFA52__
 
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 
 #include "WindowUtil.h"
 

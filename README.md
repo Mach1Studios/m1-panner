@@ -28,7 +28,7 @@ The M1-Panner can be compiled into two "modes"
 - Add as a preprocess definition via `-DCUSTOM_CHANNEL_LAYOUT` and also define the `INPUTS` and `OUTPUTS`
 
 Example:
-`-DCUSTOM_CHANNEL_LAYOUT -DINPUTS=1 -DOUTPUTS=8`
+`-DCUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8`
 
 ### `CUSTOM_CHANNEL_LAYOUT_BY_HOST`
 _This should not be set manually, this is determined for specific CUSTOM_CHANNEL_LAYOUT requirements on DAWs like AAX or RTAS_
