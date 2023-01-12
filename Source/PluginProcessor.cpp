@@ -272,37 +272,33 @@ void M1PannerAudioProcessor::createLayout(){
     numOutChans = pannerSettings.m1Encode->getOutputChannelsCount();
 #endif
     
-#ifdef STREAMING_PANNER_PLUGIN
+#if defined(STREAMING_PANNER_PLUGIN)
+    // INPUT
     if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeMono){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
     }
     else if (pannerSettings.m1Encode->getInputMode() == Mach1EncodeInputModeStereo){
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     }
+    // OUTPUT
     getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
+#elif defined(DYNAMIC_IO_PLUGIN_MODE)
+    // INPUT
+    pannerSettings.m1Encode->setInputMode((Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->getValue());
+    // OUTPUT
+    pannerSettings.m1Encode->setOutputMode((Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->getValue());
 #else
+    // INPUT
     if (numInChans == juce::AudioChannelSet::mono().size()){
-    #if defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeMono);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
     }
     else if (numInChans == juce::AudioChannelSet::stereo().size()){
-    #if defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeStereo);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     }
     else if (numInChans == juce::AudioChannelSet::createLCR().size()){
-    #if defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeLCR);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::createLCR());
     }
     else if (numInChans == juce::AudioChannelSet::quadraphonic().size()){
@@ -323,23 +319,15 @@ void M1PannerAudioProcessor::createLayout(){
 //        } else if (parameters.getParameter(paramInputMode)->getValue() == 4) {
 //            pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
 //        }
-    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeQuad);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::quadraphonic());
     }
     else if (numInChans == juce::AudioChannelSet::create5point0().size()){
-    #if defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         m1Encode.setInputMode(Mach1EncodeInputMode5dot0);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point0());
     }
     else if (numInChans == juce::AudioChannelSet::create5point1().size()){
-    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 6
+    #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 6
         if (parameters.getParameter(paramInputMode).getValue() == 0) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1Film);
         } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
@@ -347,43 +335,33 @@ void M1PannerAudioProcessor::createLayout(){
         } else if (parameters.getParameter(paramInputMode).getValue() == 2) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1SMTPE);
         }
-    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputMode5dot1Film);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::create5point1());
     }
     else if (numInChans == juce::AudioChannelSet::ambisonic(2).size()){
-    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 9
+    #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 9
         if (parameters.getParameter(paramInputMode).getValue() == 0) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAACN);
         } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAFUMA);
         }
-    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB2OAACN);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(2));
     }
     else if (numInChans == juce::AudioChannelSet::ambisonic(3).size()){
-    #if defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 16
+    #elif defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 16
         if (parameters.getParameter(paramInputMode).getValue() == 0) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAACN);
         } else if (parameters.getParameter(paramInputMode).getValue() == 1) {
             pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAFUMA);
         }
-    #elif defined(DYNAMIC_IO_PLUGIN_MODE)
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputMode)parameters.getParameter(paramInputMode).getValue());
-    #else
         pannerSettings.m1Encode->setInputMode(Mach1EncodeInputModeB3OAACN);
-    #endif
         getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::ambisonic(3));
-    }
-    pannerSettings.inputType = m1Encode.getInputMode();
+    #else
+        //error?
+    #endif
     
+    // OUTPUT
     if(numOutChans == juce::AudioChannelSet::quadraphonic().size()){
         //TODO: add a multiplier to reduce the hot 4 channel signal
         pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Horizon_4);
@@ -417,8 +395,11 @@ void M1PannerAudioProcessor::createLayout(){
         pannerSettings.m1Encode->setOutputMode(Mach1EncodeOutputModeM1Spatial_60);
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::discreteChannels(60));
     }
-    pannerSettings.outputType = m1Encode.getOutputMode();
 #endif
+    // UPDATE PANNER SETTINGS STATE
+    pannerSettings.inputType = m1Encode.getInputMode();
+    pannerSettings.outputType = m1Encode.getOutputMode();
+
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
 }

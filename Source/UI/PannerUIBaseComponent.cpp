@@ -580,9 +580,6 @@ void PannerUIBaseComponent::render()
                 30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
 		}
 	}
-    
-
-
 	
     /// Bottom bar
 #if defined(STREAMING_PANNER_PLUGIN) || defined(DYNAMIC_IO_PLUGIN_MODE) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
@@ -627,12 +624,12 @@ void PannerUIBaseComponent::render()
                                                             m.getSize().height() - 33,
                                                             80, 30 })
                                                 .withLabel(inputLabelText).commit();
-    std::vector<std::string> options = {"MONO", "STEREO"};
+    std::vector<std::string> input_options = {"MONO", "STEREO"};
     auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                        m.getSize().height() - 33 - options.size() * dropdownItemHeight,
+                                                        m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                         80, options.size() * dropdownItemHeight })
                                                 .controlling(&pannerState->inputType)
-                                                .withOptions(options);
+                                                .withOptions(input_options);
 
     if (inputDropdownButton.pressed) {
         inputDropdownMenu.open();
@@ -655,12 +652,12 @@ void PannerUIBaseComponent::render()
                                                             m.getSize().height() - 33,
                                                             80, 30 })
                                                 .withLabel(inputLabelText).commit();
-    std::vector<std::string> options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
+    std::vector<std::string> input_options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
     auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                        m.getSize().height() - 33 - options.size() * dropdownItemHeight,
-                                                        80, options.size() * dropdownItemHeight })
+                                                        m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                        80, input_options.size() * dropdownItemHeight })
                                                 .controlling(&pannerState->inputType)
-                                                .withOptions(options);
+                                                .withOptions(input_options);
 
     if (inputDropdownButton.pressed) {
         inputDropdownMenu.open();
@@ -705,12 +702,12 @@ void PannerUIBaseComponent::render()
                                                             m.getSize().height() - 33,
                                                             80, 30 })
                                                 .withLabel(inputLabelText).commit();
-    std::vector<std::string> options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
+    std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
     auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                        m.getSize().height() - 33 - options.size() * dropdownItemHeight,
+                                                        m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                         80, options.size() * dropdownItemHeight })
                                                 .controlling(&pannerState->inputType)
-                                                .withOptions(options);
+                                                .withOptions(input_options);
 
     if (inputDropdownButton.pressed) {
         inputDropdownMenu.open();
@@ -766,12 +763,12 @@ void PannerUIBaseComponent::render()
     auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                 40, 30 })
                                                 .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
-    std::vector<std::string> options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
+    std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
     auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                        m.getSize().height() - 33 - options.size() * dropdownItemHeight,
-                                                        80, options.size() * dropdownItemHeight })
+                                                        m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
+                                                        80, output_options.size() * dropdownItemHeight })
                                                 .controlling(&pannerState->inputType)
-                                                .withOptions(options);
+                                                .withOptions(output_options);
     if (outputDropdownButton.pressed) {
         outputDropdownMenu.open();
     }

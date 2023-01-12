@@ -3,9 +3,9 @@
 //  M1-Panner
 //
 
-#import "WindowUtil.h"
 #import <Foundation/Foundation.h>
 #import <AppKit/NSAlert.h>
+#import "WindowUtil.h"
 
 float WindowUtil::x = 0;
 float WindowUtil::y = 0;
