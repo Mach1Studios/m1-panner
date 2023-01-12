@@ -21,7 +21,7 @@ target_sources(${PANNER_NAME} PRIVATE    Config.h
                                     UI/M1VolumeDisplayLine.h
                                     UI/OverlayReticleField.h
                                     UI/OverlayUIBaseComponent.h
-                                    UI/OVerlayUIBaseComponent.cpp
+                                    UI/OverlayUIBaseComponent.cpp
                                     UI/PannerReticleField.h
                                     UI/PannerUIBaseComponent.h
                                     UI/PannerUIBaseComponent.cpp)
