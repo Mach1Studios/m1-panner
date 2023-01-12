@@ -49,3 +49,10 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 
 #### JUCE
 - Add `ITD_PARAMETERS` in the .jucer's Exporters->[Target]->Extra Preprocessor Definitions
+
+### Examples
+```
+cmake .. -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
+
+cmake --build . --config Release
+```

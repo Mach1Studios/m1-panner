@@ -1,2 +1,1 @@
-juce_add_binary_data(${PANNER_NAME}_binary NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png)
-target_link_libraries(${PANNER_NAME} PRIVATE ${PANNER_NAME}_binary)
+juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png)
