@@ -360,6 +360,7 @@ void M1PannerAudioProcessor::createLayout(){
     #else
         //error?
     #endif
+    }
     
     // OUTPUT
     if(numOutChans == juce::AudioChannelSet::quadraphonic().size()){

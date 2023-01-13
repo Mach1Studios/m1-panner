@@ -1,7 +1,6 @@
 # m1-panner
 GUI and plugin concept for Mach1Encode API
 
-
 ## Modes
 The M1-Panner can be compiled into two "modes"
  1. *Multichannel Internal Spatial Audio Processing*: The spatial audio is processed within the M1-Panner instance internally but is only supported in plugin hosts that support multichannel input/output
@@ -11,6 +10,8 @@ The M1-Panner can be compiled into two "modes"
  	- Streaming External Processing: `STREAMING_PANNER_PLUGIN`: This is the preprocessor definition needed to activate this mode
 
 ## Compiler Options
+
+**It is recommended to compile production plugins via CMake style, all example commands will be supplied at the bottom of this section**
 
 **WARNING: When changing the compiler options make sure to clean the build folder**
 
@@ -51,8 +52,14 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 - Add `ITD_PARAMETERS` in the .jucer's Exporters->[Target]->Extra Preprocessor Definitions
 
 ### Examples
-```
-cmake .. -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
 
-cmake --build . --config Release
+- MacOS compiling M1-Panner with specific I/O:
+```
+cmake -Bbuild_i1o8 -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
+cmake --build build_i1o8 --config Release
+```
+- MacOS compiling M1-Panner AAX
+```
+cmake -Bbuild_aax -G "Xcode" -DBUILD_AAX=1 -DAAX_PATH="/Users/[USERNAME]/SDKs/AAX_SDK_2p3p2"
+cmake --build build_aax --config Release
 ```
