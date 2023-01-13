@@ -164,19 +164,6 @@ target_link_libraries(${PANNER_NAME} PRIVATE Resources PUBLIC juce::juce_recomme
 set(JucePlugin_Name ${PANNER_NAME})
 set(JucePlugin_Desc ${PANNER_NAME})
 
-### IDE Generator post-config ###
-# IDEs:  Move the "shared code" source group (main target) out of the "Targets" folder
-#        to the top level.
-set_target_properties("${PANNER_NAME}" PROPERTIES FOLDER "")
-
-#   If JuceHeader.h is generated, remove it from the source file list and handle it individually.
-get_target_property(juce_library_code "${PANNER_NAME}" JUCE_GENERATED_SOURCES_DIRECTORY)
-set(juce_header "${juce_library_code}/JuceHeader.h")
-
-#   Place JuceHeader.h and the associated CMake Rule file into a "JUCE Library Code" folder.
-source_group("JUCE Library Code" FILES "${juce_header}")
-source_group("JUCE Library Code/CMake Rules" FILES "${juce_header}.rule")
-
 # add M1-SDK
 set(MACH1SPATIAL_LIBS_PATH "Modules/m1-sdk/mach1spatial-libs")
 if(APPLE)
@@ -193,6 +180,34 @@ set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL
 include_directories(${MACH1SPATIAL_INCLUDES})
 target_link_libraries(${PANNER_NAME} PRIVATE ${MACH1ENCODE_LIBRARY})
 target_sources(${PANNER_NAME} PRIVATE ${MACH1SPATIAL_LIBS_PATH}/xcode/include/Mach1Encode.cpp)
+
+### IDE Generator post-config ###
+# IDEs:  Move the "shared code" source group (main target) out of the "Targets" folder
+#        to the top level.
+set_target_properties("${PANNER_NAME}" PROPERTIES FOLDER "")
+
+# IDEs:  Organise source file grouping.
+get_target_property(project_sources "${PANNER_NAME}" SOURCES)
+
+#   If JuceHeader.h is generated, remove it from the source file list and handle it individually.
+get_target_property(juce_library_code "${PANNER_NAME}" JUCE_GENERATED_SOURCES_DIRECTORY)
+set(juce_header "${juce_library_code}/JuceHeader.h")
+list(REMOVE_ITEM project_sources "${juce_header}")
+# remove m1-sdk cpp files too
+list(REMOVE_ITEM project_sources "${MACH1SPATIAL_LIBS_PATH}/xcode/include/Mach1Encode.cpp")
+
+#   Place JuceHeader.h and the associated CMake Rule file into a "JUCE Library Code" folder.
+source_group("JUCE Library Code" FILES "${juce_header}")
+source_group("JUCE Library Code/CMake Rules" FILES "${juce_header}.rule")
+
+#   Generate source groups that follow the organisation of source file directories.
+source_group(TREE "${PROJECT_SOURCE_DIR}/Source" FILES ${project_sources})
+
+#   Place Binary Data related source files into the root of their target folder.
+if(TARGET Resources)
+    get_target_property(project_assets Resources SOURCES)
+    source_group("" FILES ${project_assets})
+endif()
 
 # Color our warnings and errors
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
