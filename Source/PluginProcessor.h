@@ -33,7 +33,7 @@ public:
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
 
-#ifndef JucePlugin_PreferredChannelConfigurations
+#ifndef CUSTOM_CHANNEL_LAYOUT
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
 #endif
     // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
