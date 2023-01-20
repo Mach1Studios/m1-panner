@@ -532,6 +532,12 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
      || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled())
         return false;
     
+#ifdef STREAMING_PANNER_PLUGIN
+    // hard set {1,2} and {2,2} for streaming use case
+    if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
+        return true;
+#else
+    // Test for all available Mach1Encode configs
     // manually maintained for-loop of first enum element to last enum element
     // TODO: brainstorm a way to not require manual maintaining of listed enum elements
     for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
@@ -547,6 +553,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             }
         }
     }
+#endif
     return false;
 }
 #endif

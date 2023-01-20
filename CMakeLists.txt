@@ -20,78 +20,81 @@ add_subdirectory(JUCE)
 # add custom modules
 add_subdirectory(Modules)
 
-IF(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/JUCE_deps)
+if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/JUCE_deps)
     set(AAX_PATH "JUCE_deps/AAX_SDK_2p3p2")
     set(VST2_PATH "JUCE_deps/VST_SDK_vst2/VST2_SDK")
-    message("-- JUCE Dependencies Found: ${PROJECT_SOURCE_DIR}/JUCE_deps")
-ELSE()
-    message("Warning: Did not find additional JUCE deps submodule. Please add the appropriate SDKs manually.")
-ENDIF()
+    message(STATUS "JUCE Dependencies Found: ${PROJECT_SOURCE_DIR}/JUCE_deps")
+else()
+    message(STATUS "Warning: Did not find additional JUCE deps submodule. Please add the appropriate SDKs manually.")
+endif()
 
-option(BUILD_WITH_CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUTS=1 -DOUTPUTS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
-option(BUILD_STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF) # Disabled by default
-option(BUILD_DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF) # Enabled by default
+option(CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUTS=1 -DOUTPUTS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
+option(STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF) # Disabled by default
+option(DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF) # Enabled by default
 option(BUILD_ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF) # Disabled by default
 option(BUILD_VST3 "Compile VST3 plugin type" OFF) # Enabled by default
+option(BUILD_VST "Compile VST2 plugin type" OFF)
+option(BUILD_AAX "Compile AAX plugin type" OFF)
+option(BUILD_AU "Compile AU plugin type" OFF)
 
 # These are used to re-apply brackets for the JucePlugin_PreferredChannelConfigurations
 set(LBRACKET_LITERAL "{")
 set(RBRACKET_LITERAL "}")
 
-IF(BUILD_WITH_CUSTOM_CHANNEL_LAYOUT AND (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
+if(CUSTOM_CHANNEL_LAYOUT AND (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
     set(PANNER_IO "_i${INPUTS}-o${OUTPUTS}")
     set(PANNER_NAME "${CMAKE_PROJECT_NAME}${PANNER_IO}")
     set(CUSTOM_BUNDLE_ID "com.mach1.panner.i${INPUTS}o${OUTPUTS}")
     set(CUSTOM_PLUGIN_CODE "MP${INPUTS}${OUTPUTS}")
+    set(INPUT_CHANNELS ${INPUTS})
+    set(OUTPUT_CHANNELS ${OUTPUTS})
     remove_definitions(-DSTREAMING_PANNER_PLUGIN -DDYNAMIC_IO_PLUGIN_MODE)
-    #add_definitions(JucePlugin_PreferredChannelConfigurations "${LBRACKET_LITERAL}${INPUTS},${OUTPUTS}${RBRACKET_LITERAL}")
-    # TODO: Change output name to reflect
-ELSEIF(BUILD_WITH_CUSTOM_CHANNEL_LAYOUT AND NOT (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
+elseif(CUSTOM_CHANNEL_LAYOUT AND NOT (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
     message(SEND_ERROR "INPUTS and OUTPUTS are not defined!")
-ELSE()
+else()
     set(PANNER_NAME "${CMAKE_PROJECT_NAME}")
     set(CUSTOM_BUNDLE_ID "com.mach1.panner")
     set(CUSTOM_PLUGIN_CODE "M1PN")
-    IF(BUILD_STREAMING_PANNER_PLUGIN)
+    if(STREAMING_PANNER_PLUGIN)
         add_definitions(-DSTREAMING_PANNER_PLUGIN)
-        remove_definitions(-DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT)
+        remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
         remove_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
-    ENDIF(BUILD_STREAMING_PANNER_PLUGIN)
+    endif(STREAMING_PANNER_PLUGIN)
 
-    IF(BUILD_DYNAMIC_IO_PLUGIN_MODE)
+    if(DYNAMIC_IO_PLUGIN_MODE)
         add_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
-        remove_definitions(-DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT)
+        remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
         remove_definitions(-DSTREAMING_PANNER_PLUGIN)
-    ENDIF(BUILD_DYNAMIC_IO_PLUGIN_MODE)
-ENDIF()
+    endif(DYNAMIC_IO_PLUGIN_MODE)
+endif()
 
-IF(BUILD_ITD_PARAMETERS)
+if(BUILD_ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
-ENDIF(BUILD_ITD_PARAMETERS)
+endif(BUILD_ITD_PARAMETERS)
 
 # check which formats we want to build
 # Valid formats: AAX VST VST3 AU // Not yet supported: Unity AUv3 Standalone CLAP
-IF(BUILD_VST3)
+if(BUILD_VST3)
     list(APPEND FORMATS "VST3")
-ENDIF(BUILD_VST3)
+endif(BUILD_VST3)
 
-IF(BUILD_VST2 AND VST2_PATH)
-    message("-- VST2 SDK Found: ${VST2_PATH}")
+if(BUILD_VST2 AND VST2_PATH)
+    message(STATUS "VST2 SDK Found: ${VST2_PATH}")
     list(APPEND FORMATS "VST")
     juce_set_vst2_sdk_path(${VST2_PATH})
-ENDIF()
+endif()
 
-IF(BUILD_AU AND APPLE)
+if(BUILD_AU AND APPLE)
     list(APPEND FORMATS "AU")
-ENDIF()
+endif()
 
-IF(BUILD_AAX AND AAX_PATH)
-    message("-- AAX SDK Found: ${AAX_PATH}")
+if(BUILD_AAX AND AAX_PATH)
+    message(STATUS "AAX SDK Found: ${AAX_PATH}")
     list(APPEND FORMATS "AAX")
     juce_set_aax_sdk_path(${AAX_PATH})
-    remove_definitions(-DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT)
+    remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
     # WARNING: Be careful to not mix custom channel i/o builds with AAX
-ENDIF()
+endif()
 
 # add the plugin targets
 juce_add_plugin(${PANNER_NAME}
@@ -108,7 +111,27 @@ juce_add_plugin(${PANNER_NAME}
                 BUNDLE_ID ${CUSTOM_BUNDLE_ID}
                 PLUGIN_NAME ${PANNER_NAME}
                 PRODUCT_NAME ${PANNER_NAME}
-                IS_SYNTH FALSE)
+                IS_SYNTH FALSE
+                COPY_PLUGIN_AFTER_BUILD TRUE)
+
+if(CUSTOM_CHANNEL_LAYOUT)
+    message(STATUS "Plugin Config: ${LBRACKET_LITERAL}${INPUTS},${OUTPUTS}${RBRACKET_LITERAL}")
+    target_compile_definitions(${PANNER_NAME}
+        PUBLIC 
+        JucePlugin_PreferredChannelConfigurations=${LBRACKET_LITERAL}${INPUTS},${OUTPUTS}${RBRACKET_LITERAL}
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_DISPLAY_SPLASH_SCREEN=0)
+else()
+    target_compile_definitions(${PANNER_NAME}
+        PUBLIC 
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_DISPLAY_SPLASH_SCREEN=0)
+endif(CUSTOM_CHANNEL_LAYOUT)
+
 
 # Set the C++ language standard requirenment for the "shared code" library target.
 # Setting this to PUBLIC ensures that all dependent targets will inherit the specified C++ standard.
@@ -143,7 +166,10 @@ foreach(target ${FORMATS} "All")
             # MacOS only: Sets the default executable that Xcode will open on build
             # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
             #XCODE_SCHEME_EXECUTABLE "${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app"
-
+            # if(BUILD_VST2)
+                XCODE_SCHEME_EXECUTABLE "/Applications/REAPER.app"
+            # endif(BUILD_VST2)
+                
             # Let us build the target in Xcode
             XCODE_GENERATE_SCHEME ON)
     endif()
@@ -152,11 +178,7 @@ set_target_properties(Resources PROPERTIES FOLDER "Targets")
 
 # add required flags
 juce_generate_juce_header(${PANNER_NAME})
-target_compile_definitions(${PANNER_NAME}
-    PUBLIC 
-    JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0)
+
 target_link_libraries(${PANNER_NAME} PRIVATE juce::juce_audio_basics juce::juce_audio_devices juce::juce_audio_formats juce::juce_audio_plugin_client juce::juce_audio_processors juce::juce_audio_utils juce::juce_core juce::juce_cryptography juce::juce_data_structures juce::juce_dsp juce::juce_events juce::juce_graphics juce::juce_gui_basics juce::juce_gui_extra juce::juce_opengl juce::juce_osc juce::juce_product_unlocking juce_murka)
 target_link_libraries(${PANNER_NAME} PRIVATE Resources PUBLIC juce::juce_recommended_warning_flags juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
 

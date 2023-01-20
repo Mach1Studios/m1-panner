@@ -6,9 +6,6 @@
 /// Logic flow for determining if M1-Panner will be a dynamic I/O plugin that can change its input/output configurations
 /// or if a static defined multichannel input/output configuration should be built
 
-#pragma message "Value of INPUTS: " XSTR(JucePlugin_MaxNumInputChannels)
-#pragma message "Value of OUTPUTS: " XSTR(JucePlugin_MaxNumOutputChannels)
-
 #ifndef JucePlugin_PreferredChannelConfigurations
     /// Dynamic I/O plugin mode
 
@@ -40,7 +37,6 @@
 
 #else
     /// Single instance I/O plugin mode
-    // TODO: Test for cmake i/o descriptions but add to AppConfig.h for naming of plugin
 
     // Check for jucer defined input/output config
     #if (JucePlugin_MaxNumInputChannels > 0) || (JucePlugin_MaxNumOutputChannels > 0)
@@ -48,16 +44,36 @@
         #if JucePlugin_MaxNumInputChannels > 0
             #define INPUT_CHANNELS JucePlugin_MaxNumInputChannels
         #else
-            #error ERROR: Undefined Input Configuration
+            #error ERROR: Undefined Input Configuration from JUCER
         #endif
 
         #if JucePlugin_MaxNumOutputChannels > 0
             #define OUTPUT_CHANNELS JucePlugin_MaxNumOutputChannels
             #define MAX_NUM_CHANNELS JucePlugin_MaxNumOutputChannels
         #else
-            #error ERROR: Undefined Output Configuration
+            #error ERROR: Undefined Output Configuration from JUCER
+        #endif
+    #else
+        // We are likely using CMake to define a layout which does not update the `JucePlugin_MaxNumInputChannels` or `JucePlugin_MaxNumOutputChannels` definitions
+        #if (INPUT_CHANNELS > 0) || (OUTPUT_CHANNELS > 0)
+            // Setup inputs and outputs for Channel Configuration
+            #if INPUT_CHANNELS > 0
+                #define JucePlugin_MaxNumInputChannels INPUT_CHANNELS
+            #else
+                #error ERROR: Undefined Input Configuration from CMAKE
+            #endif
+
+            #if OUTPUT_CHANNELS > 0
+                #define JucePlugin_MaxNumOutputChannels OUTPUT_CHANNELS
+                #define MAX_NUM_CHANNELS OUTPUT_CHANNELS
+            #else
+                #error ERROR: Undefined Output Configuration from CMAKE
+            #endif
         #endif
     #endif
+
+#pragma message "Value of INPUTS: " XSTR(JucePlugin_MaxNumInputChannels)
+#pragma message "Value of OUTPUTS: " XSTR(JucePlugin_MaxNumOutputChannels)
 
     // if AAX or RTAS is setup then assume entire jucer is for DYNAMIC_IO_PLUGIN_MODE
     #if (JucePlugin_Build_AAX == 1)
