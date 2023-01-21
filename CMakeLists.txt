@@ -28,11 +28,11 @@ else()
     message(STATUS "Warning: Did not find additional JUCE deps submodule. Please add the appropriate SDKs manually.")
 endif()
 
-option(CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUTS=1 -DOUTPUTS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
+option(CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUT_CHANNELS=1 -DOUTPUT_CHANNELS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
 option(STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF) # Disabled by default
 option(DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF) # Enabled by default
-option(BUILD_ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF) # Disabled by default
-option(BUILD_VST3 "Compile VST3 plugin type" OFF) # Enabled by default
+option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF) # Disabled by default
+option(BUILD_VST3 "Compile VST3 plugin type" OFF)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)
 option(BUILD_AU "Compile AU plugin type" OFF)
@@ -41,60 +41,84 @@ option(BUILD_AU "Compile AU plugin type" OFF)
 set(LBRACKET_LITERAL "{")
 set(RBRACKET_LITERAL "}")
 
-if(CUSTOM_CHANNEL_LAYOUT AND (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
-    set(PANNER_IO "_i${INPUTS}-o${OUTPUTS}")
+if(CUSTOM_CHANNEL_LAYOUT AND (INPUT_CHANNELS GREATER 0 AND OUTPUT_CHANNELS GREATER 0) AND NOT BUILD_AAX)
+    set(PANNER_IO "_i${INPUT_CHANNELS}-o${OUTPUT_CHANNELS}")
     set(PANNER_NAME "${CMAKE_PROJECT_NAME}${PANNER_IO}")
-    set(CUSTOM_BUNDLE_ID "com.mach1.panner.i${INPUTS}o${OUTPUTS}")
-    set(CUSTOM_PLUGIN_CODE "MP${INPUTS}${OUTPUTS}")
-    set(INPUT_CHANNELS ${INPUTS})
-    set(OUTPUT_CHANNELS ${OUTPUTS})
-    remove_definitions(-DSTREAMING_PANNER_PLUGIN -DDYNAMIC_IO_PLUGIN_MODE)
-elseif(CUSTOM_CHANNEL_LAYOUT AND NOT (INPUTS GREATER 0 AND OUTPUTS GREATER 0))
-    message(SEND_ERROR "INPUTS and OUTPUTS are not defined!")
+    set(CUSTOM_BUNDLE_ID "com.mach1.panner.i${INPUT_CHANNELS}o${OUTPUT_CHANNELS}")
+    set(CUSTOM_PLUGIN_CODE "MP${INPUT_CHANNELS}${OUTPUT_CHANNELS}")
+    unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
+    unset(STREAMING_PANNER_PLUGIN CACHE)
+elseif(CUSTOM_CHANNEL_LAYOUT AND NOT (INPUT_CHANNELS GREATER 0 AND OUTPUT_CHANNELS GREATER 0) AND NOT BUILD_AAX)
+    # Error handling for CUSTOM_CHANNEL_LAYOUT
+    message(SEND_ERROR "INPUT_CHANNELS and OUTPUT_CHANNELS are not defined!")
 else()
+    # DYNAMIC_IO_PLUGIN_MODE or STREAMING_PANNER_PLUGIN or AAX/RTAS
     set(PANNER_NAME "${CMAKE_PROJECT_NAME}")
     set(CUSTOM_BUNDLE_ID "com.mach1.panner")
     set(CUSTOM_PLUGIN_CODE "M1PN")
     if(STREAMING_PANNER_PLUGIN)
-        add_definitions(-DSTREAMING_PANNER_PLUGIN)
-        remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
-        remove_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
+        set(STREAMING_PANNER_PLUGIN ON)
+        unset(CUSTOM_CHANNEL_LAYOUT CACHE)
+        unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
     endif(STREAMING_PANNER_PLUGIN)
 
     if(DYNAMIC_IO_PLUGIN_MODE)
-        add_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
-        remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
-        remove_definitions(-DSTREAMING_PANNER_PLUGIN)
+        set(DYNAMIC_IO_PLUGIN_MODE ON)
+        unset(CUSTOM_CHANNEL_LAYOUT CACHE)
+        unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
     endif(DYNAMIC_IO_PLUGIN_MODE)
 endif()
 
-if(BUILD_ITD_PARAMETERS)
-    add_definitions(-DITD_PARAMETERS)
-endif(BUILD_ITD_PARAMETERS)
+if(ITD_PARAMETERS)
+    set(ITD_PARAMETERS)
+    message(STATUS "Compiling with experimental ITD parameters.")
+endif(ITD_PARAMETERS)
 
 # check which formats we want to build
 # Valid formats: AAX VST VST3 AU // Not yet supported: Unity AUv3 Standalone CLAP
+# Will only allow either AAX or other plugin formats, not both
+if(BUILD_AAX AND (BUILD_VST OR BUILD_VST3 OR BUILD_AU))
+    unset(BUILD_AAX CACHE)
+    unset(BUILD_VST3 CACHE)
+    unset(BUILD_VST CACHE)
+    unset(BUILD_AU CACHE)
+    message(SEND_ERROR "Cannot define AAX and other plugin types at the same time! We have cleared the cache so if you only compiled with one plugin type definition please recompile!")
+endif()
+
+if(BUILD_AAX AND AAX_PATH)
+    list(APPEND FORMATS "AAX")
+    juce_set_aax_sdk_path(${AAX_PATH})
+    message(STATUS "AAX SDK Found: ${AAX_PATH}")
+    unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
+    unset(STREAMING_PANNER_PLUGIN CACHE)
+    unset(CUSTOM_CHANNEL_LAYOUT CACHE)
+    unset(INPUT_CHANNELS CACHE)
+    unset(OUTPUT_CHANNELS CACHE)
+    # WARNING: Be careful to not mix custom channel i/o builds with AAX
+    message(STATUS "Removing other plugin build targets for AAX only.")
+    unset(BUILD_VST3 CACHE)
+    unset(BUILD_VST CACHE)
+    unset(BUILD_AU CACHE)
+endif()
+
 if(BUILD_VST3)
     list(APPEND FORMATS "VST3")
+    unset(BUILD_AAX CACHE)
 endif(BUILD_VST3)
 
-if(BUILD_VST2 AND VST2_PATH)
-    message(STATUS "VST2 SDK Found: ${VST2_PATH}")
+if(BUILD_VST AND VST2_PATH)
     list(APPEND FORMATS "VST")
     juce_set_vst2_sdk_path(${VST2_PATH})
+    message(STATUS "VST2 SDK Found: ${VST2_PATH}")
+    unset(BUILD_AAX CACHE)
 endif()
 
 if(BUILD_AU AND APPLE)
     list(APPEND FORMATS "AU")
+    unset(BUILD_AAX CACHE)
 endif()
 
-if(BUILD_AAX AND AAX_PATH)
-    message(STATUS "AAX SDK Found: ${AAX_PATH}")
-    list(APPEND FORMATS "AAX")
-    juce_set_aax_sdk_path(${AAX_PATH})
-    remove_definitions(-DCUSTOM_CHANNEL_LAYOUT)
-    # WARNING: Be careful to not mix custom channel i/o builds with AAX
-endif()
+message(STATUS "Plugin targets: ${FORMATS}")
 
 # add the plugin targets
 juce_add_plugin(${PANNER_NAME}
@@ -115,10 +139,10 @@ juce_add_plugin(${PANNER_NAME}
                 COPY_PLUGIN_AFTER_BUILD TRUE)
 
 if(CUSTOM_CHANNEL_LAYOUT)
-    message(STATUS "Plugin Config: ${LBRACKET_LITERAL}${INPUTS},${OUTPUTS}${RBRACKET_LITERAL}")
+    message(STATUS "Plugin Config: ${LBRACKET_LITERAL}${INPUT_CHANNELS},${OUTPUT_CHANNELS}${RBRACKET_LITERAL}")
     target_compile_definitions(${PANNER_NAME}
         PUBLIC 
-        JucePlugin_PreferredChannelConfigurations=${LBRACKET_LITERAL}${INPUTS},${OUTPUTS}${RBRACKET_LITERAL}
+        JucePlugin_PreferredChannelConfigurations=${LBRACKET_LITERAL}${INPUT_CHANNELS},${OUTPUT_CHANNELS}${RBRACKET_LITERAL}
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
@@ -131,7 +155,6 @@ else()
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_DISPLAY_SPLASH_SCREEN=0)
 endif(CUSTOM_CHANNEL_LAYOUT)
-
 
 # Set the C++ language standard requirenment for the "shared code" library target.
 # Setting this to PUBLIC ensures that all dependent targets will inherit the specified C++ standard.
@@ -157,19 +180,18 @@ set_target_properties(Resources PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 # The non-hacky way of doing this is via the global PREDEFINED_TARGETS_FOLDER property
 # However that doesn't seem to be working in Xcode
 # Not all plugin types (au, vst) available on each build type (win, macos, linux)
+
 foreach(target ${FORMATS} "All")
     if(TARGET ${PANNER_NAME}_${target})
         set_target_properties(${PANNER_NAME}_${target} PROPERTIES
             # Tuck the actual plugin targets into a folder where they won't bother us
             FOLDER "Targets"
-
+            
             # MacOS only: Sets the default executable that Xcode will open on build
             # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
-            #XCODE_SCHEME_EXECUTABLE "${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app"
-            # if(BUILD_VST2)
-                XCODE_SCHEME_EXECUTABLE "/Applications/REAPER.app"
-            # endif(BUILD_VST2)
-                
+            # XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
+            XCODE_SCHEME_EXECUTABLE /Applications/REAPER.app
+
             # Let us build the target in Xcode
             XCODE_GENERATE_SCHEME ON)
     endif()
