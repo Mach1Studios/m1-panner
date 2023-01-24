@@ -23,12 +23,10 @@ std::string WindowUtil::name = "";
 
 void WindowListApplierFunction(const void *inputDictionary, void *context)
 {
-     
 }
 
 void WindowUtil::update()
 {
-     
 }
 
 #endif //  WIN32
