@@ -29,19 +29,30 @@ else()
 endif()
 
 option(CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUT_CHANNELS=1 -DOUTPUT_CHANNELS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
-option(STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF) # Disabled by default
-option(DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF) # Enabled by default
-option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF) # Disabled by default
+option(STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF)
+option(DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF)
+option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF)
 option(BUILD_VST3 "Compile VST3 plugin type" OFF)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)
 option(BUILD_AU "Compile AU plugin type" OFF)
+
+if(STREAMING_PANNER_PLUGIN)
+    add_definitions(-DSTREAMING_PANNER_PLUGIN)
+    message(STATUS "Configuring for STREAMING_PANNER_PLUGIN")
+endif(STREAMING_PANNER_PLUGIN)
+
+if(DYNAMIC_IO_PLUGIN_MODE)
+    add_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
+    message(STATUS "Configuring for DYNAMIC_IO_PLUGIN_MODE")
+endif(DYNAMIC_IO_PLUGIN_MODE)
 
 # These are used to re-apply brackets for the JucePlugin_PreferredChannelConfigurations
 set(LBRACKET_LITERAL "{")
 set(RBRACKET_LITERAL "}")
 
 if(CUSTOM_CHANNEL_LAYOUT AND (INPUT_CHANNELS GREATER 0 AND OUTPUT_CHANNELS GREATER 0) AND NOT BUILD_AAX)
+    add_definitions(-DCUSTOM_CHANNEL_LAYOUT)
     set(PANNER_IO "_i${INPUT_CHANNELS}-o${OUTPUT_CHANNELS}")
     set(PANNER_NAME "${CMAKE_PROJECT_NAME}${PANNER_IO}")
     set(CUSTOM_BUNDLE_ID "com.mach1.panner.i${INPUT_CHANNELS}o${OUTPUT_CHANNELS}")
@@ -57,20 +68,18 @@ else()
     set(CUSTOM_BUNDLE_ID "com.mach1.panner")
     set(CUSTOM_PLUGIN_CODE "M1PN")
     if(STREAMING_PANNER_PLUGIN)
-        set(STREAMING_PANNER_PLUGIN ON)
         unset(CUSTOM_CHANNEL_LAYOUT CACHE)
         unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
     endif(STREAMING_PANNER_PLUGIN)
 
     if(DYNAMIC_IO_PLUGIN_MODE)
-        set(DYNAMIC_IO_PLUGIN_MODE ON)
         unset(CUSTOM_CHANNEL_LAYOUT CACHE)
         unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
     endif(DYNAMIC_IO_PLUGIN_MODE)
 endif()
 
 if(ITD_PARAMETERS)
-    set(ITD_PARAMETERS)
+    add_definitions(-DITD_PARAMETERS)
     message(STATUS "Compiling with experimental ITD parameters.")
 endif(ITD_PARAMETERS)
 

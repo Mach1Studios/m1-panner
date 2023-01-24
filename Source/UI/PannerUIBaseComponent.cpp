@@ -627,7 +627,7 @@ void PannerUIBaseComponent::render()
     std::vector<std::string> input_options = {"MONO", "STEREO"};
     auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                         m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
-                                                        80, options.size() * dropdownItemHeight })
+                                                        80, input_options.size() * dropdownItemHeight })
                                                 .controlling(&pannerState->inputType)
                                                 .withOptions(input_options);
 
