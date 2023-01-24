@@ -121,6 +121,7 @@
     
     #ifdef STREAMING_PANNER_PLUGIN
         /// STREAMING_PANNER_PLUGIN mode active
+        #undef DYNAMIC_IO_PLUGIN_MODE
     #else
         /// DYNAMIC_IO_PLUGIN_MODE active
         #if (JucePlugin_Build_AAX == 1) || (JucePlugin_Build_RTAS == 1)

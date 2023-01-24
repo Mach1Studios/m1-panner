@@ -534,7 +534,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
     
 #ifdef STREAMING_PANNER_PLUGIN
     // hard set {1,2} and {2,2} for streaming use case
-    if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
+    if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
         return true;
 #else
     // Test for all available Mach1Encode configs
