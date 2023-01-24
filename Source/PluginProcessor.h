@@ -32,10 +32,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
-
-#ifndef CUSTOM_CHANNEL_LAYOUT
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-#endif
     // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<juce::AudioChannelSet::ChannelType> orderOfChans;
     std::vector<int> output_channel_indices;
@@ -93,12 +90,8 @@ public:
     static juce::String paramAutoOrbit;
     static juce::String paramIsotropicEncodeMode;
     static juce::String paramEqualPowerEncodeMode;
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN) || (defined(CUSTOM_CHANNEL_LAYOUT) && INPUT_CHANNELS == 4)
     static juce::String paramInputMode;
-#endif
-#if defined(DYNAMIC_IO_PLUGIN_MODE) || defined(STREAMING_PANNER_PLUGIN)
     static juce::String paramOutputMode;
-#endif
 
 #ifdef ITD_PARAMETERS
     // Delay init
@@ -116,6 +109,9 @@ public:
     MixerSettings monitorSettings;
     juce::PluginHostType hostType;
     bool layoutCreated = false;
+    
+    // TODO: change this
+    bool external_spatialmixer_active = false; // global detect spatialmixer
     
 private:
     void createLayout();
