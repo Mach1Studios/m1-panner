@@ -2,6 +2,7 @@
 //  WindowUtil.m
 //  M1-Panner
 //
+#ifdef JUCE_MAC 
 
 #import <Foundation/Foundation.h>
 #import <AppKit/NSAlert.h>
@@ -72,3 +73,5 @@ void WindowUtil::update() {
         WindowUtil::isBusy = false;
     }
 }
+
+#endif
