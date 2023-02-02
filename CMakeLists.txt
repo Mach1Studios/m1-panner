@@ -226,12 +226,16 @@ else()
 endif()
 # link libraries
 find_library(MACH1ENCODE_LIBRARY 
-    NAMES Mach1EncodeCAPI libMach1EncodeCAPI libMach1EncodeCAPI.a libMach1EncodeCAPI.so libMach1EncodeCAPI.lib
-    PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/windows-x86 ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64
+    NAMES Mach1EncodeCAPI
+    PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64
 )
-set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL_LIBS_PATH}/linux/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/xcode/include ${MACH1SPATIAL_LIBS_PATH}/xcode/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/windows-x86/include ${MACH1SPATIAL_LIBS_PATH}/windows-x86/include/M1DSP)
+set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL_LIBS_PATH}/linux/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/xcode/include ${MACH1SPATIAL_LIBS_PATH}/xcode/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include/M1DSP)
 include_directories(${MACH1SPATIAL_INCLUDES})
 target_link_libraries(${PANNER_NAME} PRIVATE ${MACH1ENCODE_LIBRARY})
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    add_compile_definitions(M1_STATIC)
+    message(STATUS "Adding windows OS flags")
+endif()
 target_sources(${PANNER_NAME} PRIVATE ${MACH1SPATIAL_LIBS_PATH}/xcode/include/Mach1Encode.cpp)
 
 ### IDE Generator post-config ###
