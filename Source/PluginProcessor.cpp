@@ -735,8 +735,16 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     
 #ifdef STREAMING_PANNER_PLUGIN
     // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin
-    float outputMixerCoeff[m1Encode.getOutputChannelsCount()][buffer.getNumSamples()];
-    
+    juce::AudioBuffer<float> bufMixer(m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
+    float** outputMixerCoeff = bufMixer.getArrayOfWritePointers();
+
+    // clear buffer
+    for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
+        for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+            outputMixerCoeff[output_channel][sample] = 0;
+        }
+    }
+
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         for (int sample = 0; sample < buffer.getNumSamples(); sample++){
             float inValue = buffers[input_channel][sample];
