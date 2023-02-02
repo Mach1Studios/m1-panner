@@ -27,7 +27,32 @@ public:
     //==============================================================================
     M1PannerAudioProcessor();
     ~M1PannerAudioProcessor() override;
-
+    
+    static AudioProcessor::BusesProperties getHostSpecificLayout () {
+        
+        PluginHostType hostType;
+        
+        if (hostType.isProTools()) {
+            return BusesProperties()
+                .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
+                .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true);
+        }
+        
+        if (hostType.isReaper()) {
+            auto busProp = BusesProperties()
+                .withInput("6 channel Input", juce::AudioChannelSet::namedChannelSet(6), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true);
+            
+            
+            
+            return busProp;
+        }
+        
+        return BusesProperties()
+            .withInput("Input", juce::AudioChannelSet::stereo(), true)
+            .withOutput("Output", juce::AudioChannelSet::stereo(), true);
+    }
+    
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;

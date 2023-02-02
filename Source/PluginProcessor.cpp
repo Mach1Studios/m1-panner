@@ -31,58 +31,9 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
-     : AudioProcessor (BusesProperties()
-            #ifdef CUSTOM_CHANNEL_LAYOUT
-                #if (JucePlugin_Build_VST3 == 1) // VST3 does not currently support `discreteChannels()`
-                    #if (INPUT_CHANNELS < 9)
-                       .withInput("Input", juce::AudioChannelSet::namedChannelSet(INPUT_CHANNELS), true)
-                    #else
-                       // TODO: expand for 9+ channel inputs here, for now fallback to stereo()
-                       .withInput("Input", juce::AudioChannelSet::stereo(), true)
-                    #endif
-                #else
-                    .withInput("Input", juce::AudioChannelSet::discreteChannels(INPUT_CHANNELS), true)
-                #endif
-            #elif defined(STREAMING_PANNER_PLUGIN)
-                .withInput("Input", juce::AudioChannelSet::stereo(), true)
-            #else
-                #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
-                    .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
-                #else
-                    .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
-                #endif
-            #endif
-            #ifdef CUSTOM_CHANNEL_LAYOUT
-                #if (JucePlugin_Build_VST3 == 1) // VST3 does not currently support `discreteChannels()`
-                    #if (OUTPUT_CHANNELS == 4)
-                        .withOutput("Mach1 Out", juce::AudioChannelSet::quadraphonic(), true)),
-                    #elif (OUTPUT_CHANNELS == 8)
-                        .withOutput("Mach1 Out", juce::AudioChannelSet::create7point1(), true)),
-                    #elif (OUTPUT_CHANNELS == 36)
-                        .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true)),
-                    #else
-                       // No supported input bus, revert to 7.1?
-                       .withOutput("Mach1 Out", juce::AudioChannelSet::create7point1(), true)),
-                    #endif
-                #else
-                    .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(OUTPUT_CHANNELS), true)),
-                #endif
-            #elif defined(STREAMING_PANNER_PLUGIN)
-                .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-            #else
-                #if (JucePlugin_Build_AAX == 1 || JucePlugin_Build_RTAS == 1)
-                    .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true)),
-                #else
-                    .withOutput ("Mach1 Out 1", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 2", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 3", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 4", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 5", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 6", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 7", juce::AudioChannelSet::mono(), true)
-                    .withOutput ("Mach1 Out 8", juce::AudioChannelSet::mono(), true)),
-                #endif
-            #endif
+     : AudioProcessor (getHostSpecificLayout()),
+                       
+                       
     parameters(*this, &mUndoManager, juce::Identifier("M1-Panner"),
                {
                     std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
@@ -475,6 +426,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    return;
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
