@@ -29,7 +29,7 @@ public:
     ~M1PannerAudioProcessor() override;
     
     static AudioProcessor::BusesProperties getHostSpecificLayout () {
-        
+        // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         PluginHostType hostType;
         
         if (hostType.isProTools()) {
@@ -41,10 +41,7 @@ public:
         if (hostType.isReaper()) {
             auto busProp = BusesProperties()
                 .withInput("6 channel Input", juce::AudioChannelSet::namedChannelSet(6), true)
-                .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true);
-            
-            
-            
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(32), true);
             return busProp;
         }
         
@@ -58,8 +55,7 @@ public:
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
-    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans;
+    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans; // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<int> output_channel_indices;
     void fillChannelOrderArray(int numOutputChannels);
     
