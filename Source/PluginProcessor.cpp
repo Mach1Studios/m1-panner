@@ -344,11 +344,8 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
         return true;
     }
     
-    if (hostType.isNuendo()) {
+    if (hostType.isNuendo() || hostType.isArdour() || hostType.isDaVinciResolve()) {
         // TODO: test this
-    }
-
-    if (hostType.isProTools()) {
         // Test for all available Mach1Encode configs
         // manually maintained for-loop of first enum element to last enum element
         // TODO: brainstorm a way to not require manual maintaining of listed enum elements
@@ -366,6 +363,25 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             }
         }
         return false;
+    }
+
+    if (hostType.isProTools()) {
+        if ((   layouts.getMainInputChannelSet().size() == AudioChannelSet::mono().size()
+            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::stereo().size()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::createLCR()
+            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::quadraphonic().size()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point0()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point1()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create6point0())
+            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
+            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
+            &&
+            (   layouts.getMainOutputChannelSet() == AudioChannelSet::create7point1()
+             || layouts.getMainOutputChannelSet() == AudioChannelSet::quadraphonic()) ) {
+                return true;
+        } else {
+            return false;
+        }
     }
     
     // RETURN TRUE FOR EXTERNAL STREAMING MODE?
