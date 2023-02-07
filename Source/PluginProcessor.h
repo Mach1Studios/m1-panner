@@ -32,19 +32,29 @@ public:
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         PluginHostType hostType;
         
+        // Multichannel Pro Tools
+        // TODO: Check if Ultimate/HD
         if (hostType.isProTools()) {
             return BusesProperties()
                 .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
                 .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true);
         }
         
-        if (hostType.isReaper()) {
-            auto busProp = BusesProperties()
-                .withInput("6 channel Input", juce::AudioChannelSet::namedChannelSet(6), true)
-                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(32), true);
-            return busProp;
+        // Multichannel DAWs
+        if (hostType.isReaper() || hostType.isNuendo() || hostType.isDaVinciResolve() || hostType.isArdour()) {
+            if (hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_VST3) {
+                return BusesProperties()
+                // VST3 requires named plugin configurations only
+                .withInput("Input", juce::AudioChannelSet::namedChannelSet(6), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true); // 36 named channel
+            } else {
+                return BusesProperties()
+                .withInput("Input", juce::AudioChannelSet::namedChannelSet(6), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(60), true);
+            }
         }
         
+        // STREAMING Panner instance
         return BusesProperties()
             .withInput("Input", juce::AudioChannelSet::stereo(), true)
             .withOutput("Output", juce::AudioChannelSet::stereo(), true);
