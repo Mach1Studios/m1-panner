@@ -121,8 +121,10 @@ public:
     static juce::String paramAutoOrbit;
     static juce::String paramIsotropicEncodeMode;
     static juce::String paramEqualPowerEncodeMode;
+#ifndef CUSTOM_CHANNEL_LAYOUT
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
+#endif
 
 #ifdef ITD_PARAMETERS
     // Delay init

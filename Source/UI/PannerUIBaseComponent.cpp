@@ -370,9 +370,26 @@ void PannerUIBaseComponent::render()
     zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
     zLabel.commit();
 
+    /// Bottom Row of Parameters / Knobs
+    
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    // Single channel layout
+    yOffset += 140;
+#else
+    if (processor->hostType.isProTools()) { // remove I/O bar for PT
+        if (processor->getMainBusNumInputChannels() >= 4) { // unless we need space for the input dropdown menu
+            yOffset += 140 - 10;
+        } else {
+            yOffset += 140;
+        }
+    } else { // show dropdown menus for i/o for all other hosts
+        yOffset += 140 - 10;
+    }
+#endif
+    
 	// S Rotation
-    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset + 140 - 10, knobWidth, knobHeight))
-                                    .controlling(&pannerState->stereoOrbitAzimuth);
+    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
+                                        .controlling(&pannerState->stereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
     srKnob.prefix = "";
@@ -392,7 +409,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
+    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
     srLabel.enabled = ((pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
@@ -402,7 +419,7 @@ void PannerUIBaseComponent::render()
 	// S Spread
 
 	// TODO didChangeOutsideThisThread ???
-    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset + 140 - 10, knobWidth, knobHeight))
+    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoSpread);
     ssKnob.rangeFrom = 0.0;
     ssKnob.rangeTo = 100.0;
@@ -423,7 +440,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth + 10, knobHeight));
+    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
     ssLabel.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
@@ -431,8 +448,8 @@ void PannerUIBaseComponent::render()
     ssLabel.commit();
 
 	// S Pan
-    
-    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset + 140 - 10, knobWidth, knobHeight))
+
+    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
@@ -453,7 +470,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY + 140 - 10, knobWidth, knobHeight));
+    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
     spLabel.enabled = (pannerState->m1Encode->getInputMode() != Mach1EncodeInputModeMono);
@@ -555,155 +572,255 @@ void PannerUIBaseComponent::render()
 	}
 	
     /// Bottom bar
-    m.setColor(GRID_LINES_3_RGBA);
-    m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
-    m.setColor(BACKGROUND_GREY);
-    m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
-    
-    m.setColor(APP_LABEL_TEXT_COLOR);
-    m.setFont("Proxima Nova Reg.ttf", 10);
-    
-    // Input Channel Mode Selector
-    m.setColor(200, 255);
-    m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
-    inputLabel.label = "INPUT";
-    inputLabel.alignment = TEXT_CENTER;
-    inputLabel.enabled = false;
-    inputLabel.highlighted = false;
-    inputLabel.commit();
-    
-    std::string inputLabelText = "";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO ";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeStereo) inputLabelText = "STEREO";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCR) inputLabelText = "LCR ";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeQuad) inputLabelText = "QUAD ";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCRS) inputLabelText = "LCRS ";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) inputLabelText = "AFORMAT";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot0) inputLabelText = "5.0 Film";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1Film) inputLabelText = "5.1 Film";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1DTS) inputLabelText = "5.1 DTS";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1SMTPE) inputLabelText = "5.1 SMPTE";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1st Order ACNSN3D";
-    if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1st Order FuMa";
-
-    // INPUT DROPDOWN
-    int dropdownItemHeight = 25;
-    
-    auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                                                            m.getSize().height() - 33,
-                                                            80, 30 })
-                                                .withLabel(inputLabelText).commit();
-    std::vector<std::string> input_options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
-    auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                        m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
-                                                        80, input_options.size() * dropdownItemHeight })
-                                                .controlling(&pannerState->inputType)
-                                                .withOptions(input_options);
-
-    if (inputDropdownButton.pressed) {
-        inputDropdownMenu.open();
-    }
-
-    inputDropdownMenu.optionHeight = dropdownItemHeight;
-    inputDropdownMenu.fontSize = 9;
-    inputDropdownMenu.commit();
-
-    if (inputDropdownMenu.changed) {
-        if (inputDropdownMenu.selectedOption == 0) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeMono);
-        } else if (inputDropdownMenu.selectedOption == 1) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeStereo);
-        } else if (inputDropdownMenu.selectedOption == 2) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeLCR);
-        } else if (inputDropdownMenu.selectedOption == 3) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeQuad);
-        } else if (inputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeLCRS);
-        } else if (inputDropdownMenu.selectedOption == 5) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeAFormat);
-        } else if (inputDropdownMenu.selectedOption == 6) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeBFOAACN);
-        } else if (inputDropdownMenu.selectedOption == 7) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeBFOAFUMA);
-        } else if (inputDropdownMenu.selectedOption == 8) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot0);
-        } else if (inputDropdownMenu.selectedOption == 9) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1Film);
-        } else if (inputDropdownMenu.selectedOption == 10) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1DTS);
-        } else if (inputDropdownMenu.selectedOption == 11) {
-            processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1SMTPE);
-        }
-        processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
-    }
-    
-    /// -> label
-    m.setColor(200, 255);
-    m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
-    arrowLabel.label = "-->";
-    arrowLabel.alignment = TEXT_CENTER;
-    arrowLabel.enabled = false;
-    arrowLabel.highlighted = false;
-    arrowLabel.commit();
-    
-    // OUTPUT DROPDOWN or LABEL
-    m.setColor(200, 255);
-    m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 70, m.getSize().height() - 26, 60, 20));
-    outputLabel.label = "OUTPUT";
-    outputLabel.alignment = TEXT_CENTER;
-    outputLabel.enabled = false;
-    outputLabel.highlighted = false;
-    outputLabel.commit();
-    
-    auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
-                                                40, 30 })
-                                                .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
-    std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
-    auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
-                                                        m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
-                                                        80, output_options.size() * dropdownItemHeight })
-                                                .controlling(&pannerState->inputType)
-                                                .withOptions(output_options);
-    if (outputDropdownButton.pressed) {
-        outputDropdownMenu.open();
-    }
-    
-    outputDropdownMenu.optionHeight = dropdownItemHeight;
-    outputDropdownMenu.fontSize = 9;
-    outputDropdownMenu.commit();
-
-    if (outputDropdownMenu.changed) {
-        if (outputDropdownMenu.selectedOption == 0) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Horizon_4);
-        } else if (outputDropdownMenu.selectedOption == 1) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_8);
-        } else if (outputDropdownMenu.selectedOption == 2) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_12);
-        } else if (outputDropdownMenu.selectedOption == 3) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_14);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_18);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_22);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_32);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_36);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_48);
-        } else if (outputDropdownMenu.selectedOption == 4) {
-            processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_60);
-        }
-        processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode->getOutputMode());
-    }
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    // Remove bottom bar for CUSTOM_CHANNEL_LAYOUT macro
+#else
+    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
         
+        // Show bottom bar
+        
+        m.setColor(GRID_LINES_3_RGBA);
+        m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
+        m.setColor(BACKGROUND_GREY);
+        m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
+        
+        m.setColor(APP_LABEL_TEXT_COLOR);
+        m.setFont("Proxima Nova Reg.ttf", 10);
+        
+        // Input Channel Mode Selector
+        m.setColor(200, 255);
+        m.setFont("Proxima Nova Reg.ttf", 10);
+        auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
+        inputLabel.label = "INPUT";
+        inputLabel.alignment = TEXT_CENTER;
+        inputLabel.enabled = false;
+        inputLabel.highlighted = false;
+        inputLabel.commit();
+        
+        std::string inputLabelText = "";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO ";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeStereo) inputLabelText = "STEREO";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCR) inputLabelText = "LCR ";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeQuad) inputLabelText = "QUAD ";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeLCRS) inputLabelText = "LCRS ";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) inputLabelText = "AFORMAT";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot0) inputLabelText = "5.0 Film";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1Film) inputLabelText = "5.1 Film";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1DTS) inputLabelText = "5.1 DTS";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputMode5dot1SMTPE) inputLabelText = "5.1 SMPTE";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1st Order ACNSN3D";
+        if (pannerState->m1Encode->getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1st Order FuMa";
+
+        // INPUT DROPDOWN
+        int dropdownItemHeight = 25;
+        
+        // STEREO hosts here
+        if (processor->hostType.isAbletonLive() || processor->hostType.isReason() || processor->hostType.isLogic() || processor->hostType.isGarageBand() || processor->hostType.isFruityLoops() || processor->hostType.isBitwigStudio()) {
+            // MONO & STEREO only
+            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+                                                                    m.getSize().height() - 33,
+                                                                    80, 30 })
+                                                        .withLabel(inputLabelText).commit();
+            std::vector<std::string> input_options = {"MONO", "STEREO"};
+            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+                                                                m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                                80, input_options.size() * dropdownItemHeight })
+                                                        .controlling(&pannerState->inputType)
+                                                        .withOptions(input_options);
+
+            if (inputDropdownButton.pressed) {
+                inputDropdownMenu.open();
+            }
+
+            inputDropdownMenu.optionHeight = dropdownItemHeight;
+            inputDropdownMenu.fontSize = 9;
+            inputDropdownMenu.commit();
+
+            if (inputDropdownMenu.changed) {
+                if (inputDropdownMenu.selectedOption == 0) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeMono);
+                } else if (inputDropdownMenu.selectedOption == 1) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeStereo);
+                }
+                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
+            }
+        // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
+        } else if (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4) {
+            // Displaying options only available as 4 channel INPUT
+            // Dropdown is used for QUADMODE indication only
+            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+                                                                    m.getSize().height() - 33,
+                                                                    80, 30 })
+                                                        .withLabel(inputLabelText).commit();
+            std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
+            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+                                                                m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                                80, input_options.size() * dropdownItemHeight })
+                                                        .controlling(&pannerState->inputType)
+                                                        .withOptions(input_options);
+
+            if (inputDropdownButton.pressed) {
+                inputDropdownMenu.open();
+            }
+
+            inputDropdownMenu.optionHeight = dropdownItemHeight;
+            inputDropdownMenu.fontSize = 9;
+            inputDropdownMenu.commit();
+
+            if (inputDropdownMenu.changed) {
+                if (inputDropdownMenu.selectedOption == 0) {
+                    pannerState->m1Encode->setInputMode(Mach1EncodeInputModeQuad);
+                    pannerState->inputType = Mach1EncodeInputModeQuad;
+                } else if (inputDropdownMenu.selectedOption == 1) {
+                    pannerState->m1Encode->setInputMode(Mach1EncodeInputModeLCRS);
+                    pannerState->inputType = Mach1EncodeInputModeLCRS;
+                } else if (inputDropdownMenu.selectedOption == 2) {
+                    pannerState->m1Encode->setInputMode(Mach1EncodeInputModeAFormat);
+                    pannerState->inputType = Mach1EncodeInputModeAFormat;
+                } else if (inputDropdownMenu.selectedOption == 3) {
+                    pannerState->m1Encode->setInputMode(Mach1EncodeInputModeBFOAACN);
+                    pannerState->inputType = Mach1EncodeInputModeBFOAACN;
+                } else if (inputDropdownMenu.selectedOption == 4) {
+                    pannerState->m1Encode->setInputMode(Mach1EncodeInputModeBFOAFUMA);
+                    pannerState->inputType = Mach1EncodeInputModeBFOAFUMA;
+                }
+                processor->parameterChanged(processor->paramInputMode, pannerState->inputType);
+            }
+        // Multichannel DAWs
+        } else {
+            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+                                                                    m.getSize().height() - 33,
+                                                                    80, 30 })
+                                                        .withLabel(inputLabelText).commit();
+            std::vector<std::string> input_options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
+            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+                                                                m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                                80, input_options.size() * dropdownItemHeight })
+                                                        .controlling(&pannerState->inputType)
+                                                        .withOptions(input_options);
+
+            if (inputDropdownButton.pressed) {
+                inputDropdownMenu.open();
+            }
+
+            inputDropdownMenu.optionHeight = dropdownItemHeight;
+            inputDropdownMenu.fontSize = 9;
+            inputDropdownMenu.commit();
+
+            if (inputDropdownMenu.changed) {
+                if (inputDropdownMenu.selectedOption == 0) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeMono);
+                } else if (inputDropdownMenu.selectedOption == 1) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeStereo);
+                } else if (inputDropdownMenu.selectedOption == 2) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeLCR);
+                } else if (inputDropdownMenu.selectedOption == 3) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeQuad);
+                } else if (inputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeLCRS);
+                } else if (inputDropdownMenu.selectedOption == 5) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeAFormat);
+                } else if (inputDropdownMenu.selectedOption == 6) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeBFOAACN);
+                } else if (inputDropdownMenu.selectedOption == 7) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputModeBFOAFUMA);
+                } else if (inputDropdownMenu.selectedOption == 8) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot0);
+                } else if (inputDropdownMenu.selectedOption == 9) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1Film);
+                } else if (inputDropdownMenu.selectedOption == 10) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1DTS);
+                } else if (inputDropdownMenu.selectedOption == 11) {
+                    processor->parameterChanged(processor->paramInputMode, pannerState->inputType = Mach1EncodeInputMode5dot1SMTPE);
+                }
+                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode->getInputMode());
+            }
+        }
+
+        // OUTPUT DROPDOWN & LABELS
+        if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
+            /// -> label
+            m.setColor(200, 255);
+            m.setFont("Proxima Nova Reg.ttf", 10);
+            auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
+            arrowLabel.label = "-->";
+            arrowLabel.alignment = TEXT_CENTER;
+            arrowLabel.enabled = false;
+            arrowLabel.highlighted = false;
+            arrowLabel.commit();
+            
+            // OUTPUT DROPDOWN or LABEL
+            m.setColor(200, 255);
+            m.setFont("Proxima Nova Reg.ttf", 10);
+            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 70, m.getSize().height() - 26, 60, 20));
+            outputLabel.label = "OUTPUT";
+            outputLabel.alignment = TEXT_CENTER;
+            outputLabel.enabled = false;
+            outputLabel.highlighted = false;
+            outputLabel.commit();
+            
+            auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
+                                                        40, 30 })
+                                                        .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
+            std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
+            auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
+                                                                m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
+                                                                80, output_options.size() * dropdownItemHeight })
+                                                        .controlling(&pannerState->inputType)
+                                                        .withOptions(output_options);
+            if (outputDropdownButton.pressed) {
+                outputDropdownMenu.open();
+            }
+            
+            outputDropdownMenu.optionHeight = dropdownItemHeight;
+            outputDropdownMenu.fontSize = 9;
+            outputDropdownMenu.commit();
+
+            if (outputDropdownMenu.changed) {
+                if (outputDropdownMenu.selectedOption == 0) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Horizon_4);
+                } else if (outputDropdownMenu.selectedOption == 1) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_8);
+                } else if (outputDropdownMenu.selectedOption == 2) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_12);
+                } else if (outputDropdownMenu.selectedOption == 3) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_14);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_18);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_22);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_32);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_36);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_48);
+                } else if (outputDropdownMenu.selectedOption == 4) {
+                    processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_60);
+                }
+                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode->getOutputMode());
+            }
+        } else {
+            // PT & 4 channels
+            // hide bottom bar
+        }
+    }
+#endif // end of bottom bar macro check
+    
     /// Panner label
     m.setColor(200, 255);
     m.setFont("Proxima Nova Reg.ttf", 10);
-    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 26, 80, 20));
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
+#else
+    int labelYOffset;
+    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
+        labelYOffset = 26;
+    } else {
+        labelYOffset = 30;
+    }
+    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - labelYOffset, 80, 20));
+#endif
     pannerLabel.label = "PANNER";
     pannerLabel.alignment = TEXT_CENTER;
     pannerLabel.enabled = false;
@@ -712,7 +829,15 @@ void PannerUIBaseComponent::render()
     
     m.setColor(200, 255);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
-    m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
+#else
+    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
+        m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
+    } else {
+        m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
+    }
+#endif
 
 	m.end();
 } 
