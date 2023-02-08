@@ -3,6 +3,74 @@
 #define XSTR(x) STR(x)
 #define STR(x) #x
 
+/// Single instance I/O plugin mode
+
+// Check for jucer defined input/output config
+#if (JucePlugin_MaxNumInputChannels > 0) || (JucePlugin_MaxNumOutputChannels > 0)
+    // Setup inputs and outputs for Channel Configuration
+    #if JucePlugin_MaxNumInputChannels > 0
+        #define INPUT_CHANNELS JucePlugin_MaxNumInputChannels
+    #else
+        #error ERROR: Undefined Input Configuration from JUCER
+    #endif
+
+    #if JucePlugin_MaxNumOutputChannels > 0
+        #define OUTPUT_CHANNELS JucePlugin_MaxNumOutputChannels
+        #define MAX_NUM_CHANNELS JucePlugin_MaxNumOutputChannels
+    #else
+        #error ERROR: Undefined Output Configuration from JUCER
+    #endif
+
+    // if AAX or RTAS is setup alongside custom channel single mode than error
+    #if (JucePlugin_Build_AAX == 1)
+        #error ERROR: Build AAX -> Disable Custom layout chanel
+    #endif
+    #if (JucePlugin_Build_RTAS == 1)
+        #error ERROR: Build RTAS -> Disable Custom layout chanel
+    #endif
+#else
+    // We are likely using CMake to define a layout which does not update the `JucePlugin_MaxNumInputChannels` or `JucePlugin_MaxNumOutputChannels` definitions
+    #if (INPUT_CHANNELS > 0) || (OUTPUT_CHANNELS > 0)
+        // Setup inputs and outputs for Channel Configuration
+        #if INPUT_CHANNELS > 0
+            #define JucePlugin_MaxNumInputChannels INPUT_CHANNELS
+        #else
+            #error ERROR: Undefined Input Configuration from CMAKE
+        #endif
+
+        #if OUTPUT_CHANNELS > 0
+            #define JucePlugin_MaxNumOutputChannels OUTPUT_CHANNELS
+            #define MAX_NUM_CHANNELS OUTPUT_CHANNELS
+        #else
+            #error ERROR: Undefined Output Configuration from CMAKE
+        #endif
+        
+        // if AAX or RTAS is setup alongside custom channel single mode than error
+        #if (JucePlugin_Build_AAX == 1)
+            #error ERROR: Build AAX -> Disable Custom layout chanel
+        #endif
+        #if (JucePlugin_Build_RTAS == 1)
+            #error ERROR: Build RTAS -> Disable Custom layout chanel
+        #endif
+    #endif
+#endif
+
+// Check if Custom Config
+#pragma message "Value of INPUTS: " XSTR(JucePlugin_MaxNumInputChannels)
+#pragma message "Value of OUTPUTS: " XSTR(JucePlugin_MaxNumOutputChannels)
+#pragma message "Value of INPUT_CHANNELS: " XSTR(INPUT_CHANNELS)
+#pragma message "Value of OUTPUT_CHANNELS: " XSTR(OUTPUT_CHANNELS)
+
+#if (INPUT_CHANNELS > 0) && (OUTPUT_CHANNELS > 0)
+    #define CUSTOM_CHANNEL_LAYOUT
+#else
+    #undef CUSTOM_CHANNEL_LAYOUT
+#endif
+
+#ifdef CUSTOM_CHANNEL_LAYOUT
+    #pragma message "CUSTOM_CHANNEL_LAYOUT Active"
+#endif
+
 #ifdef ITD_PARAMETERS
     #pragma message "ITD_PARAMETERS Active"
 #endif

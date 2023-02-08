@@ -21,8 +21,10 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("stereoInputBalance
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
+#ifndef CUSTOM_CHANNEL_LAYOUT
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
+#endif
 #ifdef ITD_PARAMETER
 juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
 juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
@@ -84,8 +86,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
+#ifndef CUSTOM_CHANNEL_LAYOUT
                     std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+#endif
 #ifdef ITD_PARAMETERS
                     std::make_unique<juce::AudioParameterBool>(paramITDActive, TRANS("ITD"), pannerSettings.itdActive),
                     std::make_unique<juce::AudioParameterFloat>(paramDelayTime,
@@ -113,8 +117,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
+#ifndef CUSTOM_CHANNEL_LAYOUT
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
+#endif
 #ifdef ITD_PARAMETERS
     parameters.addParameterListener(paramITDActive, this);
     parameters.addParameterListener(paramDelayTime, this);
