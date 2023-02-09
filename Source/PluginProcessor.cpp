@@ -350,27 +350,6 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
         return true;
     }
     
-    if (hostType.isNuendo() || hostType.isArdour() || hostType.isDaVinciResolve()) {
-        // TODO: test this
-        // Test for all available Mach1Encode configs
-        // manually maintained for-loop of first enum element to last enum element
-        // TODO: brainstorm a way to not require manual maintaining of listed enum elements
-        for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
-            configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
-            // test each input, if the input has the number of channels as the input testing layout has move on to output testing
-            if (layouts.getMainInputChannels() == configTester.getInputChannelsCount()) {
-                for (int outputEnum = Mach1EncodeOutputModeM1Horizon_4; outputEnum != Mach1EncodeOutputModeM1Spatial_32; outputEnum++ ) {
-                    // test each output
-                   configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
-                    if (layouts.getMainOutputChannels() == configTester.getOutputChannelsCount()){
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     if (hostType.isProTools()) {
         if ((   layouts.getMainInputChannelSet().size() == AudioChannelSet::mono().size()
             ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::stereo().size()
@@ -388,13 +367,29 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
         } else {
             return false;
         }
-    }
-    
-    // RETURN TRUE FOR EXTERNAL STREAMING MODE?
-    // hard set {1,2} and {2,2} for streaming use case
-    if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
+    } else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo())) {
+        // RETURN TRUE FOR EXTERNAL STREAMING MODE
+        // hard set {1,2} and {2,2} for streaming use case
         return true;
-    
+    } else {
+        // Test for all available Mach1Encode configs
+        // manually maintained for-loop of first enum element to last enum element
+        // TODO: brainstorm a way to not require manual maintaining of listed enum elements
+        for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
+            configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
+            // test each input, if the input has the number of channels as the input testing layout has move on to output testing
+            if (layouts.getMainInputChannelSet().size() == configTester.getInputChannelsCount()) {
+                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_32; outputEnum++ ) {
+                    // test each output
+                   configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
+                    if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount()){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
 #endif
 

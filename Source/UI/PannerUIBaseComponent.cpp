@@ -765,7 +765,7 @@ void PannerUIBaseComponent::render()
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
             auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
-                                                                80, output_options.size() * dropdownItemHeight })
+                                                                120, output_options.size() * dropdownItemHeight })
                                                         .controlling(&pannerState->inputType)
                                                         .withOptions(output_options);
             if (outputDropdownButton.pressed) {
