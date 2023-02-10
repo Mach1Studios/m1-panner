@@ -1,5 +1,5 @@
 //
-//  WindowUtil.m
+//  WindowUtil.cpp
 //  M1-Panner
 //
 #ifdef  WIN32
@@ -23,12 +23,10 @@ std::string WindowUtil::name = "";
 
 void WindowListApplierFunction(const void *inputDictionary, void *context)
 {
-     
 }
 
 void WindowUtil::update()
 {
-     
 }
 
 #endif //  WIN32

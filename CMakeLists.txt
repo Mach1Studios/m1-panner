@@ -28,55 +28,20 @@ else()
     message(STATUS "Warning: Did not find additional JUCE deps submodule. Please add the appropriate SDKs manually.")
 endif()
 
-option(CUSTOM_CHANNEL_LAYOUT "Compiles a single I/O static setup pugin, requires setting CONFIG_IO for example: `-DINPUT_CHANNELS=1 -DOUTPUT_CHANNELS=8`; n,N where n=number_of_input_channels and N=number_of_output_channels" OFF)
-option(STREAMING_PANNER_PLUGIN "Compiles the plugin UI and processing code for external spatial audio processing" OFF)
-option(DYNAMIC_IO_PLUGIN_MODE "Compiles the plugin UI and processing code for re-declarable I/O" OFF)
 option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF)
 option(BUILD_VST3 "Compile VST3 plugin type" OFF)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)
 option(BUILD_AU "Compile AU plugin type" OFF)
 
-if(STREAMING_PANNER_PLUGIN)
-    add_definitions(-DSTREAMING_PANNER_PLUGIN)
-    message(STATUS "Configuring for STREAMING_PANNER_PLUGIN")
-endif(STREAMING_PANNER_PLUGIN)
-
-if(DYNAMIC_IO_PLUGIN_MODE)
-    add_definitions(-DDYNAMIC_IO_PLUGIN_MODE)
-    message(STATUS "Configuring for DYNAMIC_IO_PLUGIN_MODE")
-endif(DYNAMIC_IO_PLUGIN_MODE)
-
 # These are used to re-apply brackets for the JucePlugin_PreferredChannelConfigurations
 set(LBRACKET_LITERAL "{")
 set(RBRACKET_LITERAL "}")
 
-if(CUSTOM_CHANNEL_LAYOUT AND (INPUT_CHANNELS GREATER 0 AND OUTPUT_CHANNELS GREATER 0) AND NOT BUILD_AAX)
-    add_definitions(-DCUSTOM_CHANNEL_LAYOUT)
-    set(PANNER_IO "_i${INPUT_CHANNELS}-o${OUTPUT_CHANNELS}")
-    set(PANNER_NAME "${CMAKE_PROJECT_NAME}${PANNER_IO}")
-    set(CUSTOM_BUNDLE_ID "com.mach1.panner.i${INPUT_CHANNELS}o${OUTPUT_CHANNELS}")
-    set(CUSTOM_PLUGIN_CODE "MP${INPUT_CHANNELS}${OUTPUT_CHANNELS}")
-    unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
-    unset(STREAMING_PANNER_PLUGIN CACHE)
-elseif(CUSTOM_CHANNEL_LAYOUT AND NOT (INPUT_CHANNELS GREATER 0 AND OUTPUT_CHANNELS GREATER 0) AND NOT BUILD_AAX)
-    # Error handling for CUSTOM_CHANNEL_LAYOUT
-    message(SEND_ERROR "INPUT_CHANNELS and OUTPUT_CHANNELS are not defined!")
-else()
-    # DYNAMIC_IO_PLUGIN_MODE or STREAMING_PANNER_PLUGIN or AAX/RTAS
-    set(PANNER_NAME "${CMAKE_PROJECT_NAME}")
-    set(CUSTOM_BUNDLE_ID "com.mach1.panner")
-    set(CUSTOM_PLUGIN_CODE "M1PN")
-    if(STREAMING_PANNER_PLUGIN)
-        unset(CUSTOM_CHANNEL_LAYOUT CACHE)
-        unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
-    endif(STREAMING_PANNER_PLUGIN)
-
-    if(DYNAMIC_IO_PLUGIN_MODE)
-        unset(CUSTOM_CHANNEL_LAYOUT CACHE)
-        unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
-    endif(DYNAMIC_IO_PLUGIN_MODE)
-endif()
+# DYNAMIC_IO_PLUGIN_MODE or STREAMING_PANNER_PLUGIN or AAX/RTAS
+set(PANNER_NAME "${CMAKE_PROJECT_NAME}")
+set(CUSTOM_BUNDLE_ID "com.mach1.panner")
+set(CUSTOM_PLUGIN_CODE "M1PN")
 
 if(ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
@@ -86,45 +51,36 @@ endif(ITD_PARAMETERS)
 # check which formats we want to build
 # Valid formats: AAX VST VST3 AU // Not yet supported: Unity AUv3 Standalone CLAP
 # Will only allow either AAX or other plugin formats, not both
-if(BUILD_AAX AND (BUILD_VST OR BUILD_VST3 OR BUILD_AU))
-    unset(BUILD_AAX CACHE)
-    unset(BUILD_VST3 CACHE)
-    unset(BUILD_VST CACHE)
-    unset(BUILD_AU CACHE)
-    message(SEND_ERROR "Cannot define AAX and other plugin types at the same time! We have cleared the cache so if you only compiled with one plugin type definition please recompile!")
-endif()
-
 if(BUILD_AAX AND AAX_PATH)
     list(APPEND FORMATS "AAX")
     juce_set_aax_sdk_path(${AAX_PATH})
-    message(STATUS "AAX SDK Found: ${AAX_PATH}")
-    unset(DYNAMIC_IO_PLUGIN_MODE CACHE)
-    unset(STREAMING_PANNER_PLUGIN CACHE)
-    unset(CUSTOM_CHANNEL_LAYOUT CACHE)
-    unset(INPUT_CHANNELS CACHE)
-    unset(OUTPUT_CHANNELS CACHE)
-    # WARNING: Be careful to not mix custom channel i/o builds with AAX
-    message(STATUS "Removing other plugin build targets for AAX only.")
-    unset(BUILD_VST3 CACHE)
-    unset(BUILD_VST CACHE)
-    unset(BUILD_AU CACHE)
+    message(STATUS "AAX SDK path set as: ${AAX_PATH}")
 endif()
 
 if(BUILD_VST3)
     list(APPEND FORMATS "VST3")
-    unset(BUILD_AAX CACHE)
 endif(BUILD_VST3)
 
 if(BUILD_VST AND VST2_PATH)
     list(APPEND FORMATS "VST")
     juce_set_vst2_sdk_path(${VST2_PATH})
-    message(STATUS "VST2 SDK Found: ${VST2_PATH}")
-    unset(BUILD_AAX CACHE)
+    message(STATUS "VST2 SDK path set as: ${VST2_PATH}")
+endif()
+
+if(BUILD_UNITY)
+    list(APPEND FORMATS "Unity")
+endif()
+
+if(BUILD_STANDALONE)
+    list(APPEND FORMATS "Standalone")
 endif()
 
 if(BUILD_AU AND APPLE)
     list(APPEND FORMATS "AU")
-    unset(BUILD_AAX CACHE)
+endif()
+
+if(BUILD_AUV3 AND APPLE)
+    list(APPEND FORMATS "AUv3")
 endif()
 
 message(STATUS "Plugin targets: ${FORMATS}")
@@ -147,23 +103,12 @@ juce_add_plugin(${PANNER_NAME}
                 IS_SYNTH FALSE
                 COPY_PLUGIN_AFTER_BUILD TRUE)
 
-if(CUSTOM_CHANNEL_LAYOUT)
-    message(STATUS "Plugin Config: ${LBRACKET_LITERAL}${INPUT_CHANNELS},${OUTPUT_CHANNELS}${RBRACKET_LITERAL}")
-    target_compile_definitions(${PANNER_NAME}
-        PUBLIC 
-        JucePlugin_PreferredChannelConfigurations=${LBRACKET_LITERAL}${INPUT_CHANNELS},${OUTPUT_CHANNELS}${RBRACKET_LITERAL}
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
-        JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_DISPLAY_SPLASH_SCREEN=0)
-else()
-    target_compile_definitions(${PANNER_NAME}
-        PUBLIC 
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
-        JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_DISPLAY_SPLASH_SCREEN=0)
-endif(CUSTOM_CHANNEL_LAYOUT)
+target_compile_definitions(${PANNER_NAME}
+    PUBLIC 
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.
 # Setting this to PUBLIC ensures that all dependent targets will inherit the specified C++ standard.
