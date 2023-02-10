@@ -12,7 +12,6 @@ target_sources(${PANNER_NAME} PRIVATE    Config.h
                                     RingBuffer.h
                                     WindowUtil.h
                                     WindowUtil.cpp
-                                    WindowUtil.mm
                                     UI/M1Checkbox.h
                                     UI/M1DropdownButton.h
                                     UI/M1DropdownMenu.h
@@ -25,3 +24,7 @@ target_sources(${PANNER_NAME} PRIVATE    Config.h
                                     UI/PannerReticleField.h
                                     UI/PannerUIBaseComponent.h
                                     UI/PannerUIBaseComponent.cpp)
+
+if(APPLE)
+    target_sources(${PANNER_NAME} PRIVATE WindowUtil.mm)
+endif(APPLE)
