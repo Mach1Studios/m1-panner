@@ -213,9 +213,11 @@ void M1PannerAudioProcessor::createLayout(){
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
         // INPUT
-        pannerSettings.m1Encode->setInputMode((Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->getValue());
+        auto newInputModeValue = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue());
+        pannerSettings.m1Encode->setInputMode(newInputModeValue);
         // OUTPUT
-        pannerSettings.m1Encode->setOutputMode((Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->getValue());
+        auto newOutputModeValue = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue());
+        pannerSettings.m1Encode->setOutputMode(newOutputModeValue);
     }
     
     // UPDATE PANNER SETTINGS STATE

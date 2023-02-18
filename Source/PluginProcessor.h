@@ -30,7 +30,7 @@ public:
     
     static AudioProcessor::BusesProperties getHostSpecificLayout () {
         
-        PluginHostType hostType;
+        juce::PluginHostType hostType;
         
         if (hostType.isProTools()) {
             return BusesProperties()
