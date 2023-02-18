@@ -30,24 +30,33 @@ public:
     
     static AudioProcessor::BusesProperties getHostSpecificLayout () {
         
+        // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         juce::PluginHostType hostType;
+        PluginHostType hostType;
         
+        // Multichannel Pro Tools
+        // TODO: Check if Ultimate/HD
         if (hostType.isProTools()) {
             return BusesProperties()
                 .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
                 .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true);
         }
         
-        if (hostType.isReaper()) {
-            auto busProp = BusesProperties()
-                .withInput("6 channel Input", juce::AudioChannelSet::namedChannelSet(6), true)
-                .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true);
-            
-            
-            
-            return busProp;
+        // Multichannel DAWs
+        if (hostType.isReaper() || hostType.isNuendo() || hostType.isDaVinciResolve() || hostType.isArdour()) {
+            if (hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_VST3) {
+                return BusesProperties()
+                // VST3 requires named plugin configurations only
+                .withInput("Input", juce::AudioChannelSet::namedChannelSet(6), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::ambisonic(5), true); // 36 named channel
+            } else {
+                return BusesProperties()
+                .withInput("Input", juce::AudioChannelSet::namedChannelSet(6), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(60), true);
+            }
         }
         
+        // STREAMING Panner instance
         return BusesProperties()
             .withInput("Input", juce::AudioChannelSet::stereo(), true)
             .withOutput("Output", juce::AudioChannelSet::stereo(), true);
@@ -58,8 +67,7 @@ public:
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
-    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans;
+    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans; // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<int> output_channel_indices;
     void fillChannelOrderArray(int numOutputChannels);
     
@@ -115,8 +123,10 @@ public:
     static juce::String paramAutoOrbit;
     static juce::String paramIsotropicEncodeMode;
     static juce::String paramEqualPowerEncodeMode;
+#ifndef CUSTOM_CHANNEL_LAYOUT
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
+#endif
 
 #ifdef ITD_PARAMETERS
     // Delay init

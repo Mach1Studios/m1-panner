@@ -54,7 +54,7 @@ endif(ITD_PARAMETERS)
 if(BUILD_AAX AND AAX_PATH)
     list(APPEND FORMATS "AAX")
     juce_set_aax_sdk_path(${AAX_PATH})
-    message(STATUS "AAX SDK Found: ${AAX_PATH}")
+    message(STATUS "AAX SDK path set as: ${AAX_PATH}")
 endif()
 
 if(BUILD_VST3)
@@ -64,11 +64,23 @@ endif(BUILD_VST3)
 if(BUILD_VST AND VST2_PATH)
     list(APPEND FORMATS "VST")
     juce_set_vst2_sdk_path(${VST2_PATH})
-    message(STATUS "VST2 SDK Found: ${VST2_PATH}")
+    message(STATUS "VST2 SDK path set as: ${VST2_PATH}")
+endif()
+
+if(BUILD_UNITY)
+    list(APPEND FORMATS "Unity")
+endif()
+
+if(BUILD_STANDALONE)
+    list(APPEND FORMATS "Standalone")
 endif()
 
 if(BUILD_AU AND APPLE)
     list(APPEND FORMATS "AU")
+endif()
+
+if(BUILD_AUV3 AND APPLE)
+    list(APPEND FORMATS "AUv3")
 endif()
 
 message(STATUS "Plugin targets: ${FORMATS}")

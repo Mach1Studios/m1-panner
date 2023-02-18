@@ -21,8 +21,10 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("stereoInputBalance
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
+#ifndef CUSTOM_CHANNEL_LAYOUT
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
+#endif
 #ifdef ITD_PARAMETER
 juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
 juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
@@ -31,9 +33,7 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 
 //==============================================================================
 M1PannerAudioProcessor::M1PannerAudioProcessor()
-     : AudioProcessor (getHostSpecificLayout()),
-                       
-                       
+     : AudioProcessor (getHostSpecificLayout()),                 
     parameters(*this, &mUndoManager, juce::Identifier("M1-Panner"),
                {
                     std::make_unique<juce::AudioParameterFloat>(paramAzimuth,
@@ -86,8 +86,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterBool>(paramIsotropicEncodeMode, TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(paramEqualPowerEncodeMode, TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
+#ifndef CUSTOM_CHANNEL_LAYOUT
                     std::make_unique<juce::AudioParameterInt>(paramInputMode, TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeStereo),
                     std::make_unique<juce::AudioParameterInt>(paramOutputMode, TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+#endif
 #ifdef ITD_PARAMETERS
                     std::make_unique<juce::AudioParameterBool>(paramITDActive, TRANS("ITD"), pannerSettings.itdActive),
                     std::make_unique<juce::AudioParameterFloat>(paramDelayTime,
@@ -115,8 +117,10 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
+#ifndef CUSTOM_CHANNEL_LAYOUT
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
+#endif
 #ifdef ITD_PARAMETERS
     parameters.addParameterListener(paramITDActive, this);
     parameters.addParameterListener(paramDelayTime, this);
@@ -336,35 +340,58 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 #ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
+    PluginHostType hostType;
     Mach1Encode configTester;
     
     // block plugin if input or output is disabled on construction
     if (layouts.getMainInputChannelSet()  == juce::AudioChannelSet::disabled()
      || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled())
         return false;
-    
-    // RETURN TRUE FOR EXTERNAL STREAMING MODE?
-    // TODO: determine how to best support this
-    // hard set {1,2} and {2,2} for streaming use case
-    if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
+
+    if (hostType.isReaper()) {
         return true;
-    // Test for all available Mach1Encode configs
-    // manually maintained for-loop of first enum element to last enum element
-    // TODO: brainstorm a way to not require manual maintaining of listed enum elements
-    for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
-        configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
-        // test each input, if the input has the number of channels as the input testing layout has move on to output testing
-        if (layouts.getMainInputChannels() == configTester.getInputChannelsCount()) {
-            for (int outputEnum = Mach1EncodeOutputModeM1Horizon_4; outputEnum != Mach1EncodeOutputModeM1Spatial_32; outputEnum++ ) {
-                // test each output
-               configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
-                if (layouts.getMainOutputChannels() == configTester.getOutputChannelsCount()){
-                    return true;
+    }
+    
+    if (hostType.isProTools()) {
+        if ((   layouts.getMainInputChannelSet().size() == AudioChannelSet::mono().size()
+            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::stereo().size()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::createLCR()
+            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::quadraphonic().size()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point0()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point1()
+            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create6point0())
+            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
+            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
+            &&
+            (   layouts.getMainOutputChannelSet() == AudioChannelSet::create7point1()
+             || layouts.getMainOutputChannelSet() == AudioChannelSet::quadraphonic()) ) {
+                return true;
+        } else {
+            return false;
+        }
+    } else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo())) {
+        // RETURN TRUE FOR EXTERNAL STREAMING MODE
+        // hard set {1,2} and {2,2} for streaming use case
+        return true;
+    } else {
+        // Test for all available Mach1Encode configs
+        // manually maintained for-loop of first enum element to last enum element
+        // TODO: brainstorm a way to not require manual maintaining of listed enum elements
+        for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
+            configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
+            // test each input, if the input has the number of channels as the input testing layout has move on to output testing
+            if (layouts.getMainInputChannelSet().size() == configTester.getInputChannelsCount()) {
+                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_32; outputEnum++ ) {
+                    // test each output
+                   configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
+                    if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount()){
+                        return true;
+                    }
                 }
             }
         }
+        return false;
     }
-    return false;
 }
 #endif
 
