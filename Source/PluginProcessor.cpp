@@ -340,7 +340,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 #ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    PluginHostType hostType;
+    juce::PluginHostType hostType;
     Mach1Encode configTester;
     
     // block plugin if input or output is disabled on construction
@@ -353,18 +353,18 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
     }
     
     if (hostType.isProTools()) {
-        if ((   layouts.getMainInputChannelSet().size() == AudioChannelSet::mono().size()
-            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::stereo().size()
-            ||  layouts.getMainInputChannelSet() == AudioChannelSet::createLCR()
-            ||  layouts.getMainInputChannelSet().size() == AudioChannelSet::quadraphonic().size()
-            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point0()
-            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create5point1()
-            ||  layouts.getMainInputChannelSet() == AudioChannelSet::create6point0())
+        if ((   layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::mono().size()
+            ||  layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::stereo().size()
+            ||  layouts.getMainInputChannelSet() == juce::AudioChannelSet::createLCR()
+            ||  layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::quadraphonic().size()
+            ||  layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point0()
+            ||  layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point1()
+            ||  layouts.getMainInputChannelSet() == juce::AudioChannelSet::create6point0())
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
             &&
-            (   layouts.getMainOutputChannelSet() == AudioChannelSet::create7point1()
-             || layouts.getMainOutputChannelSet() == AudioChannelSet::quadraphonic()) ) {
+            (   layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1()
+             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()) ) {
                 return true;
         } else {
             return false;
