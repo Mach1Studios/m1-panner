@@ -114,6 +114,8 @@ void PannerUIBaseComponent::initialise()
     }
     printf("Resources Loaded From: %s \n" , resourcesPath.c_str());
     m.setResourcesPath(resourcesPath);
+    
+    m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
 void PannerUIBaseComponent::render()
@@ -828,7 +830,6 @@ void PannerUIBaseComponent::render()
     pannerLabel.commit();
     
     m.setColor(200, 255);
-    m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 #ifdef CUSTOM_CHANNEL_LAYOUT
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else

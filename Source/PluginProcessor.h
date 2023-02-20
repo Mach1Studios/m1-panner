@@ -32,7 +32,6 @@ public:
         
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         juce::PluginHostType hostType;
-        PluginHostType hostType;
         
         // Multichannel Pro Tools
         // TODO: Check if Ultimate/HD
