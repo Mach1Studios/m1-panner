@@ -31,6 +31,7 @@ struct PannerSettings {
 #endif
 
 	Mach1Encode* m1Encode = nullptr;
+    
 };
 
 struct MixerSettings {
