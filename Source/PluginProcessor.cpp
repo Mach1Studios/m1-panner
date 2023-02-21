@@ -780,6 +780,7 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.autoOrbit = getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
         pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
         pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
+
 #ifdef ITD_PARAMETERS
         pannerSettings.itdActive = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
         pannerSettings.delayTime = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
@@ -806,12 +807,12 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             }
             m1Encode.setInputMode(tempInputType);
             pannerSettings.inputType = m1Encode.getInputMode();
-        } else if (prefix == "2.0.0") {
-            pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
         }
         if (prefix == "2.0.0") {
-            pannerSettings.inputType = (Mach1EncodeInputModeType)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType);
-            pannerSettings.outputType = (Mach1EncodeOutputModeType)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType);
+            pannerSettings.inputType = Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.inputType));
+            pannerSettings.outputType = Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.outputType));
+            m1Encode.setInputMode(pannerSettings.inputType);
+            m1Encode.setOutputMode(pannerSettings.outputType);
         }
     } else {
         // Legacy recall
