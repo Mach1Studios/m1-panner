@@ -40,9 +40,13 @@ public:
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle(1, 1, shape.size.x - 2, shape.size.y - 2);
             
+            bool hoveredAnything = false;
+            
             for (int i = 0; i < options.size(); i++) {
                 
                 bool hoveredAnOption = (context.mousePosition.y > i * optionHeight) && (context.mousePosition.y < (i + 1) * optionHeight) && inside;
+                
+                hoveredAnything += hoveredAnOption; // Setting to true if any of those are true
                 
                 if (hoveredAnOption) {
                     m.setColor(ENABLED_PARAM);
@@ -74,7 +78,20 @@ public:
                     m.setFont("Proxima Nova Reg.ttf", fontSize);
                     m.draw<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
                 }
+                
+                // Closing if pressed/released outside of the menu
+                if (!inside && !hoveredAnything) {
+                    if ((closingMode == mouseDown) && (c.mouseDownPressed[0])) {
+                        opened = false;
+                        changed = false;
+                    }
+                    if ((closingMode == mouseUp) && (c.mouseReleased[0])) {
+                        opened = false;
+                        changed = false;
+                    }
+                }
             }
+            
         } else {
             changed = false;
         }
