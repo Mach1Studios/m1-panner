@@ -519,7 +519,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // input channel setup loop
-    auto inputChannelsCount = m1Encode.getInputChannelsCount();
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
         // Copy input data to additional buffer
         audioDataIn[input_channel].resize(mainInput.getNumSamples());
@@ -722,14 +721,15 @@ void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType in
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
-
 }
 
 void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode) {
     m1Encode.setOutputMode(outputMode);
 
-    auto inputChannelsCount = m1Encode.getInputChannelsCount();
+    auto outputChannelsCount = m1Encode.getOutputChannelsCount();
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
+    orderOfChans.resize(m1Encode.getOutputChannelsCount());
+    output_channel_indices.resize(m1Encode.getOutputChannelsCount());
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
         smoothedChannelCoeffs[input_channel].resize(m1Encode.getOutputChannelsCount());
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
