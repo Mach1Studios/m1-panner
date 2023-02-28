@@ -762,7 +762,7 @@ void PannerUIBaseComponent::render()
             outputLabel.commit();
             
             auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
-                                                        40, 30 })
+                                                        80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
             auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
