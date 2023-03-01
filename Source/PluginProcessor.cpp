@@ -646,8 +646,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 #endif // end of ITD_PARAMETERS
     }
     
-    return;
-    
     // update meters
     if (external_spatialmixer_active) {
         // only using the data from the input channels and channel count and simulating here the expected multichannel output meters
