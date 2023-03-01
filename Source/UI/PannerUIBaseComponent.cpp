@@ -247,22 +247,22 @@ void PannerUIBaseComponent::render()
     yLabel.commit();
 
 	// Rotation
-    auto& rKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
+    auto& azKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->azimuth);
-    rKnob.rangeFrom = -180;
-    rKnob.rangeTo = 180;
-    rKnob.floatingPointPrecision = 1;
-    rKnob.speed = knobSpeed;
-    rKnob.defaultValue = 0;
-    rKnob.isEndlessRotary = true;
-    rKnob.enabled = true;
-    rKnob.postfix = "º";
-    rKnob.externalHover = reticleHoveredLastFrame;
-    rKnob.cursorHide = cursorHide;
-    rKnob.cursorShow = cursorShowAndTeleportBack;
-    rKnob.commit();
+    azKnob.rangeFrom = -180;
+    azKnob.rangeTo = 180;
+    azKnob.floatingPointPrecision = 1;
+    azKnob.speed = knobSpeed;
+    azKnob.defaultValue = 0;
+    azKnob.isEndlessRotary = true;
+    azKnob.enabled = true;
+    azKnob.postfix = "º";
+    azKnob.externalHover = reticleHoveredLastFrame;
+    azKnob.cursorHide = cursorHide;
+    azKnob.cursorShow = cursorShowAndTeleportBack;
+    azKnob.commit();
 
-    if (rKnob.changed) {
+    if (azKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
@@ -270,14 +270,14 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
-	rotateKnobDraggingNow = rKnob.draggingNow;
+	rotateKnobDraggingNow = azKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& rLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    rLabel.label = "ROTATE";
-    rLabel.alignment = TEXT_CENTER;
-    rLabel.enabled = true;
-    rLabel.highlighted = rKnob.hovered || reticleHoveredLastFrame;
-    rLabel.commit();
+    auto& azLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    azLabel.label = "AZIMUTH";
+    azLabel.alignment = TEXT_CENTER;
+    azLabel.enabled = true;
+    azLabel.highlighted = azKnob.hovered || reticleHoveredLastFrame;
+    azLabel.commit();
 
 	// Diverge
     auto& dKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))

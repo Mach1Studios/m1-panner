@@ -512,7 +512,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // Multiply input buffer by inputGain parameter
     mainInput.applyGain(pannerSettings.gain);
     // input pan balance for stereo input
-    if (m1Encode.getInputChannelsCount() == 2) {
+    if (mainInput.getNumChannels() > 1 && m1Encode.getInputChannelsCount() == 2) {
         float p = PI * (pannerSettings.stereoInputBalance + 1)/4;
         mainInput.applyGain(0, 0, mainInput.getNumSamples(), std::cos(p)); // gain for Left
         mainInput.applyGain(1, 0, mainInput.getNumSamples(), std::sin(p)); // gain for Right
@@ -520,20 +520,26 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
-        // Copy input data to additional buffer
-        audioDataIn[input_channel].resize(mainInput.getNumSamples());
-        memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples());
-        // TODO: figure out how to best use getChannelIndexForType() instead of literal index?
-        // Get the current input channel index audio data buffer
-        const float* newChannelInputBuffer = audioDataIn[input_channel].data();
-        buffers.push_back(newChannelInputBuffer);
         
-        // output channel setup loop
-        for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
-            // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
-            // Output channel reordering from fillChannelOrder()
-            int output_channel_reordered = output_channel_indices[output_channel];
-            smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
+        // break if expected input channel num size does not match current input channel num size from host
+        if (input_channel > mainInput.getNumChannels()-1) {
+            break;
+        } else {
+            // Copy input data to additional buffer
+            audioDataIn[input_channel].resize(mainInput.getNumSamples());
+            memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples());
+            // TODO: figure out how to best use getChannelIndexForType() instead of literal index?
+            // Get the current input channel index audio data buffer
+            const float* newChannelInputBuffer = audioDataIn[input_channel].data();
+            buffers.push_back(newChannelInputBuffer);
+            
+            // output channel setup loop
+            for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
+                // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
+                // Output channel reordering from fillChannelOrder()
+                int output_channel_reordered = output_channel_indices[output_channel];
+                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
+            }
         }
     }
     
@@ -596,22 +602,43 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
         // processing loop
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
-            for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
-                outBuffer[output_channel][sample] = 0;
+            // break if expected output channel num size does not match current output channel num size from host
+            if (output_channel > mainOutput.getNumChannels()-1) {
+                break;
+            } else {
+                for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+                    outBuffer[output_channel][sample] = 0;
+                }
             }
         }
         
         for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
             for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                float inValue = buffer.getSample(input_channel, sample);
-//                float inValue = buffers[input_channel][sample];
+                /// Get each input sample per channel
+                
+                // return if expected input channel num size does not match current input channel num size from host
+                // TODO: this should be an error instead?
+                // TODO: Otherwise figure out how this should be handled when host some how got this far with just 2 channel input support (issue discovered with "standalone" target)
+                float inValue = 0;
+                if (input_channel > mainInput.getNumChannels()-1) {
+                    inValue = buffer.getSample(0, sample);
+                } else {
+                    inValue = buffer.getSample(input_channel, sample);
+                }
+                
+                /// Apply to each of the output channels per input channel
                 for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
-                    float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                    // break if expected output channel num size does not match current output channel num size from host
+                    if (output_channel > mainOutput.getNumChannels()-1) {
+                        break;
+                    } else {
+                        float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
-                    // TODO: check if `output_channel_reordered` is appropriate here
-                    // Output channel reordering from fillChannelOrder()
-                    int output_channel_reordered = output_channel_indices[output_channel];
-                    outBuffer[output_channel_reordered][sample] += inValue * inGain;
+                        // TODO: check if `output_channel_reordered` is appropriate here
+                        // Output channel reordering from fillChannelOrder()
+                        int output_channel_reordered = output_channel_indices[output_channel];
+                        outBuffer[output_channel][sample] += inValue * inGain;
+                    }
                 }
             }
         }
@@ -647,7 +674,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // update meters
-    if (external_spatialmixer_active) {
+    if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
         // only using the data from the input channels and channel count and simulating here the expected multichannel output meters
         juce::AudioBuffer<float> buf(m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
         outputMeterValuedB.resize(m1Encode.getOutputChannelsCount()); // expand meter UI number

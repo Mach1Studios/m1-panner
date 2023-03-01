@@ -165,10 +165,16 @@ public:
             std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             if (m1Encode->getInputChannelsCount() > 1) {
                 for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-                    MurkaPoint point((points[i].z + 1.0)* shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
+                    MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
                     clamp(point.y, 0, shape.size.y);
-                    drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, false, m);
+                    if (m1Encode->getInputMode() <= Mach1EncodeInputModeStereo) {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
+                    } else if (m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
+                    } else {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
+                    }
                 }
             }
             
@@ -222,25 +228,22 @@ public:
         if (input.x > max) input.x = max;
         if (input.y < min) input.y = min;
         if (input.y > max) input.y = max;
-    };
+    }
 
     void clamp(float& input, float min, float max) {
         if (input < min) input = min;
         if (input > max) input = max;
-    };
+    }
 
-    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, bool largeReticles, Murka& m) {
+    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, Murka& m) {
         m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered) + (2 * (elevation/90))));
         m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         
-        if (largeReticles){
-            m.drawCircle(x, y, (20 + 3 * A(reticleHovered) + (2 * (elevation/90))));
-        } else {
-            m.drawCircle(x, y, (10 + 3 * A(reticleHovered) + (2 * (elevation/90))));
-        }
-        m.draw<murka::Label>(MurkaShape(x - 8 - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).commit();
-    };
+        m.drawCircle(x, y, (10*reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (elevation/90)));
+        // re-adjust label x offset for size of string
+        m.draw<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).commit();
+    }
     
     PannerReticleField & controlling (XYRD *dataToControl_) {
         dataToControl = dataToControl_;
