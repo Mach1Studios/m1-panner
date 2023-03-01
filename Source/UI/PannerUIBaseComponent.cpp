@@ -754,7 +754,7 @@ void PannerUIBaseComponent::render()
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFont("Proxima Nova Reg.ttf", 10);
-            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 70, m.getSize().height() - 26, 60, 20));
+            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUTPUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;

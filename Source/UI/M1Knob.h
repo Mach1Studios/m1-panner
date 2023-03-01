@@ -17,8 +17,8 @@ public:
         bool inside = ctx.isHovered() *
 //        Had to temporary remove the areInteractiveChildrenHovered because of the bug in Murka with the non-deleting children widgets. TODO: fix this
 //        !areInteractiveChildrenHovered(ctx) *
-            hasMouseFocus(m)
-            * (!editingTextNow);
+//            hasMouseFocus(m) *
+             (!editingTextNow);
         
         changed = false;
 
