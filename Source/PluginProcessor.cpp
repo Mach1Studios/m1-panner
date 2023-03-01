@@ -603,7 +603,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         
         for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
             for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                float inValue = buffers[input_channel][sample];
+                float inValue = buffer.getSample(input_channel, sample);
+//                float inValue = buffers[input_channel][sample];
                 for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                     float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
@@ -644,6 +645,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
 #endif // end of ITD_PARAMETERS
     }
+    
+    return;
     
     // update meters
     if (external_spatialmixer_active) {
