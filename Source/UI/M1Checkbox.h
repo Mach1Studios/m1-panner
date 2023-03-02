@@ -16,12 +16,7 @@ public:
         bool* data = dataToControl;
         
         MurkaContext& context = m.currentContext;
-
-//        auto params = (Parameters*)parametersObject;
-//        auto results = (Results*)resultObject;
         bool inside = context.isHovered() * !areInteractiveChildrenHovered(m) * hasMouseFocus(m);
-        
-//        auto r = context.renderer;
         auto& c = context;
         
         if (didntInitialiseYet) {
@@ -58,7 +53,7 @@ public:
 		else {
             changed = false;
 		}
-	};
+	}
     
     float animatedData = 0;
     bool didntInitialiseYet = true;

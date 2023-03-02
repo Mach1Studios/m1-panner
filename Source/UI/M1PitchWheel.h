@@ -14,15 +14,9 @@ public:
         hovered = inside + draggingNow;
         bool hoveredLocal = hovered + externalHovered; // this variable is not used outside the widget to avoid feedback loop
         changed = false; // false unless the user changed a value using this knob
-        
         auto& c = ctx;
-        
-//        r->setColor(255, 0, 0, 255);
-//        r->drawLine(0, 0, c.getSize().x, c.getSize().y);
-//        r->drawLine(c.getSize().x, 0, 0, c.getSize().y);
 		
 		// Reticle calculation
-
 		float reticlePositionNorm = (*((float*)dataToControl) - rangeFrom) / (rangeTo - rangeFrom);
 
 		MurkaShape reticlePosition = { c.getSize().x / 2 - 6,
@@ -120,7 +114,7 @@ public:
         }
 
 		m.popStyle();
-    };
+    }
     
     float dataCache = 0.0; // for hint drawing
     MurkaPoint hintPosition = {0, 0};
@@ -128,24 +122,6 @@ public:
 
     std::function<void()> cursorHide, cursorShow;
     float mixerPitch = 0;
-
-//    Parameters() {}
-//    Parameters(std::function<void()> cursrorHide_,
-//               std::function<void()> cursorShow_,
-//               float offset_,
-//               float range_from,
-//               float range_to,
-//               bool externalHovered_,
-//               float mixerPitch_ = 0) {
-//        cursorHide = cursrorHide_;
-//        cursorShow = cursorShow_;
-//        offset = offset_;
-//        rangeFrom = range_from;
-//        rangeTo = range_to;
-//        externalHovered = externalHovered_;
-//        mixerPitch = mixerPitch_;
-//    }
-    
     bool hovered = false;
     bool changed = false;
 
@@ -179,5 +155,5 @@ public:
                     controlling, // setter
                     nullptr // default
     )
-
+    
 };
