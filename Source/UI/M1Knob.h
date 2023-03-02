@@ -125,6 +125,7 @@ public:
             
             if (textFieldResults) {
                 editingTextNow = false;
+                changed = true;
                 deleteTheTextField();
             }
             
