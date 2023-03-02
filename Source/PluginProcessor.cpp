@@ -128,7 +128,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #endif
 
     // Setup defaults for Mach1Enecode API
-    m1Encode.setPannerMode(pannerSettings.pannerMode);
+    m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
     // assign pointer to Mach1Encode object
     pannerSettings.m1Encode = &m1Encode;
 }
@@ -487,10 +487,14 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
     
     if (pannerSettings.isotropicMode) {
-        if (pannerSettings.equalpowerMode) m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
-        else m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicLinear);
+        if (pannerSettings.equalpowerMode) {
+            m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
+        } else {
+            m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicLinear);
+        }
+    } else {
+         m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
     }
-    else m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
 
     m1Encode.generatePointResults();
     auto gainCoeffs = m1Encode.getGains();
@@ -636,7 +640,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
                         // TODO: check if `output_channel_reordered` is appropriate here
                         // Output channel reordering from fillChannelOrder()
-                        int output_channel_reordered = output_channel_indices[output_channel];
+                        //int output_channel_reordered = output_channel_indices[output_channel];
                         outBuffer[output_channel][sample] += inValue * inGain;
                     }
                 }
@@ -707,7 +711,7 @@ bool M1PannerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
-    return new M1PannerAudioProcessorEditor (*this, pannerSettings.pannerMode, pannerSettings.inputType);
+    return new M1PannerAudioProcessorEditor (*this, pannerSettings.inputType);
 }
 
 //==============================================================================

@@ -510,14 +510,16 @@ void PannerUIBaseComponent::render()
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
-                processor->parameterChanged(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, true);
             } else {
-                processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
             }
         } else {
-            processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+            processor->parameterChanged(processor->paramIsotropicEncodeMode, false);
+            processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
         }
-        pannerState->m1Encode->setPannerMode(pannerState->pannerMode);
     }
 
     auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
