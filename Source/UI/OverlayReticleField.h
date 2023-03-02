@@ -129,12 +129,12 @@ public:
         if (input.x > max) input.x = max;
         if (input.y < min) input.y = min;
         if (input.y > max) input.y = max;
-    };
+    }
     
     float normalize(float input, float min, float max){
         float normalized_x = (input-min)/(max-min);
         return normalized_x;
-    };
+    }
     
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, Murka& m, MurkaContext& context) {
         float realx = x;
@@ -170,7 +170,7 @@ public:
             float right_rollover = abs(realx-8);
             m.draw<M1Label>(MurkaShape(context.getSize().x-right_rollover, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
         }
-    };
+    }
     
     void drawMonitorYaw(float yawAngle, float pitchAngle, Murka& m){
         MurkaContext& context = m.currentContext;
@@ -195,7 +195,7 @@ public:
                             right_rollover,
                             context.getSize().y/divider);
         }
-    };
+    }
     
     bool draggingNow = false;
     bool reticleHoveredLastFrame = false;
