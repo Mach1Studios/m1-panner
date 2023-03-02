@@ -246,7 +246,6 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // can still be used to calculate coeffs even in STREAMING_PANNER_PLUGIN mode
     processorSampleRate = sampleRate;
     
-    
     if (m1Encode.getOutputChannelsCount() != getMainBusNumOutputChannels()){
         bool channel_io_error = -1;
         // error handling here?
@@ -463,13 +462,13 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     
     // Set temp values for processing
     float _diverge = pannerSettings.diverge;
-    float _gain = juce::Decibels::decibelsToGain(pannerSettings.gain);
+    float _gain = pannerSettings.gain;
 
     // TODO: Check for a monitor if none is connected
     
     if (monitorSettings.monitor_mode == 2) { // StereoSafe mode is on
         //store diverge for gain
-        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f)); // ?
+        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
         //Setup for stereoSafe diverge range to gain
         _gain = _gain - (abs_diverge * 6.0);
         //Set Diverge to 0 after using Diverge for Gain
@@ -482,7 +481,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
 
     m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
-    m1Encode.setOutputGain(_gain, true);
     m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
     m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
     
@@ -500,7 +498,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     auto gainCoeffs = m1Encode.getGains();
 
     // vector of input channel buffers
-    std::vector<const float*> buffers;
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
     audioDataIn.resize(m1Encode.getInputChannelsCount());
@@ -514,7 +511,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 #endif
     
     // Multiply input buffer by inputGain parameter
-    mainInput.applyGain(pannerSettings.gain);
+    mainInput.applyGain(juce::Decibels::decibelsToGain(pannerSettings.gain));
+    
     // input pan balance for stereo input
     if (mainInput.getNumChannels() > 1 && m1Encode.getInputChannelsCount() == 2) {
         float p = PI * (pannerSettings.stereoInputBalance + 1)/4;
@@ -532,50 +530,15 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             // Copy input data to additional buffer
             audioDataIn[input_channel].resize(mainInput.getNumSamples());
             memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples());
-            // TODO: figure out how to best use getChannelIndexForType() instead of literal index?
-            // Get the current input channel index audio data buffer
-            const float* newChannelInputBuffer = audioDataIn[input_channel].data();
-            buffers.push_back(newChannelInputBuffer);
-            
+  
             // output channel setup loop
             for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                 // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
                 // Output channel reordering from fillChannelOrder()
                 int output_channel_reordered = output_channel_indices[output_channel];
-                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] * _gain);
+                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel] /** _gain*/);
             }
         }
-    }
-    
-    // Process Buffer loop section
-    if(m1Encode.getInputMode() == Mach1EncodeInputModeMono){
-        buffers[0] = audioDataIn[0].data();
-        // Default alway add side chain bus.
-    } else if(m1Encode.getInputChannelsCount() == 2 && mainInput.getNumChannels() >= 2){
-        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
-        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-    } else if (m1Encode.getInputChannelsCount() == 3 && mainInput.getNumChannels() >= 3){
-        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
-        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
-        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-    } else if (m1Encode.getInputChannelsCount() == 4 && mainInput.getNumChannels() >= 4){
-        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
-        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
-        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
-    } else if (m1Encode.getInputChannelsCount() == 5 && mainInput.getNumChannels() >= 5){
-        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
-        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
-        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
-        buffers[4] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
-    } else if (m1Encode.getInputChannelsCount() == 6 && mainInput.getNumChannels() >= 6){ // we use this instead of == to ensure HOSTS can support the plugin even when input channel count is > than needed
-        buffers[0] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::left)].data();
-        buffers[1] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::centre)].data();
-        buffers[2] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::right)].data();
-        buffers[3] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::leftSurround)].data();
-        buffers[4] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::rightSurround)].data();
-        buffers[5] = audioDataIn[inputLayout.getChannelIndexForType(juce::AudioChannelSet::LFE)].data();
     }
     
     float outputMixerCoeff[m1Encode.getOutputChannelsCount()][buffer.getNumSamples()];
@@ -584,7 +547,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin        
         for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
             for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                float inValue = buffers[input_channel][sample];
+                float inValue = audioDataIn[input_channel][sample];
                 for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                     float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
@@ -623,12 +586,12 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 // return if expected input channel num size does not match current input channel num size from host
                 // TODO: this should be an error instead?
                 // TODO: Otherwise figure out how this should be handled when host some how got this far with just 2 channel input support (issue discovered with "standalone" target)
-                float inValue = 0;
+                float inValue;
                 if (input_channel > mainInput.getNumChannels()-1) {
                     // get the first input channel if we are requesting more input channels than exist
-                    inValue = buffer.getSample(0, sample);
+                    inValue = audioDataIn[0][sample];
                 } else {
-                    inValue = buffer.getSample(input_channel, sample);
+                    inValue = audioDataIn[input_channel][sample];
                 }
                 
                 /// Apply to each of the output channels per input channel
@@ -637,12 +600,12 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     if (output_channel > mainOutput.getNumChannels()-1) {
                         break;
                     } else {
-                        float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
                         // TODO: check if `output_channel_reordered` is appropriate here
                         // Output channel reordering from fillChannelOrder()
-                        //int output_channel_reordered = output_channel_indices[output_channel];
-                        outBuffer[output_channel][sample] += inValue * inGain;
+                        int output_channel_reordered = output_channel_indices[output_channel];
+                        outBuffer[output_channel][sample] += inValue * spatialGainCoeff;
                     }
                 }
             }
@@ -748,6 +711,10 @@ void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType in
     
     auto inputChannelsCount = m1Encode.getInputChannelsCount();
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
+    
+    // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
+    fillChannelOrderArray(m1Encode.getOutputChannelsCount());
+    
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
         smoothedChannelCoeffs[input_channel].resize(m1Encode.getOutputChannelsCount());
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
@@ -763,6 +730,10 @@ void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType 
     smoothedChannelCoeffs.resize(m1Encode.getInputChannelsCount());
     orderOfChans.resize(m1Encode.getOutputChannelsCount());
     output_channel_indices.resize(m1Encode.getOutputChannelsCount());
+    
+    // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
+    fillChannelOrderArray(m1Encode.getOutputChannelsCount());
+    
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++) {
         smoothedChannelCoeffs[input_channel].resize(m1Encode.getOutputChannelsCount());
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
