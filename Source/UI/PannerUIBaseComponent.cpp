@@ -246,7 +246,7 @@ void PannerUIBaseComponent::render()
     yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
     yLabel.commit();
 
-	// Rotation
+	// Azimuth / Rotation
     auto& azKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->azimuth);
     azKnob.rangeFrom = -180;

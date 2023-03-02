@@ -77,7 +77,7 @@ public:
                          4,
                          4);
         */
-    };
+    }
 
     float map(float value, float low1, float high1, float low2, float high2) {
         return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
@@ -91,6 +91,10 @@ public:
         return x < a ? a : (x > b ? b : x);
     }
 
+    float maxVolume = 0;
+    double maxVolumeReachedTime = 0;
+    typedef bool Results;
+
     MURKA_PARAMETER(M1VolumeDisplayLine, // class name
                     float, // parameter type
                     volume, // parameter variable name
@@ -98,8 +102,4 @@ public:
                     0.0 // default
     )
    
-    float maxVolume = 0;
-    double maxVolumeReachedTime = 0;
-
-    typedef bool Results;
 };

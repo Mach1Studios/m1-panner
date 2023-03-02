@@ -625,6 +625,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 // TODO: Otherwise figure out how this should be handled when host some how got this far with just 2 channel input support (issue discovered with "standalone" target)
                 float inValue = 0;
                 if (input_channel > mainInput.getNumChannels()-1) {
+                    // get the first input channel if we are requesting more input channels than exist
                     inValue = buffer.getSample(0, sample);
                 } else {
                     inValue = buffer.getSample(input_channel, sample);

@@ -95,7 +95,7 @@ public:
         } else {
             changed = false;
         }
-    };
+    }
     
     void open() {
         opened = true;
