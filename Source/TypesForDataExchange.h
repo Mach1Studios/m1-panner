@@ -7,8 +7,9 @@ struct PannerSettings {
     // Should we remove these to force setup through `m1Encode` object instead?
     Mach1EncodeInputModeType inputType = Mach1EncodeInputModeStereo;
     Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeM1Spatial_8;
-    Mach1EncodePannerMode pannerMode = Mach1EncodePannerModePeriphonicLinear;
     // ?
+    
+    Mach1Encode* m1Encode = nullptr;
     
     float x = 0.;
 	float y = 70.7;
@@ -29,9 +30,6 @@ struct PannerSettings {
     int delayTime = 600;
     float delayDistance = 1.0;
 #endif
-
-	Mach1Encode* m1Encode = nullptr;
-    
 };
 
 struct MixerSettings {
