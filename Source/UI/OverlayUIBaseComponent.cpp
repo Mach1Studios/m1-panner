@@ -158,7 +158,7 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.teleportCursor = teleportCursor;
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
-        overlayReticleField.m1Encode = pannerState->m1Encode;
+        overlayReticleField.m1Encode = &pannerState->m1Encode;
         overlayReticleField.sRotate = pannerState->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerState->stereoSpread;
 		overlayReticleField.monitorState = monitorState;

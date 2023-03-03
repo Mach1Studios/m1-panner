@@ -19,7 +19,7 @@
 class M1PannerAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
-    M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p, Mach1EncodeInputModeType &iMode);
+    M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p);
     ~M1PannerAudioProcessorEditor() override;
     
     M1PannerAudioProcessor* processor = nullptr;
