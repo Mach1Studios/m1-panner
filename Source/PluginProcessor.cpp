@@ -500,7 +500,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // vector of input channel buffers
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
-    audioDataIn.resize(m1Encode.getInputChannelsCount());
     
     // output buffers
     juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
@@ -519,18 +518,23 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         mainInput.applyGain(0, 0, mainInput.getNumSamples(), std::cos(p)); // gain for Left
         mainInput.applyGain(1, 0, mainInput.getNumSamples(), std::sin(p)); // gain for Right
     }
+
+    // resize the processing buffer and zero it out so it works despite how many of the expected channels actually exist host side
+    audioDataIn.resize(mainInput.getNumChannels()); // resizing the process data to what the host can support
+    // TODO: error handle for when requested m1Encode input size is more than the host supports
+    for (int input_channel = 0; input_channel < mainInput.getNumChannels(); input_channel++){
+        audioDataIn[input_channel].resize(mainInput.getNumSamples(), 0.0);
+    }
     
     // input channel setup loop
     for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
-        
-        // break if expected input channel num size does not match current input channel num size from host
         if (input_channel > mainInput.getNumChannels()-1) {
+            // TODO: error?
             break;
         } else {
             // Copy input data to additional buffer
-            audioDataIn[input_channel].resize(mainInput.getNumSamples());
             memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * mainInput.getNumSamples());
-  
+
             // output channel setup loop
             for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                 // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
@@ -571,8 +575,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++) {
             // break if expected output channel num size does not match current output channel num size from host
             if (output_channel > mainOutput.getNumChannels()-1) {
+                // TODO: Test for external_mixer?
                 break;
             } else {
+                // clear the output buffer
                 for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
                     outBuffer[output_channel][sample] = 0;
                 }
@@ -582,22 +588,13 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int input_channel = 0; input_channel < m1Encode.getInputChannelsCount(); input_channel++){
             for (int sample = 0; sample < buffer.getNumSamples(); sample++){
                 /// Get each input sample per channel
-                
-                // return if expected input channel num size does not match current input channel num size from host
-                // TODO: this should be an error instead?
-                // TODO: Otherwise figure out how this should be handled when host some how got this far with just 2 channel input support (issue discovered with "standalone" target)
-                float inValue;
-                if (input_channel > mainInput.getNumChannels()-1) {
-                    // get the first input channel if we are requesting more input channels than exist
-                    inValue = audioDataIn[0][sample];
-                } else {
-                    inValue = audioDataIn[input_channel][sample];
-                }
+                float inValue = audioDataIn[input_channel][sample];
                 
                 /// Apply to each of the output channels per input channel
                 for (int output_channel = 0; output_channel < m1Encode.getOutputChannelsCount(); output_channel++){
                     // break if expected output channel num size does not match current output channel num size from host
                     if (output_channel > mainOutput.getNumChannels()-1) {
+                        // TODO: Test for external_mixer?
                         break;
                     } else {
                         float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
