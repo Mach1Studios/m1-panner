@@ -4,12 +4,11 @@
 #include "Mach1Encode.h"
 
 struct PannerSettings {
-    // Should we remove these to force setup through `m1Encode` object instead?
-    Mach1EncodeInputModeType inputType = Mach1EncodeInputModeStereo;
-    Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeM1Spatial_8;
-    // ?
-    
-    Mach1Encode* m1Encode = nullptr;
+    /// This object contains:
+    /// - `Mach1EncodeInputModeType`
+    /// - `Mach1EncodeOutputModeType`
+    /// - `Mach1EncodePannerMode`
+    Mach1Encode m1Encode;
     
     float x = 0.;
 	float y = 70.7;
