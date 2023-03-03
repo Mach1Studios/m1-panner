@@ -142,7 +142,6 @@ public:
     
     void m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode);
     void m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode);
-    Mach1Encode m1Encode;
     PannerSettings pannerSettings;
     MixerSettings monitorSettings;
     juce::PluginHostType hostType;

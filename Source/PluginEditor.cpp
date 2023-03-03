@@ -11,7 +11,7 @@
 #include <Mach1Encode.h>
 
 //==============================================================================
-M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p, Mach1EncodeInputModeType &iMode)
+M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p)
     : AudioProcessorEditor (&p)
 {
     // Make sure that before the constructor has finished, you've set the
