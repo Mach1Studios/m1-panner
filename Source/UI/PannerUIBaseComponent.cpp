@@ -114,6 +114,8 @@ void PannerUIBaseComponent::initialise()
     }
     printf("Resources Loaded From: %s \n" , resourcesPath.c_str());
     m.setResourcesPath(resourcesPath);
+    
+    m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
 void PannerUIBaseComponent::render()
@@ -244,23 +246,23 @@ void PannerUIBaseComponent::render()
     yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
     yLabel.commit();
 
-	// Rotation
-    auto& rKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
+	// Azimuth / Rotation
+    auto& azKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->azimuth);
-    rKnob.rangeFrom = -180;
-    rKnob.rangeTo = 180;
-    rKnob.floatingPointPrecision = 1;
-    rKnob.speed = knobSpeed;
-    rKnob.defaultValue = 0;
-    rKnob.isEndlessRotary = true;
-    rKnob.enabled = true;
-    rKnob.postfix = "º";
-    rKnob.externalHover = reticleHoveredLastFrame;
-    rKnob.cursorHide = cursorHide;
-    rKnob.cursorShow = cursorShowAndTeleportBack;
-    rKnob.commit();
+    azKnob.rangeFrom = -180;
+    azKnob.rangeTo = 180;
+    azKnob.floatingPointPrecision = 1;
+    azKnob.speed = knobSpeed;
+    azKnob.defaultValue = 0;
+    azKnob.isEndlessRotary = true;
+    azKnob.enabled = true;
+    azKnob.postfix = "º";
+    azKnob.externalHover = reticleHoveredLastFrame;
+    azKnob.cursorHide = cursorHide;
+    azKnob.cursorShow = cursorShowAndTeleportBack;
+    azKnob.commit();
 
-    if (rKnob.changed) {
+    if (azKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
@@ -268,14 +270,14 @@ void PannerUIBaseComponent::render()
         processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
-	rotateKnobDraggingNow = rKnob.draggingNow;
+	rotateKnobDraggingNow = azKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& rLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    rLabel.label = "ROTATE";
-    rLabel.alignment = TEXT_CENTER;
-    rLabel.enabled = true;
-    rLabel.highlighted = rKnob.hovered || reticleHoveredLastFrame;
-    rLabel.commit();
+    auto& azLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    azLabel.label = "AZIMUTH";
+    azLabel.alignment = TEXT_CENTER;
+    azLabel.enabled = true;
+    azLabel.highlighted = azKnob.hovered || reticleHoveredLastFrame;
+    azLabel.commit();
 
 	// Diverge
     auto& dKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
@@ -508,14 +510,16 @@ void PannerUIBaseComponent::render()
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
         if (isotropicCheckbox.checked) {
             if (equalPowerCheckbox.checked) {
-                processor->parameterChanged(processor->paramEqualPowerEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicEqualPower);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, true);
             } else {
-                processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModeIsotropicLinear);
+                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
+                processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
             }
         } else {
-            processor->parameterChanged(processor->paramIsotropicEncodeMode, pannerState->pannerMode = Mach1EncodePannerModePeriphonicLinear);
+            processor->parameterChanged(processor->paramIsotropicEncodeMode, false);
+            processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
         }
-        pannerState->m1Encode->setPannerMode(pannerState->pannerMode);
     }
 
     auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
@@ -752,7 +756,7 @@ void PannerUIBaseComponent::render()
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFont("Proxima Nova Reg.ttf", 10);
-            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 70, m.getSize().height() - 26, 60, 20));
+            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUTPUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
@@ -760,7 +764,7 @@ void PannerUIBaseComponent::render()
             outputLabel.commit();
             
             auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
-                                                        40, 30 })
+                                                        80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-18", "M1Spatial-22", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
             auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
@@ -828,7 +832,6 @@ void PannerUIBaseComponent::render()
     pannerLabel.commit();
     
     m.setColor(200, 255);
-    m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 #ifdef CUSTOM_CHANNEL_LAYOUT
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else

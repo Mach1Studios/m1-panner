@@ -40,10 +40,32 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered)));
             m.setColor(BACKGROUND_GREY); // background color for internal circle
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered)));
-            
             m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
 
+            // rollover central reticle draw logic
+            if (reticlePositionInWidgetSpace.x > context.getSize().x) {
+                //draw rollover shape on left side
+                float left_rollover = (reticlePositionInWidgetSpace.x+14)-context.getSize().x;
+                m.setColor(M1_ACTION_YELLOW);
+                m.drawCircle(left_rollover-14, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered)));
+                m.setColor(BACKGROUND_GREY); // background color for internal circle
+                m.drawCircle(left_rollover-14, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered)));
+                m.setColor(M1_ACTION_YELLOW);
+                m.drawCircle(left_rollover-14, reticlePositionInWidgetSpace.y, 6);
+            }
+            if (reticlePositionInWidgetSpace.x < 0) {
+                //draw rollover shape on right side
+                float right_rollover = abs(reticlePositionInWidgetSpace.x - 14);
+                float left_rollover = (reticlePositionInWidgetSpace.x+14)-context.getSize().x;
+                m.setColor(M1_ACTION_YELLOW);
+                m.drawCircle(context.getSize().x-right_rollover+14, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered)));
+                m.setColor(BACKGROUND_GREY); // background color for internal circle
+                m.drawCircle(context.getSize().x-right_rollover+14, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered)));
+                m.setColor(M1_ACTION_YELLOW);
+                m.drawCircle(context.getSize().x-right_rollover+14, reticlePositionInWidgetSpace.y, 6);
+            }
+        
             // Draw additional reticles for each input channel
             std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             std::vector<Mach1Point3D> points = m1Encode->getPoints();
@@ -107,12 +129,12 @@ public:
         if (input.x > max) input.x = max;
         if (input.y < min) input.y = min;
         if (input.y > max) input.y = max;
-    };
+    }
     
     float normalize(float input, float min, float max){
         float normalized_x = (input-min)/(max-min);
         return normalized_x;
-    };
+    }
     
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, Murka& m, MurkaContext& context) {
         float realx = x;
@@ -130,8 +152,7 @@ public:
         if (realx-14 < 0){
             //draw rollover shape on right side
             float right_rollover = abs(realx - 14);
-            float width = context.getSize().x;
-            m.drawCircle(width-right_rollover+14, realy+5, (10 + 3 * A(reticleHovered)));
+            m.drawCircle(context.getSize().x-right_rollover+14, realy+5, (10 + 3 * A(reticleHovered)));
         }
         
         m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered)));
@@ -147,10 +168,9 @@ public:
         if (realx-20 < 0){
             //draw rollover shape on right side
             float right_rollover = abs(realx-8);
-            float width = context.getSize().x;
-            m.draw<M1Label>(MurkaShape(width-right_rollover, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
+            m.draw<M1Label>(MurkaShape(context.getSize().x-right_rollover, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
         }
-    };
+    }
     
     void drawMonitorYaw(float yawAngle, float pitchAngle, Murka& m){
         MurkaContext& context = m.currentContext;
@@ -170,13 +190,12 @@ public:
         if (centerPos-halfWidth < 0){
             //draw rollover shape on right side
             float right_rollover = abs(centerPos - halfWidth);
-            float width = context.getSize().x;
-            m.drawRectangle(width-right_rollover,
+            m.drawRectangle(context.getSize().x-right_rollover,
                             ((pitch / 180.) * context.getSize().y) - halfHeight,
                             right_rollover,
                             context.getSize().y/divider);
         }
-    };
+    }
     
     bool draggingNow = false;
     bool reticleHoveredLastFrame = false;

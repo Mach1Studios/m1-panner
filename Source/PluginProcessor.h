@@ -29,8 +29,9 @@ public:
     ~M1PannerAudioProcessor() override;
     
     static AudioProcessor::BusesProperties getHostSpecificLayout () {
+        
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
-        PluginHostType hostType;
+        juce::PluginHostType hostType;
         
         // Multichannel Pro Tools
         // TODO: Check if Ultimate/HD
@@ -137,6 +138,10 @@ public:
     // Variables from processor for UI
     juce::Array<float> outputMeterValuedB;
     
+    double processorSampleRate = 44100; // only has to be something for the initilizer to work
+    
+    void m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode);
+    void m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode);
     Mach1Encode m1Encode;
     PannerSettings pannerSettings;
     MixerSettings monitorSettings;

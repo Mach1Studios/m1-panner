@@ -17,11 +17,10 @@ public:
         bool inside = ctx.isHovered() *
 //        Had to temporary remove the areInteractiveChildrenHovered because of the bug in Murka with the non-deleting children widgets. TODO: fix this
 //        !areInteractiveChildrenHovered(ctx) *
-            hasMouseFocus(m)
-            * (!editingTextNow);
+//            hasMouseFocus(m) *
+             (!editingTextNow);
         
         changed = false;
-
         hovered = inside + draggingNow; // for external views to be highlighted too if needed
         bool hoveredLocal = hovered + externalHover; // shouldn't propel hoveredLocal outside so it doesn't feedback
 
@@ -39,21 +38,18 @@ public:
         float width = 1.0;
         
         // "Outer" circle
-        
-        
         m.drawCircle(shape.size.x / 2,
                      shape.size.y * 0.35,
                      shape.size.x * (0.25 + A(0.01 * hoveredLocal)));
         
         // "Inner" circle
-         
         m.setColor(BACKGROUND_GREY);
         m.drawCircle(shape.size.x / 2,
                      shape.size.y * 0.35,
                      shape.size.x * 0.25 - 2 * (width + A(0.5 * hoveredLocal)));
         m.setColor(BACKGROUND_GREY);
-       // A grey colored rectangle that rotates
         
+       // A grey colored rectangle that rotates
         m.pushMatrix();
         m.translate(shape.size.x / 2,
                     shape.size.y * 0.35,
@@ -67,24 +63,20 @@ public:
         }
         
         m.rotateZRad(inputValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
-        
         m.drawRectangle(-width * (4 + A(1 * inside)), 0, width * (8 + A(2 * inside)), shape.size.x * (0.25 + A(0.02 * inside)));
         
         // A white rectangle inside a grey colored one
-        
         m.setColor(100 + 110 * enabled + A(30 * hoveredLocal) * enabled, 255);
         float w = A(width * (1 + 1 * hoveredLocal));
         m.drawRectangle(-w, 0, w * 2, shape.size.x * 0.26);
-        m.popMatrix();
         
+        m.popMatrix();
         m.popStyle();
         
         m.setColor(100 + 110 * enabled + A(30 * hoveredLocal), 255);
-        
         auto labelPositionY = shape.size.x * 0.8 / width + 10;
-
         std::string displayString = float_to_string(*data, floatingPointPrecision);
-        
+
         std::function<void()> deleteTheTextField = [&]() {
             // Temporary solution to delete the TextField:
             // Searching for an id to delete the text field widget.
@@ -119,7 +111,6 @@ public:
                 .onlyAllowNumbers(true)
                 .commit();
             
-            
             auto textFieldResults = textFieldObject.results;
             
             if (shouldForceEditorToSelectAll) {
@@ -134,9 +125,10 @@ public:
             
             if (textFieldResults) {
                 editingTextNow = false;
-
+                changed = true;
                 deleteTheTextField();
             }
+            
         } else {
             m.draw<murka::Label>({0, shape.size.x * 0.8 / width + 10,
                 shape.size.x / width, shape.size.y * 0.5})
@@ -231,7 +223,7 @@ public:
             }
             changed = true;
         }
-    };
+    }
     
     std::stringstream converterStringStream;
     
@@ -260,7 +252,8 @@ public:
     float defaultValue = 0;
     float* dataToControl = nullptr;
     bool changed = false;
-    
+    bool hovered = false;
+
     M1Knob & withParameters(float rangeFrom_,
                             float rangeTo_,
                             std::string postfix_ = "",
@@ -294,5 +287,4 @@ public:
         return *this;
     }
     
-    bool hovered = false;
 };
