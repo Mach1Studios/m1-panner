@@ -763,6 +763,9 @@ void PannerUIBaseComponent::render()
             outputLabel.highlighted = false;
             outputLabel.commit();
             
+            auto outputChannelsCount = pannerState->m1Encode->getOutputChannelsCount();
+            auto outputType = pannerState->m1Encode->getOutputMode();
+            
             auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                         80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode->getOutputChannelsCount())).commit();
@@ -791,18 +794,18 @@ void PannerUIBaseComponent::render()
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_14);
                 } else if (outputDropdownMenu.selectedOption == 4) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_18);
-                } else if (outputDropdownMenu.selectedOption == 4) {
+                } else if (outputDropdownMenu.selectedOption == 5) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_22);
-                } else if (outputDropdownMenu.selectedOption == 4) {
+                } else if (outputDropdownMenu.selectedOption == 6) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_32);
-                } else if (outputDropdownMenu.selectedOption == 4) {
+                } else if (outputDropdownMenu.selectedOption == 7) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_36);
-                } else if (outputDropdownMenu.selectedOption == 4) {
+                } else if (outputDropdownMenu.selectedOption == 8) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_48);
-                } else if (outputDropdownMenu.selectedOption == 4) {
+                } else if (outputDropdownMenu.selectedOption == 9) {
                     processor->parameterChanged(processor->paramOutputMode, pannerState->outputType = Mach1EncodeOutputModeM1Spatial_60);
                 }
-                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode->getOutputMode());
+//                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode->getOutputMode());
             }
         } else {
             // PT & 4 channels

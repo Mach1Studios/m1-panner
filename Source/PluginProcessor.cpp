@@ -216,6 +216,7 @@ void M1PannerAudioProcessor::createLayout(){
         // OUTPUT
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
+        /*
         // INPUT
         auto newInputModeValue = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue());
         
@@ -225,12 +226,15 @@ void M1PannerAudioProcessor::createLayout(){
         // OUTPUT
         auto newOutputModeValue = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue());
         pannerSettings.m1Encode->setOutputMode(newOutputModeValue);
+         */
     }
     
+    /*
     // UPDATE PANNER SETTINGS STATE
     pannerSettings.inputType = m1Encode.getInputMode();
     pannerSettings.outputType = m1Encode.getOutputMode();
-
+     */
+    
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
 }
@@ -324,9 +328,11 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         layoutCreated = false;
         createLayout();
     } else if (parameterID == paramOutputMode) {
-        parameters.getParameter(paramOutputMode)->setValue((int)newValue);
-        Mach1EncodeOutputModeType outputMode = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->getValue();
-        m1EncodeChangeOutputMode(outputMode);
+        juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramInputMode);
+        parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
+        Mach1EncodeOutputModeType outputType;
+        outputType = Mach1EncodeOutputModeType((int)newValue);
+        m1EncodeChangeOutputMode(outputType);
         pannerSettings.outputType = m1Encode.getOutputMode();
         layoutCreated = false;
         createLayout();
