@@ -565,9 +565,7 @@ void PannerUIBaseComponent::render()
 
 		m.setColor(REF_LABEL_TEXT_COLOR);
 		for (int i = 0; i <= 56; i += 6) {
-			//float db = ofMap(i, 0, 100, 0, -144); // 144 from M1VolumeDisplayLine math
 			float db = -i + 12;
-
 			float y = i * 7;
             // Background line
             m.draw<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
@@ -629,7 +627,6 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
-//                                                        .controlling(&pannerState->inputType)
                                                         .withOptions(input_options);
 
             if (inputDropdownButton.pressed) {
@@ -662,7 +659,6 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
-//                                                        .controlling(&pannerState->inputType)
                                                         .withOptions(input_options);
 
             if (inputDropdownButton.pressed) {
@@ -697,7 +693,6 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
-//                                                        .controlling(&pannerState->inputType)
                                                         .withOptions(input_options);
 
             if (inputDropdownButton.pressed) {
@@ -769,7 +764,6 @@ void PannerUIBaseComponent::render()
             auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
                                                                 120, output_options.size() * dropdownItemHeight })
-//                                                        .controlling(&pannerState->outputType)
                                                         .withOptions(output_options);
             if (outputDropdownButton.pressed) {
                 outputDropdownMenu.open();
