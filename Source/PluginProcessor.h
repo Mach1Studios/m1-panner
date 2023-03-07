@@ -28,8 +28,7 @@ public:
     M1PannerAudioProcessor();
     ~M1PannerAudioProcessor() override;
     
-    static AudioProcessor::BusesProperties getHostSpecificLayout () {
-        
+    static AudioProcessor::BusesProperties getHostSpecificLayout() {
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         juce::PluginHostType hostType;
         
@@ -65,10 +64,13 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
     std::vector<juce::AudioChannelSet::ChannelType> orderOfChans; // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<int> output_channel_indices;
     void fillChannelOrderArray(int numOutputChannels);
+
+#ifndef CUSTOM_CHANNEL_LAYOUT
+    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+#endif
     
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 #ifdef ITD_PARAMETERS
@@ -139,7 +141,6 @@ public:
     juce::Array<float> outputMeterValuedB;
     
     double processorSampleRate = 44100; // only has to be something for the initilizer to work
-    
     void m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode);
     void m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode);
     PannerSettings pannerSettings;

@@ -34,13 +34,13 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 
 ### Examples
 
-- MacOS compiling M1-Panner with specific I/O:
+- MacOS setup M1-Panner
+```
+cmake -Bbuild -G "Xcode" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="/Users/[USERNAME]/SDKs/aax-sdk-2-4-1" -DBUILD_AU=ON -DBUILD_VST=ON -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK" -DBUILD_AUV3=ON -DBUILD_UNITY=ON -DBUILD_STANDALONE=ON
+```
+
+- MacOS setup & compile M1-Panner with specific I/O:
 ```
 cmake -Bbuild_i1o8 -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
 cmake --build build_i1o8 --config Release
-```
-- MacOS compiling M1-Panner AAX
-```
-cmake -Bbuild_aax -G "Xcode" -DBUILD_AAX=1 -DAAX_PATH="/Users/[USERNAME]/SDKs/AAX_SDK_2p3p2"
-cmake --build build_aax --config Release
 ```
