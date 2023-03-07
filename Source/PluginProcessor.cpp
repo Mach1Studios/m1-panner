@@ -553,7 +553,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         /// INTERNAL_SPATIAL_PROCESSING
 
         // multichannel output buffer
-        float ** outBuffer = mainOutput.getArrayOfWritePointers();
+        float* const* outBuffer = mainOutput.getArrayOfWritePointers();
 
         // processing loop
         for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
