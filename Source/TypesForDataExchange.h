@@ -38,6 +38,8 @@ struct MixerSettings {
 	float pitch;
 	float roll;
     int monitor_mode;
+
+    bool yawActive, pitchActive, rollActive = true;
 };
 
 #endif

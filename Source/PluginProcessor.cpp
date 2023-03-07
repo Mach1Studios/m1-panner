@@ -359,7 +359,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
             // test each input, if the input has the number of channels as the input testing layout has move on to output testing
             if (layouts.getMainInputChannelSet().size() == configTester.getInputChannelsCount()) {
-                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_32; outputEnum++ ) {
+                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_60; outputEnum++ ) {
                     // test each output
                    configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
                     if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount()){
@@ -685,7 +685,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType in
     pannerSettings.m1Encode.setInputMode(inputMode);
     
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
-    smoothedChannelCoeffs.resize(pannerSettings.m1Encode.getInputChannelsCount());
+    smoothedChannelCoeffs.resize(inputChannelsCount);
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
     fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
@@ -702,9 +702,9 @@ void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType 
     pannerSettings.m1Encode.setOutputMode(outputMode);
 
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
-    smoothedChannelCoeffs.resize(pannerSettings.m1Encode.getInputChannelsCount());
-    orderOfChans.resize(pannerSettings.m1Encode.getOutputChannelsCount());
-    output_channel_indices.resize(pannerSettings.m1Encode.getOutputChannelsCount());
+    smoothedChannelCoeffs.resize(outputChannelsCount);
+    orderOfChans.resize(outputChannelsCount);
+    output_channel_indices.resize(outputChannelsCount);
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
     fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
