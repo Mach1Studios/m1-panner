@@ -175,12 +175,13 @@ endif()
 # link libraries
 find_library(MACH1ENCODE_LIBRARY 
     NAMES Mach1EncodeCAPI
-    PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64
+    #PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64
+    PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/${CMAKE_BUILD_TYPE}
 )
 set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL_LIBS_PATH}/linux/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/xcode/include ${MACH1SPATIAL_LIBS_PATH}/xcode/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include/M1DSP)
 include_directories(${MACH1SPATIAL_INCLUDES})
 target_link_libraries(${PLUGIN_NAME} PRIVATE ${MACH1ENCODE_LIBRARY})
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if(WIN32)
     add_compile_definitions(M1_STATIC)
     message(STATUS "Adding windows OS flags")
 endif()
