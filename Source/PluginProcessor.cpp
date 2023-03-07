@@ -526,8 +526,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
     
-    float outputMixerCoeff[pannerSettings.m1Encode.getOutputChannelsCount()][buffer.getNumSamples()];
-    
+    float** outputMixerCoeff = new float* [pannerSettings.m1Encode.getOutputChannelsCount()];
+    for (int i = 0; i < pannerSettings.m1Encode.getOutputChannelsCount(); i++) {
+        outputMixerCoeff[i] = new float[buffer.getNumSamples()];
+    }
+
     if (external_spatialmixer_active) {
         // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin        
         for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
@@ -635,6 +638,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             outputMeterValuedB.set(output_channel, output_channel < pannerSettings.m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
         }
     }
+
+    for (int i = 0; i < pannerSettings.m1Encode.getOutputChannelsCount(); i++) {
+        delete[] outputMixerCoeff[i];
+    }
+    delete[] outputMixerCoeff;
 }
 
 //==============================================================================
