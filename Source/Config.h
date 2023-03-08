@@ -75,6 +75,14 @@
     #pragma message "ITD_PARAMETERS Active"
 #endif
 
+#ifdef PLUGIN_FONT
+    #pragma message XSTR(USER_FONT) "." XSTR(USER_FONT_TYPE)
+    #pragma message XSTR(PLUGIN_FONT)
+#else
+    // default opensource font
+    #define PLUGIN_FONT "AileronBlack.ttf"
+#endif
+
 // ---
 
 #ifndef PI

@@ -25,7 +25,7 @@ public:
                         shape.size.x - 2, shape.size.y - 2);
 
         m.setColor(LABEL_TEXT_COLOR);
-        m.setFont("Proxima Nova Reg.ttf", fontSize);
+        m.setFont(PLUGIN_FONT, fontSize);
         // centered interior text
         m.draw<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).commit();
 

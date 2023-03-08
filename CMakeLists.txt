@@ -140,17 +140,30 @@ set_target_properties(Resources PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 foreach(target ${FORMATS} "All")
     if(TARGET ${PLUGIN_NAME}_${target})
-        set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
-            # Tuck the actual plugin targets into a folder where they won't bother us
-            FOLDER "Targets"
-            
-            # MacOS only: Sets the default executable that Xcode will open on build
-            # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
-            # XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
-            XCODE_SCHEME_EXECUTABLE /Applications/REAPER.app
+        if (${target} STREQUAL "VST" OR ${target} STREQUAL "VST3")
+                set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
+                # Tuck the actual plugin targets into a folder where they won't bother us
+                FOLDER "Targets"
+                
+                # MacOS only: Sets the default executable that Xcode will open on build
+                # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
+                #XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
+                XCODE_SCHEME_EXECUTABLE /Applications/REAPER.app
 
-            # Let us build the target in Xcode
-            XCODE_GENERATE_SCHEME ON)
+                # Let us build the target in Xcode
+                XCODE_GENERATE_SCHEME ON)
+        else()
+            set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
+                # Tuck the actual plugin targets into a folder where they won't bother us
+                FOLDER "Targets"
+                
+                # MacOS only: Sets the default executable that Xcode will open on build
+                # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
+                #XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
+
+                # Let us build the target in Xcode
+                XCODE_GENERATE_SCHEME ON)
+        endif()
     endif()
 endforeach()
 set_target_properties(Resources PROPERTIES FOLDER "Targets")
@@ -174,7 +187,7 @@ else()
 endif()
 
 # link libraries
-if(WIN32)
+if(WIN32 OR MSVC OR MINGW)
     find_library(MACH1ENCODE_LIBRARY_RELEASE
         NAMES Mach1EncodeCAPI
         PATHS ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/Release

@@ -126,6 +126,12 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayTime, this);
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
+
+    // standalone initialize as 1->8
+    if(hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Standalone) {
+        m1EncodeChangeInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
+        m1EncodeChangeOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
+    }
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
@@ -559,7 +565,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
             // break if expected output channel num size does not match current output channel num size from host
             if (output_channel > mainOutput.getNumChannels()-1) {
-                // TODO: Test for external_mixer?
+                // TODO: Test for external_mixer because we are not seeing the expected multichannel output?
                 break;
             } else {
                 // clear the output buffer
@@ -571,22 +577,27 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         
         for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
             for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                /// Get each input sample per channel
-                float inValue = audioDataIn[input_channel][sample];
-                
-                /// Apply to each of the output channels per input channel
-                for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
-                    // break if expected output channel num size does not match current output channel num size from host
-                    if (output_channel > mainOutput.getNumChannels()-1) {
-                        // TODO: Test for external_mixer?
-                        break;
-                    } else {
-                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                // break if expected input channel num size does not match current input channel num size from host
+                if (input_channel > mainInput.getNumChannels()-1) {
+                    break;
+                } else {
+                    /// Get each input sample per channel
+                    float inValue = audioDataIn[input_channel][sample];
+                    
+                    /// Apply to each of the output channels per input channel
+                    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
+                        // break if expected output channel num size does not match current output channel num size from host
+                        if (output_channel > mainOutput.getNumChannels()-1) {
+                            // TODO: Test for external_mixer?
+                            break;
+                        } else {
+                            float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
-                        // TODO: check if `output_channel_reordered` is appropriate here
-                        // Output channel reordering from fillChannelOrder()
-                        int output_channel_reordered = output_channel_indices[output_channel];
-                        outBuffer[output_channel][sample] += inValue * spatialGainCoeff;
+                            // TODO: check if `output_channel_reordered` is appropriate here
+                            // Output channel reordering from fillChannelOrder()
+                            int output_channel_reordered = output_channel_indices[output_channel];
+                            outBuffer[output_channel][sample] += inValue * spatialGainCoeff;
+                        }
                     }
                 }
             }
@@ -818,7 +829,6 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
                 // error
             }
             m1EncodeChangeInputMode(tempInputType);
-            pannerSettings.m1Encode.setInputMode(pannerSettings.m1Encode.getInputMode());
         }
         if (prefix == "2.0.0") {
             pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));

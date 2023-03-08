@@ -1,1 +1,16 @@
-juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png)
+option(PLUGIN_FONT "Set the plugin's primary text font" "AileronBlack.ttf")
+
+if(EXISTS "ProximaNovaReg.ttf" AND NOT IS_DIRECTORY "ProximaNovaReg.ttf")
+    add_compile_definitions(USER_FONT ProximaNovaReg)
+    add_compile_definitions(USER_FONT_TYPE ttf)
+    set(PLUGIN_FONT "${USER_FONT}.${USER_FONT_TYPE}")
+    juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png ProximaNovaReg.ttf SoinSansPro-Roman.ttf)
+    message(STATUS "Font: ProximaNovaReg")
+else()
+    add_compile_definitions(USER_FONT AileronBlack)
+    add_compile_definitions(USER_FONT_TYPE ttf)
+    juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png AileronBlack.ttf)
+    message(STATUS "Font: AileronBlack")
+endif()
+
+target_compile_definitions(${PLUGIN_NAME} PUBLIC "${PLUGIN_FONT}")
