@@ -172,12 +172,28 @@ if(APPLE)
 else()
     set(MACH1SPATIAL_LIBS_UNIX_PATH ${MACH1SPATIAL_LIBS_PATH}/linux)
 endif()
+
 # link libraries
-find_library(MACH1ENCODE_LIBRARY 
-    NAMES Mach1EncodeCAPI
-    #PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64
-    PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/${CMAKE_BUILD_TYPE}
-)
+if(WIN32)
+    find_library(MACH1ENCODE_LIBRARY_RELEASE
+        NAMES Mach1EncodeCAPI
+        PATHS ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/Release
+    )
+    find_library(MACH1ENCODE_LIBRARY_DEBUG
+        NAMES Mach1EncodeCAPId
+        PATHS ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/Debug
+    )
+    SET(MACH1ENCODE_LIBRARY
+        debug ${MACH1ENCODE_LIBRARY_DEBUG}
+        optimized ${MACH1ENCODE_LIBRARY_RELEASE}
+    )
+else()
+    find_library(MACH1ENCODE_LIBRARY 
+        NAMES Mach1EncodeCAPI
+        PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib
+    )
+endif()
+
 set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL_LIBS_PATH}/linux/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/xcode/include ${MACH1SPATIAL_LIBS_PATH}/xcode/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include/M1DSP)
 include_directories(${MACH1SPATIAL_INCLUDES})
 target_link_libraries(${PLUGIN_NAME} PRIVATE ${MACH1ENCODE_LIBRARY})
