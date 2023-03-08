@@ -155,7 +155,7 @@ public:
             m.drawCircle(context.getSize().x-right_rollover+14, realy+5, (10 + 3 * A(reticleHovered)));
         }
         
-        m.setFont("Proxima Nova Reg.ttf", (10 + 2 * A(reticleHovered)));
+        m.setFont(PLUGIN_FONT, (10 + 2 * A(reticleHovered)));
         m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         M1Label& l = m.draw<M1Label>(MurkaShape(realx-9, realy-7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();

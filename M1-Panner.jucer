@@ -7,13 +7,12 @@
               pluginManufacturer="Mach1" pluginCode="M1PN" aaxIdentifier="com.mach1.panner"
               pluginVSTCategory="kPlugCategSpacializer" pluginAAXCategory="0,512"
               pluginRTASCategory="0,512" pluginVST3Category="Spatial,Surround,Up-Downmix"
-              pluginFormats="buildAU,buildVST" version="2.0.0" cppLanguageStandard="17">
+              pluginFormats="buildStandalone,buildVST,buildVST3" version="2.0.0"
+              cppLanguageStandard="17">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
+    <FILE id="oAX6j9" name="AileronBlack.ttf" compile="0" resource="1"
+          file="Resources/AileronBlack.ttf"/>
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
-    <FILE id="vkeyiB" name="Proxima Nova Reg.ttf" compile="0" resource="1"
-          file="Resources/Proxima Nova Reg.ttf"/>
-    <FILE id="xavLT3" name="SoinSansPro-Roman.ttf" compile="0" resource="1"
-          file="Resources/SoinSansPro-Roman.ttf"/>
     <FILE id="qM1czu" name="bluetooth_icon.png" compile="0" resource="1"
           file="Resources/bluetooth_icon.png"/>
     <FILE id="hUQhuN" name="tech_support_icon.png" compile="0" resource="1"
@@ -72,7 +71,7 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="$(MY_SPECIAL_LINKER_FLAG)"
-               externalLibraries="Mach1EncodeCAPI" extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3">
+               externalLibraries="Mach1EncodeCAPI" extraDefs="USER_FONT=AileronBlack&#10;USER_FONT_TYPE=ttf&#10;PLUGIN_FONT=&quot;AileronBlack.ttf&quot;&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/include/"
                        libraryPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/lib/"
@@ -104,7 +103,7 @@
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2017 targetFolder="Builds/VisualStudio2017" externalLibraries="Mach1EncodeCAPI.lib"
-            extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3">
+            extraDefs="USER_FONT=AileronBlack&#10;USER_FONT_TYPE=ttf&#10;PLUGIN_FONT=&quot;AileronBlack.ttf&quot;&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64\include"
                        libraryPath="..\..\Modules\m1-sdk\mach1spatial-libs\windows-x86_64"/>
@@ -134,7 +133,7 @@
       </MODULEPATHS>
     </VS2017>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" externalLibraries="Mach1EncodeCAPI"
-                extraDefs="&#10;MURKA_JUCE JUCE_OPENGL3">
+                extraDefs="USER_FONT=AileronBlack&#10;USER_FONT_TYPE=ttf&#10;PLUGIN_FONT=&quot;AileronBlack.ttf&quot;&#10;MURKA_JUCE JUCE_OPENGL3">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/linux/include/"
                        libraryPath="../../Modules/m1-sdk/mach1spatial-libs/linux/lib/"/>

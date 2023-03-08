@@ -137,7 +137,7 @@ void OverlayUIBaseComponent::render()
 	//OpenGLHelpers::clear (Colours::black);
 
 	// TODO
-	m.setFont( "Proxima Nova Reg.ttf", 10);
+	m.setFont(PLUGIN_FONT, 10);
 	m.begin();
 
 	m.setColor(0, 0);
@@ -183,7 +183,7 @@ void OverlayUIBaseComponent::render()
 	m.setCircleResolution(128);
 
 	float labelAnimation = 0; // we will get the hover from knobs to highlight labels
-	m.setFont("Proxima Nova Reg.ttf", 10);
+	m.setFont(PLUGIN_FONT, 10);
 
 	// Diverge
 	if (pannerState) {
