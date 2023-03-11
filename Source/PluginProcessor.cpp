@@ -537,18 +537,24 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         outputMixerCoeff[i] = new float[buffer.getNumSamples()];
     }
 
-    if (external_spatialmixer_active) {
-        // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin        
+    if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
+        // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin
         for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
-            for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                float inValue = audioDataIn[input_channel][sample];
-                for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
-                    float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+            if (input_channel > mainInput.getNumChannels()-1) {
+                // TODO: error?
+                // we are requesting an input format beyond what the current host can support
+                break;
+            } else {
+                for (int sample = 0; sample < buffer.getNumSamples(); sample++){
+                    float inValue = audioDataIn[input_channel][sample];
+                    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
+                        float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
-                    // TODO: check if `output_channel_reordered` is appropriate here
-                    // Output channel reordering from fillChannelOrder()
-                    int output_channel_reordered = output_channel_indices[output_channel];
-                    outputMixerCoeff[output_channel_reordered][sample] += inValue * inGain;
+                        // TODO: check if `output_channel_reordered` is appropriate here
+                        // Output channel reordering from fillChannelOrder()
+                        int output_channel_reordered = output_channel_indices[output_channel];
+                        outputMixerCoeff[output_channel_reordered][sample] += inValue * inGain;
+                    }
                 }
             }
         }
@@ -604,6 +610,8 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     
 #ifdef ITD_PARAMETERS
+        // TODO: Only support this if we are using a multichannel daw
+        
         //SIMPLE DELAY
         // scale delayCoeffs to be normalized
         for (int i = 0; i < pannerSettings.m1Encode.getInputChannelsCount(); i++) {
@@ -650,6 +658,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
 
+    // cleanup the buffer that was used for the GUI
     for (int i = 0; i < pannerSettings.m1Encode.getOutputChannelsCount(); i++) {
         delete[] outputMixerCoeff[i];
     }

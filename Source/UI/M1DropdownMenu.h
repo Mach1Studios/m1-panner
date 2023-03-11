@@ -52,7 +52,7 @@ public:
                     m.setColor(ENABLED_PARAM);
                     m.drawRectangle(1, i * optionHeight, shape.size.x - 2, optionHeight);
                     m.setColor(BACKGROUND_GREY);
-                    m.setFont(PLUGIN_FONT, fontSize);
+                    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
                     m.draw<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
                     
                     if (closingMode == mouseDown) {
@@ -75,7 +75,7 @@ public:
                     }
                 } else {
                     m.setColor(LABEL_TEXT_COLOR);
-                    m.setFont(PLUGIN_FONT, fontSize);
+                    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
                     m.draw<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
                 }
                 
