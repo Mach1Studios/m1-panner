@@ -75,14 +75,6 @@
     #pragma message "ITD_PARAMETERS Active"
 #endif
 
-#ifdef PLUGIN_FONT
-    #pragma message XSTR(USER_FONT) "." XSTR(USER_FONT_TYPE)
-    #pragma message XSTR(PLUGIN_FONT)
-#else
-    // default opensource font
-    #define PLUGIN_FONT "AileronBlack.ttf"
-#endif
-
 // ---
 
 #ifndef PI
@@ -111,3 +103,15 @@
 #define METER_RED 178, 24, 23
 #define METER_YELLOW 220, 174, 37
 #define METER_GREEN 67, 174, 56
+
+#ifdef PLUGIN_FONT
+    #pragma message XSTR(LOCAL_FONT) "." XSTR(LOCAL_FONT_TYPE)
+#else
+    // default opensource font
+    #define PLUGIN_FONT "AileronBlack.ttf"
+    #define BINARYDATA_FONT "BinaryData::AileronBlack_ttf"
+    #define BINARYDATA_FONT_SIZE "BinaryData::AileronBlack_ttfSize"
+#endif
+#pragma message XSTR(PLUGIN_FONT)
+#pragma message XSTR(BINARYDATA_FONT)
+#pragma message XSTR(BINARYDATA_FONT_SIZE)

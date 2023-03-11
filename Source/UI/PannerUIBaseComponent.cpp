@@ -134,10 +134,8 @@ void PannerUIBaseComponent::render()
     }
 
 	m.begin();
-    //m.setFontFromRawData(PLUGIN_FONT, BinaryData::USER_FONT+_+USER_FONT_TYPE, BinaryData::USER_FONT+_+USER_FONT_TYPESize, 7);
-    m.setFont(PLUGIN_FONT, 10);
-
-	m.setColor(BACKGROUND_GREY);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+    m.setColor(BACKGROUND_GREY);
 	m.clear();
     
 	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
@@ -171,8 +169,6 @@ void PannerUIBaseComponent::render()
 
 //    m.end();
 //    return;
-
-	m.setFont(PLUGIN_FONT, 10);
 
 	// Changes the default knob reaction speed to mouse. The higher the slower.
 	float knobSpeed = 350;
@@ -556,7 +552,7 @@ void PannerUIBaseComponent::render()
 
 	// Drawing volume meters
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
-        m.setFont(PLUGIN_FONT, 7);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 7);
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
             auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
 
@@ -588,11 +584,10 @@ void PannerUIBaseComponent::render()
         m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
         
         m.setColor(APP_LABEL_TEXT_COLOR);
-        m.setFont(PLUGIN_FONT, 10);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
         
         // Input Channel Mode Selector
         m.setColor(200, 255);
-        m.setFont(PLUGIN_FONT, 10);
         auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
         inputLabel.label = "INPUT";
         inputLabel.alignment = TEXT_CENTER;
@@ -738,7 +733,7 @@ void PannerUIBaseComponent::render()
         if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
             /// -> label
             m.setColor(200, 255);
-            m.setFont(PLUGIN_FONT, 10);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
             auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
             arrowLabel.label = "-->";
             arrowLabel.alignment = TEXT_CENTER;
@@ -748,7 +743,7 @@ void PannerUIBaseComponent::render()
             
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
-            m.setFont(PLUGIN_FONT, 10);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
             auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUTPUT";
             outputLabel.alignment = TEXT_CENTER;
@@ -803,7 +798,7 @@ void PannerUIBaseComponent::render()
     
     /// Panner label
     m.setColor(200, 255);
-    m.setFont(PLUGIN_FONT, 10);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
 #ifdef CUSTOM_CHANNEL_LAYOUT
     auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
