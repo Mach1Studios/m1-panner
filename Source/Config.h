@@ -107,10 +107,10 @@
 #ifdef PLUGIN_FONT
     #pragma message XSTR(LOCAL_FONT) "." XSTR(LOCAL_FONT_TYPE)
 #else
-    // default opensource font
-    #define PLUGIN_FONT "AileronBlack.ttf"
-    #define BINARYDATA_FONT "BinaryData::AileronBlack_ttf"
-    #define BINARYDATA_FONT_SIZE "BinaryData::AileronBlack_ttfSize"
+    // default CC0 font
+    #define PLUGIN_FONT "AileronSemiBold.ttf"
+    #define BINARYDATA_FONT "BinaryData::AileronSemiBold_ttf"
+    #define BINARYDATA_FONT_SIZE "BinaryData::AileronSemiBold_ttfSize"
 #endif
 #pragma message XSTR(PLUGIN_FONT)
 #pragma message XSTR(BINARYDATA_FONT)
