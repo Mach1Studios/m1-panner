@@ -10,8 +10,8 @@
               pluginFormats="buildStandalone,buildVST,buildVST3" version="2.0.0"
               cppLanguageStandard="17">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
-    <FILE id="oAX6j9" name="AileronBlack.ttf" compile="0" resource="1"
-          file="Resources/AileronBlack.ttf"/>
+    <FILE id="oAX6j9" name="AileronSemiBold.ttf" compile="0" resource="1"
+          file="Resources/AileronSemiBold.ttf"/>
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
     <FILE id="qM1czu" name="bluetooth_icon.png" compile="0" resource="1"
           file="Resources/bluetooth_icon.png"/>

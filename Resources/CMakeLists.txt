@@ -1,13 +1,13 @@
-option(PLUGIN_FONT "Set the plugin's primary text font" "AileronBlack.ttf")
+option(PLUGIN_FONT "Set the plugin's primary text font" "AileronSemiBold.ttf")
 
 if(EXISTS "Resources/ProximaNovaReg.ttf" AND NOT IS_DIRECTORY "Resources/ProximaNovaReg.ttf")
 	set(FOUND_FONT ProximaNovaReg)
 	set(FOUND_FONT_TYPE ttf)
     juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png ProximaNovaReg.ttf)
 else()
-	set(FOUND_FONT AileronBlack)
+	set(FOUND_FONT AileronSemiBold)
 	set(FOUND_FONT_TYPE ttf)
-    juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png AileronBlack.ttf)
+    juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png AileronSemiBold.ttf)
 endif()
 
 set(PLUGIN_FONT "${FOUND_FONT}.${FOUND_FONT_TYPE}")
