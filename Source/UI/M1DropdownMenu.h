@@ -105,7 +105,7 @@ public:
     
     bool changed = false;
     bool opened = false;
-    int selectedOption = 0;
+    int selectedOption = 1; // TODO: Have this set a default value
     std::vector<std::string> options;
     Mach1EncodeInputModeType* dataToControl = nullptr;
     
