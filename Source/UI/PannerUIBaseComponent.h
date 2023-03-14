@@ -80,11 +80,5 @@ private:
 		//
 	};
     
-    M1OrientationClientWindow orientationControlWindow;
-    bool showOrientationControlMenu = false;
-    bool showedOrientationControlBefore = false;
-    int DEBUG_orientationDeviceSelected = -1;
-    bool DEBUG_trackYaw = true, DEBUG_trackPitch = true, DEBUG_trackRoll = true;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PannerUIBaseComponent)
 };

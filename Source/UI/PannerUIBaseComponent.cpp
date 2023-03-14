@@ -555,16 +555,15 @@ void PannerUIBaseComponent::render()
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 7);
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
             auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
-
             m.setColor(LABEL_TEXT_COLOR);
             m.draw<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
 		}
-
-		m.setColor(REF_LABEL_TEXT_COLOR);
+        
 		for (int i = 0; i <= 56; i += 6) {
 			float db = -i + 12;
 			float y = i * 7;
             // Background line
+            m.setColor(REF_LABEL_TEXT_COLOR);
             m.draw<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
                 30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
 		}

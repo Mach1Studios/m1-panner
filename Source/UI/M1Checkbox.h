@@ -26,8 +26,6 @@ public:
         
         float animation = A(inside * enabled);
         
-        //TODO: setup default `checked` behavior in UI
-        //TODO: if disabled no animation
 		m.pushStyle();
         m.setColor(100 + 110 * enabled + 30 * animation, 220);
         m.drawCircle(c.getSize().y / 2, c.getSize().y / 2, c.getSize().y / 2);
