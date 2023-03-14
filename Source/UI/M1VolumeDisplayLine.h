@@ -85,7 +85,7 @@ public:
 
         // volume rms indicator
         float d = 0 ;
-        if (maxVolume < 0) {
+        if (maxVolume < 0 && maxVolume > -100) {
             d = maxVolume/-144; // negative dB
             d += 0.205; // offset by red zone percentage
         } else {

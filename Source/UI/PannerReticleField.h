@@ -91,7 +91,7 @@ public:
 			// MIXER - MONITOR DISPLAY
 			{
 				MurkaPoint center = { context.getSize().x / 2, context.getSize().x / 2 };
-				std::vector< MurkaPoint> vects;
+				std::vector<MurkaPoint> vects;
 				// arc
 				{
 					float centerX = 0;
