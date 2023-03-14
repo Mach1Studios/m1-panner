@@ -126,12 +126,6 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayTime, this);
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
-
-    // standalone initialize as 1->8
-    if(hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Standalone) {
-        m1EncodeChangeInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
-        m1EncodeChangeOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
-    }
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
@@ -217,17 +211,7 @@ void M1PannerAudioProcessor::createLayout(){
         // OUTPUT
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
-        /*
-        // INPUT
-        auto newInputModeValue = (Mach1EncodeInputModeType)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue());
-        
-        m1EncodeChangeInputMode(newInputModeValue);
-
-        auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
-        // OUTPUT
-        auto newOutputModeValue = (Mach1EncodeOutputModeType)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue());
-        pannerSettings.m1Encode.setOutputMode(newOutputModeValue);
-         */
+        // internal processing
     }
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
@@ -512,7 +496,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (int input_channel = 0; input_channel < mainInput.getNumChannels(); input_channel++){
         audioDataIn[input_channel].resize(buffer.getNumSamples(), 0.0);
     }
-    
+
     // input channel setup loop
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
         if (input_channel > mainInput.getNumChannels()-1) {
@@ -531,138 +515,104 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             }
         }
     }
-    
-    float** outputMixerCoeff = new float* [pannerSettings.m1Encode.getOutputChannelsCount()];
-    for (int i = 0; i < pannerSettings.m1Encode.getOutputChannelsCount(); i++) {
-        outputMixerCoeff[i] = new float[buffer.getNumSamples()];
-    }
 
-    if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
-        // internally process simulated multichannel output for meters and other usage but prevent it from outputting to the output bus of the plugin
-        for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
+    // multichannel temp buffer (also used for informing meters even when not processing to write pointers
+    juce::AudioBuffer<float> buf(pannerSettings.m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
+    buf.clear();
+    // multichannel output buffer (if internal processing is active this will have the above copy into it)
+    float* const* outBuffer = mainOutput.getArrayOfWritePointers();
+
+    // prepare the output buffer
+    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
+        // break if expected output channel num size does not match current output channel num size from host
+        if (output_channel > mainOutput.getNumChannels()-1) {
+            // TODO: Test for external_mixer because we are not seeing the expected multichannel output?
+            break;
+        } else {
+            // clear the output buffer
+            for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+                outBuffer[output_channel][sample] = 0;
+            }
+        }
+    }
+    
+    // processing loop
+    for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
+        for (int sample = 0; sample < buffer.getNumSamples(); sample++){
+            // break if expected input channel num size does not match current input channel num size from host
             if (input_channel > mainInput.getNumChannels()-1) {
-                // TODO: error?
-                // we are requesting an input format beyond what the current host can support
                 break;
             } else {
-                for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                    float inValue = audioDataIn[input_channel][sample];
-                    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
-                        float inGain = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                // Get each input sample per channel
+                float inValue = audioDataIn[input_channel][sample];
+                
+                // Apply to each of the output channels per input channel
+                for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
+                    // break if expected output channel num size does not match current output channel num size from host
+                    if (output_channel > mainOutput.getNumChannels()-1) {
+                        // TODO: Test for external_mixer?
+                        break;
+                    } else {
+                        // Get the next Mach1Encode coeff
+                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
                         // TODO: check if `output_channel_reordered` is appropriate here
                         // Output channel reordering from fillChannelOrder()
                         int output_channel_reordered = output_channel_indices[output_channel];
-                        outputMixerCoeff[output_channel_reordered][sample] += inValue * inGain;
-                    }
-                }
-            }
-        }
-            
-        /// TODO: SEND INPUT STREAMS TO EXTERNAL PROCESSOR HERE
-    
-    } else {
-        /// INTERNAL_SPATIAL_PROCESSING
-
-        // multichannel output buffer
-        float* const* outBuffer = mainOutput.getArrayOfWritePointers();
-
-        // processing loop
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
-            // break if expected output channel num size does not match current output channel num size from host
-            if (output_channel > mainOutput.getNumChannels()-1) {
-                // TODO: Test for external_mixer because we are not seeing the expected multichannel output?
-                break;
-            } else {
-                // clear the output buffer
-                for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
-                    outBuffer[output_channel][sample] = 0;
-                }
-            }
-        }
-        
-        for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
-            for (int sample = 0; sample < buffer.getNumSamples(); sample++){
-                // break if expected input channel num size does not match current input channel num size from host
-                if (input_channel > mainInput.getNumChannels()-1) {
-                    break;
-                } else {
-                    /// Get each input sample per channel
-                    float inValue = audioDataIn[input_channel][sample];
-                    
-                    /// Apply to each of the output channels per input channel
-                    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
-                        // break if expected output channel num size does not match current output channel num size from host
-                        if (output_channel > mainOutput.getNumChannels()-1) {
-                            // TODO: Test for external_mixer?
-                            break;
+                        
+                        // process via temp buffer that will also be used for meters
+                        buf.addSample(output_channel, sample, inValue * spatialGainCoeff);
+                        
+                        if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
+                            // ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
+                            
                         } else {
-                            float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                            // ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
 
-                            // TODO: check if `output_channel_reordered` is appropriate here
-                            // Output channel reordering from fillChannelOrder()
-                            int output_channel_reordered = output_channel_indices[output_channel];
-                            outBuffer[output_channel][sample] += inValue * spatialGainCoeff;
+                            // apply processed output samples to become the output buffers
+                            outBuffer[output_channel][sample] += buf.getSample(output_channel, sample);
+                            
+                            #ifdef ITD_PARAMETERS
+                                //SIMPLE DELAY
+                                // scale delayCoeffs to be normalized
+                                for (int i = 0; i < pannerSettings.m1Encode.getInputChannelsCount(); i++) {
+                                    for (int o = 0; o < pannerSettings.m1Encode.getOutputChannelsCount(); o++) {
+                                        delayCoeffs[i][o] = std::min(0.25f, delayCoeffs[i][o]); // clamp maximum to .25f
+                                        delayCoeffs[i][o] *= 4.0f; // rescale range to 0.0->1.0
+                                        // Incorporate the distance delay multiplier
+                                        // using min to correlate delayCoeffs as multiplier increases
+                                        //delayCoeffs[i][o] = std::min<float>(1.0f, (delayCoeffs[i][o]+0.01f) * (float)delayDistanceParameter->get()/100.);
+                                        //delayCoeffs[i][o] *= delayDistanceParameter->get()/10.;
+                                    }
+                                }
+                                
+                                if ((bool)*itdParameter) {
+                                    for (int sample = 0; sample < numSamples; sample++) {
+                                        // write original to delay
+                                        float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
+                                        for (auto channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
+                                            ring->pushSample(channel, outBuffer[channel][sample]);
+                                        }
+                                        for (int channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
+                                            outBuffer[channel][sample] = (outBuffer[channel][sample] * 0.707106781) + (ring->getSampleAtDelay(channel, udtime * delayCoeffs[0][channel]) * 0.707106781); // pan-law applied via `0.707106781`
+                                        }
+                                        ring->increment();
+                                    }
+                                }
+                            #endif // end of ITD_PARAMETERS
                         }
                     }
                 }
             }
         }
-    
-#ifdef ITD_PARAMETERS
-        // TODO: Only support this if we are using a multichannel daw
-        
-        //SIMPLE DELAY
-        // scale delayCoeffs to be normalized
-        for (int i = 0; i < pannerSettings.m1Encode.getInputChannelsCount(); i++) {
-            for (int o = 0; o < pannerSettings.m1Encode.getOutputChannelsCount(); o++) {
-                delayCoeffs[i][o] = std::min(0.25f, delayCoeffs[i][o]); // clamp maximum to .25f
-                delayCoeffs[i][o] *= 4.0f; // rescale range to 0.0->1.0
-                // Incorporate the distance delay multiplier
-                // using min to correlate delayCoeffs as multiplier increases
-                //delayCoeffs[i][o] = std::min<float>(1.0f, (delayCoeffs[i][o]+0.01f) * (float)delayDistanceParameter->get()/100.);
-                //delayCoeffs[i][o] *= delayDistanceParameter->get()/10.;
-            }
-        }
-        
-        if ((bool)*itdParameter) {
-            for (int sample = 0; sample < numSamples; sample++) {
-                // write original to delay
-                float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
-                for (auto channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
-                    ring->pushSample(channel, outBuffer[channel][sample]);
-                }
-                for (int channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
-                    outBuffer[channel][sample] = (outBuffer[channel][sample] * 0.707106781) + (ring->getSampleAtDelay(channel, udtime * delayCoeffs[0][channel]) * 0.707106781); // pan-law applied via `0.707106781`
-                }
-                ring->increment();
-            }
-        }
-#endif // end of ITD_PARAMETERS
     }
     
     // update meters
-    if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
-        // only using the data from the input channels and channel count and simulating here the expected multichannel output meters
-        juce::AudioBuffer<float> buf(pannerSettings.m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
-        outputMeterValuedB.resize(pannerSettings.m1Encode.getOutputChannelsCount()); // expand meter UI number
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
-            buf.copyFrom(output_channel, 0, *outputMixerCoeff, buf.getNumSamples());
-            outputMeterValuedB.set(output_channel, output_channel < pannerSettings.m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
-        }
-    } else {
-        juce::AudioBuffer<float> buf(buffer.getArrayOfWritePointers(), pannerSettings.m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
-        outputMeterValuedB.resize(pannerSettings.m1Encode.getOutputChannelsCount());
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
-            outputMeterValuedB.set(output_channel, output_channel < pannerSettings.m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
-        }
+    outputMeterValuedB.resize(pannerSettings.m1Encode.getOutputChannelsCount()); // expand meter UI number
+    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
+        outputMeterValuedB.set(output_channel, output_channel < pannerSettings.m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
     }
 
-    // cleanup the buffer that was used for the GUI
-    for (int i = 0; i < pannerSettings.m1Encode.getOutputChannelsCount(); i++) {
-        delete[] outputMixerCoeff[i];
-    }
-    delete[] outputMixerCoeff;
 }
 
 //==============================================================================

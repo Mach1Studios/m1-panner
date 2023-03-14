@@ -54,6 +54,13 @@ public:
             }
         }
         
+        if (hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Standalone ||
+            hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Unity) {
+            return BusesProperties()
+                .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                .withOutput("Mach1 Out", juce::AudioChannelSet::discreteChannels(8), true);
+        }
+        
         // STREAMING Panner instance
         return BusesProperties()
             .withInput("Input", juce::AudioChannelSet::stereo(), true)
