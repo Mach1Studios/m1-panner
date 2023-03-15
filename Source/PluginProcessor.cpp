@@ -564,10 +564,10 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                         buf.addSample(output_channel, sample, inValue * spatialGainCoeff);
                         
                         if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
-                            // ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
+                            /// ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
                             
                         } else {
-                            // ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
+                            /// ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
 
                             // apply processed output samples to become the output buffers
                             outBuffer[output_channel][sample] += buf.getSample(output_channel, sample);
@@ -661,16 +661,15 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 
 void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode) {
     pannerSettings.m1Encode.setInputMode(inputMode);
-    
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     smoothedChannelCoeffs.resize(inputChannelsCount);
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
-    fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
+    fillChannelOrderArray(inputChannelsCount);
     
-    for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++) {
-        smoothedChannelCoeffs[input_channel].resize(pannerSettings.m1Encode.getOutputChannelsCount());
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
+    for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++) {
+        smoothedChannelCoeffs[input_channel].resize(inputChannelsCount);
+        for (int output_channel = 0; output_channel < inputChannelsCount; output_channel++) {
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }

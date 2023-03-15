@@ -11,7 +11,6 @@ class M1Knob : public murka::View<M1Knob> {
 public:
     void internalDraw(Murka & m) {
         float* data = dataToControl;
-        
         MurkaContext& ctx = m.currentContext;
 
         bool inside = ctx.isHovered() *
@@ -165,7 +164,6 @@ public:
             deleteTheTextField();
         }
         
-        std::string debugStr = "";
         if ((hoveredValueText) && (m.currentContext.doubleClick) && (enabled)) {
             editingTextNow = true;
             shouldForceEditorToSelectAll = true;
@@ -226,7 +224,6 @@ public:
     }
     
     std::stringstream converterStringStream;
-    
     std::string float_to_string(float input, int precision) {
         converterStringStream.str(std::string());
         converterStringStream << std::fixed << std::setprecision(precision) << input;
