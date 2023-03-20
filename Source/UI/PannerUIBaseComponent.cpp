@@ -626,6 +626,7 @@ void PannerUIBaseComponent::render()
 
             if (inputDropdownButton.pressed) {
                 inputDropdownMenu.open();
+                inputDropdownMenu.selectedOption = (int)processor->pannerSettings.m1Encode.getInputMode();
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
@@ -658,6 +659,7 @@ void PannerUIBaseComponent::render()
 
             if (inputDropdownButton.pressed) {
                 inputDropdownMenu.open();
+                inputDropdownMenu.selectedOption = (int)processor->pannerSettings.m1Encode.getInputMode();
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
@@ -666,17 +668,16 @@ void PannerUIBaseComponent::render()
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeQuad);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeQuad);
                 } else if (inputDropdownMenu.selectedOption == 1) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeLCRS);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCRS);
                 } else if (inputDropdownMenu.selectedOption == 2) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeAFormat);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeAFormat);
                 } else if (inputDropdownMenu.selectedOption == 3) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeBFOAACN);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAACN);
                 } else if (inputDropdownMenu.selectedOption == 4) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeBFOAFUMA);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAFUMA);
                 }
-                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
             }
         // Multichannel DAWs
         } else {
@@ -692,6 +693,7 @@ void PannerUIBaseComponent::render()
 
             if (inputDropdownButton.pressed) {
                 inputDropdownMenu.open();
+                inputDropdownMenu.selectedOption = (int)processor->pannerSettings.m1Encode.getInputMode();
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
@@ -699,32 +701,34 @@ void PannerUIBaseComponent::render()
             inputDropdownMenu.commit();
 
             if (inputDropdownMenu.changed) {
+                DBG("CHANGED!!!!");
+                DBG(String(inputDropdownMenu.selectedOption));
                 if (inputDropdownMenu.selectedOption == 0) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeMono);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeMono);
                 } else if (inputDropdownMenu.selectedOption == 1) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeStereo);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeStereo);
                 } else if (inputDropdownMenu.selectedOption == 2) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeLCR);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCR);
                 } else if (inputDropdownMenu.selectedOption == 3) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeQuad);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeQuad);
                 } else if (inputDropdownMenu.selectedOption == 4) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeLCRS);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCRS);
                 } else if (inputDropdownMenu.selectedOption == 5) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeAFormat);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeAFormat);
                 } else if (inputDropdownMenu.selectedOption == 6) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeBFOAACN);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAACN);
                 } else if (inputDropdownMenu.selectedOption == 7) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeBFOAFUMA);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAFUMA);
                 } else if (inputDropdownMenu.selectedOption == 8) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode5dot0);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot0);
                 } else if (inputDropdownMenu.selectedOption == 9) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode5dot1Film);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1Film);
                 } else if (inputDropdownMenu.selectedOption == 10) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode5dot1DTS);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1DTS);
                 } else if (inputDropdownMenu.selectedOption == 11) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode5dot1SMTPE);
+                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1SMTPE);
                 }
-                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
+//                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
             }
         }
 

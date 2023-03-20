@@ -58,18 +58,14 @@ public:
                     if (closingMode == mouseDown) {
                         if (c.mouseDownPressed[0]) {
                             opened = false; // Closing the menu
-                            if (selectedOption != i) {
-                                changed = true;
-                            }
+                            changed = true;
                             selectedOption = i;
                         }
                     }
                     if (closingMode == mouseUp) {
                         if (c.mouseReleased[0]) {
                             opened = false; // Closing the menu
-                            if (selectedOption != i) {
-                                changed = true;
-                            }
+                            changed = true;
                             selectedOption = i;
                         }
                     }
