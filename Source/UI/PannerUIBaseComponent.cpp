@@ -774,23 +774,22 @@ void PannerUIBaseComponent::render()
 
             if (outputDropdownMenu.changed) {
                 if (outputDropdownMenu.selectedOption == 0) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Horizon_4);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Horizon_4);
                 } else if (outputDropdownMenu.selectedOption == 1) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_8);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_8);
                 } else if (outputDropdownMenu.selectedOption == 2) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_12);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_12);
                 } else if (outputDropdownMenu.selectedOption == 3) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_14);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_14);
                 } else if (outputDropdownMenu.selectedOption == 4) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_32);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_32);
                 } else if (outputDropdownMenu.selectedOption == 5) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_36);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_36);
                 } else if (outputDropdownMenu.selectedOption == 6) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_48);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_48);
                 } else if (outputDropdownMenu.selectedOption == 7) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeM1Spatial_60);
+                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_60);
                 }
-                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
             }
         } else {
             // PT & 4 channels
