@@ -213,6 +213,11 @@ void M1PannerAudioProcessor::createLayout(){
     } else {
         // internal processing
     }
+    
+    // initialize the channel i/o
+    m1EncodeChangeInputMode(pannerSettings.m1Encode.getInputMode());
+    m1EncodeChangeOutputMode(pannerSettings.m1Encode.getOutputMode());
+    
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
 }
