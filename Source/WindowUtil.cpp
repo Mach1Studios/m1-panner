@@ -2,7 +2,7 @@
 //  WindowUtil.cpp
 //  M1-Panner
 //
-#ifdef  WIN32
+#ifdef  _WIN32
 
 #include "WindowUtil.h"
 

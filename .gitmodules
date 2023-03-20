@@ -12,3 +12,6 @@
 [submodule "JUCE"]
 	path = JUCE
 	url = git@github.com:juce-framework/JUCE.git
+[submodule "Source/PlugSync/shared/message_protocol_external_mixer"]
+	path = Source/PlugSync/shared/message_protocol_external_mixer
+	url = ssh://git@git.jetbrains.space/gpu-audio/mach-1/message_protocol_external_mixer.git
