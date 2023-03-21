@@ -428,6 +428,18 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    // Update the host playhead data external usage
+    if (external_spatialmixer_active && getPlayHead() != nullptr) {
+        juce::AudioPlayHead* ph = getPlayHead();
+        juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
+        // Lots of defenses against hosts who do not support playhead data returns
+        if (ph->getCurrentPosition(currentPlayHeadInfo)) {
+            hostTimelineData.isPlaying = currentPlayHeadInfo.isPlaying;
+            hostTimelineData.playheadPositionInSeconds = currentPlayHeadInfo.timeInSeconds;
+            
+        }
+    }
+    
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
