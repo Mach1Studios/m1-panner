@@ -674,7 +674,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType in
     
     for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++) {
         smoothedChannelCoeffs[input_channel].resize(inputChannelsCount);
-        for (int output_channel = 0; output_channel < inputChannelsCount; output_channel++) {
+        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
@@ -689,11 +689,11 @@ void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType 
     output_channel_indices.resize(outputChannelsCount);
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
-    fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
+    fillChannelOrderArray(outputChannelsCount);
     
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++) {
-        smoothedChannelCoeffs[input_channel].resize(pannerSettings.m1Encode.getOutputChannelsCount());
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
+        smoothedChannelCoeffs[input_channel].resize(outputChannelsCount);
+        for (int output_channel = 0; output_channel < outputChannelsCount; output_channel++) {
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
