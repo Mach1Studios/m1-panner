@@ -152,7 +152,7 @@ void OverlayUIBaseComponent::render()
 
 	if (pannerState) {
 		XYRZ xyrz = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->elevation };
-        auto& overlayReticleField = m.draw<OverlayReticleField>({0, 0, getWidth() * m.getScreenScale(), getHeight() * m.getScreenScale()}).controlling(&xyrz);
+        auto& overlayReticleField = m.prepare<OverlayReticleField>({0, 0, getWidth() * m.getScreenScale(), getHeight() * m.getScreenScale()}).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
         overlayReticleField.teleportCursor = teleportCursor;
@@ -188,7 +188,7 @@ void OverlayUIBaseComponent::render()
 	// Diverge
 	if (pannerState) {
         
-        auto& divergeKnob = m.draw<M1Knob>({xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight})
+        auto& divergeKnob = m.prepare<M1Knob>({xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight})
             .controlling(&pannerState->diverge);
         divergeKnob.rangeFrom = -100;
         divergeKnob.rangeTo = 100;
@@ -209,7 +209,7 @@ void OverlayUIBaseComponent::render()
 		labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);
 		divergeKnobDraggingNow = divergeKnob.draggingNow;
 		m.setColor(210 + 40 * labelAnimation, 255);
-        auto & dLabel = m.draw<M1Label>({xOffset, m.getWindowHeight() - knobHeight - 20 - labelOffsetY, knobWidth, knobHeight}).text("DIVERGE");
+        auto & dLabel = m.prepare<M1Label>({xOffset, m.getWindowHeight() - knobHeight - 20 - labelOffsetY, knobWidth, knobHeight}).text("DIVERGE");
         dLabel.alignment = TEXT_CENTER;
 	}
 
