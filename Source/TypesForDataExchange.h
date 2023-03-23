@@ -42,4 +42,16 @@ struct MixerSettings {
     bool yawActive, pitchActive, rollActive = true;
 };
 
+struct HostTimelineData {
+    // Currently implmenting via JUCE 6, however JUCE 7 will change require a change to this struct design
+    bool isPlaying;
+    double playheadPositionInSeconds;
+    
+    // TODO: Implement the following after upgrading project to JUCE 7
+    // double hostBPM; // Used to calculate loop points in seconds
+    // double loopStartPositionInSeconds; // for more detailed indication on timeline indicator
+    // double loopEndPositionInSeconds; // for more detailed indication on timeline indicator
+    // double editOriginPositionInSeconds;
+};
+
 #endif

@@ -152,6 +152,7 @@ public:
     void m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode);
     PannerSettings pannerSettings;
     MixerSettings monitorSettings;
+    HostTimelineData hostTimelineData;
     juce::PluginHostType hostType;
     bool layoutCreated = false;
     
