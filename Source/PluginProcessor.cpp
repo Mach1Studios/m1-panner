@@ -692,6 +692,7 @@ void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType 
     fillChannelOrderArray(outputChannelsCount);
     
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++) {
+        smoothedChannelCoeffs[input_channel] = std::vector<juce::LinearSmoothedValue<float>>();
         smoothedChannelCoeffs[input_channel].resize(outputChannelsCount);
         for (int output_channel = 0; output_channel < outputChannelsCount; output_channel++) {
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);

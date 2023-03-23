@@ -40,7 +40,7 @@ public:
 
         m.setColor(100 + 110 * enabled + 30 * animation, 220);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
-        m.draw<murka::Label>({shape.size.y + 2, 2, 150, shape.size.y + 5}).text(label).commit();
+        m.prepare<murka::Label>({shape.size.y + 2, 2, 150, shape.size.y + 5}).text(label).commit();
         m.popStyle();
 
         // Action

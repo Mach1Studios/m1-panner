@@ -120,6 +120,7 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::render()
 {
+    
     // This clears the context with our background.
     //juce::OpenGLHelpers::clear(juce::Colour(255.0, 198.0, 30.0));
 
@@ -139,7 +140,7 @@ void PannerUIBaseComponent::render()
 	m.clear();
     
 	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
-    auto & reticleField = m.drawWidget<PannerReticleField>(MurkaShape(25, 30, 400, 400));
+    auto & reticleField = m.prepare<PannerReticleField>(MurkaShape(25, 30, 400, 400));
     reticleField.controlling(&xyrd);
     
     reticleField.cursorHide = cursorHide;
@@ -181,7 +182,7 @@ void PannerUIBaseComponent::render()
     int M1LabelOffsetY = 25;
 
 	// X
-    auto& xKnob = m.draw<M1Knob>(MurkaShape(xOffset + 10, yOffset, knobWidth, knobHeight))
+    auto& xKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 10, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->x);
     xKnob.rangeFrom = -100;
     xKnob.rangeTo = 100;
@@ -205,7 +206,7 @@ void PannerUIBaseComponent::render()
 	}
     
 	m.setColor(ENABLED_PARAM);
-    auto& xLabel = m.draw<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& xLabel = m.prepare<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     xLabel.label = "X";
     xLabel.alignment = TEXT_CENTER;
     xLabel.enabled = true;
@@ -213,7 +214,7 @@ void PannerUIBaseComponent::render()
     xLabel.commit();
 
 	// Y
-    auto& yKnob = m.draw<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
+    auto& yKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->y);
     yKnob.rangeFrom = -100;
     yKnob.rangeTo = 100;
@@ -236,7 +237,7 @@ void PannerUIBaseComponent::render()
     }
     
 	m.setColor(ENABLED_PARAM);
-    auto& yLabel = m.draw<M1Label>(MurkaShape(xOffset + 100 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& yLabel = m.prepare<M1Label>(MurkaShape(xOffset + 100 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     yLabel.label = "Y";
     yLabel.alignment = TEXT_CENTER;
     yLabel.enabled = true;
@@ -244,7 +245,7 @@ void PannerUIBaseComponent::render()
     yLabel.commit();
 
 	// Azimuth / Rotation
-    auto& azKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
+    auto& azKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->azimuth);
     azKnob.rangeFrom = -180;
     azKnob.rangeTo = 180;
@@ -269,7 +270,7 @@ void PannerUIBaseComponent::render()
     
 	rotateKnobDraggingNow = azKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& azLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& azLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     azLabel.label = "AZIMUTH";
     azLabel.alignment = TEXT_CENTER;
     azLabel.enabled = true;
@@ -277,7 +278,7 @@ void PannerUIBaseComponent::render()
     azLabel.commit();
 
 	// Diverge
-    auto& dKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
+    auto& dKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->diverge);
     dKnob.rangeFrom = -100;
     dKnob.rangeTo = 100;
@@ -301,7 +302,7 @@ void PannerUIBaseComponent::render()
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& dLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& dLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     dLabel.label = "DIVERGE";
     dLabel.alignment = TEXT_CENTER;
     dLabel.enabled = true;
@@ -309,7 +310,7 @@ void PannerUIBaseComponent::render()
     dLabel.commit();
 
 	// Gain
-    auto& gKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
+    auto& gKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
                                 .controlling(&pannerState->gain);
     gKnob.rangeFrom = -90;
     gKnob.rangeTo = 24;
@@ -330,7 +331,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& gLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& gLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     gLabel.label = "GAIN";
     gLabel.alignment = TEXT_CENTER;
     gLabel.enabled = true;
@@ -338,7 +339,7 @@ void PannerUIBaseComponent::render()
     gLabel.commit();
     
     // Z
-    auto& zKnob = m.draw<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
+    auto& zKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
                                             .controlling(&pannerState->elevation);
     zKnob.rangeFrom = -90;
     zKnob.rangeTo = 90;
@@ -361,7 +362,7 @@ void PannerUIBaseComponent::render()
     bool zHovered = zKnob.hovered;
 
     m.setColor(ENABLED_PARAM);
-    auto& zLabel = m.draw<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
+    auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
                                               knobWidth, knobHeight));
     zLabel.label = "Z";
     zLabel.alignment = TEXT_CENTER;
@@ -387,7 +388,7 @@ void PannerUIBaseComponent::render()
 #endif
     
 	// S Rotation
-    auto& srKnob = m.draw<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
+    auto& srKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
                                         .controlling(&pannerState->stereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
@@ -408,7 +409,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& srLabel = m.draw<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
     srLabel.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
@@ -418,7 +419,7 @@ void PannerUIBaseComponent::render()
 	// S Spread
 
 	// TODO didChangeOutsideThisThread ???
-    auto& ssKnob = m.draw<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
+    auto& ssKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
                                     .controlling(&pannerState->stereoSpread);
     ssKnob.rangeFrom = 0.0;
     ssKnob.rangeTo = 100.0;
@@ -439,7 +440,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& ssLabel = m.draw<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
+    auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
     ssLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
@@ -448,7 +449,7 @@ void PannerUIBaseComponent::render()
 
 	// S Pan
 
-    auto& spKnob = m.draw<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
+    auto& spKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
                                             .controlling(&pannerState->stereoInputBalance);
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
@@ -469,7 +470,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& spLabel = m.draw<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& spLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
     spLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
@@ -479,7 +480,7 @@ void PannerUIBaseComponent::render()
 	/// CHECKBOXES
 	float checkboxSlotHeight = 28;
     
-    auto& overlayCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 0,
+    auto& overlayCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 0,
                                                 200, 20 })
                                                 .controlling(&pannerState->overlay)
                                                 .withLabel("OVERLAY");
@@ -490,14 +491,14 @@ void PannerUIBaseComponent::render()
         setOverlayVisible(pannerState->overlay);
     }
         
-    auto& isotropicCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
+    auto& isotropicCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1,
                                                 200, 20 })
                                                 .controlling(&pannerState->isotropicMode)
                                                 .withLabel("ISOTROPIC");
     isotropicCheckbox.enabled = true;
     isotropicCheckbox.commit();
 
-    auto& equalPowerCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
+    auto& equalPowerCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
                                                 200, 20 })
                                                 .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
@@ -519,7 +520,7 @@ void PannerUIBaseComponent::render()
         }
     }
 
-    auto& autoOrbitCheckbox = m.draw<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
+    auto& autoOrbitCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3,
                                                 200, 20 })
                                                 .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
@@ -532,7 +533,7 @@ void PannerUIBaseComponent::render()
     
 	//TODO: why are pitch ranges inversed?
     
-    auto& pitchWheel = m.draw<M1PitchWheel>({ 445, 30 - 10,
+    auto& pitchWheel = m.prepare<M1PitchWheel>({ 445, 30 - 10,
                                             80, 400 + 20 });
     pitchWheel.cursorHide = cursorHide;
     pitchWheel.cursorShow = cursorShow;
@@ -554,9 +555,9 @@ void PannerUIBaseComponent::render()
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 7);
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
-            auto& volumeDisplayLine = m.draw<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
+            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
             m.setColor(LABEL_TEXT_COLOR);
-            m.draw<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
+            m.prepare<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
 		}
         
 		for (int i = 0; i <= 56; i += 6) {
@@ -564,7 +565,7 @@ void PannerUIBaseComponent::render()
 			float y = i * 7;
             // Background line
             m.setColor(REF_LABEL_TEXT_COLOR);
-            m.draw<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
+            m.prepare<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
                 30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
 		}
 	}
@@ -587,7 +588,7 @@ void PannerUIBaseComponent::render()
         
         // Input Channel Mode Selector
         m.setColor(200, 255);
-        auto& inputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
+        auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
         inputLabel.label = "INPUT";
         inputLabel.alignment = TEXT_CENTER;
         inputLabel.enabled = false;
@@ -614,12 +615,12 @@ void PannerUIBaseComponent::render()
         // STEREO hosts here
         if (processor->hostType.isAbletonLive() || processor->hostType.isReason() || processor->hostType.isLogic() || processor->hostType.isGarageBand() || processor->hostType.isFruityLoops() || processor->hostType.isBitwigStudio()) {
             // MONO & STEREO only
-            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
                                                         .withLabel(inputLabelText).commit();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
-            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
                                                         .withOptions(input_options);
@@ -647,12 +648,12 @@ void PannerUIBaseComponent::render()
         } else if (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4) {
             // Displaying options only available as 4 channel INPUT
             // Dropdown is used for QUADMODE indication only
-            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
                                                         .withLabel(inputLabelText).commit();
             std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
-            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
                                                         .withOptions(input_options);
@@ -681,12 +682,12 @@ void PannerUIBaseComponent::render()
             }
         // Multichannel DAWs
         } else {
-            auto& inputDropdownButton = m.draw<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
                                                         .withLabel(inputLabelText).commit();
             std::vector<std::string> input_options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
-            auto& inputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+            auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
                                                         .withOptions(input_options);
@@ -737,7 +738,7 @@ void PannerUIBaseComponent::render()
             /// -> label
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
-            auto& arrowLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
+            auto& arrowLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
             arrowLabel.label = "-->";
             arrowLabel.alignment = TEXT_CENTER;
             arrowLabel.enabled = false;
@@ -747,7 +748,7 @@ void PannerUIBaseComponent::render()
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
-            auto& outputLabel = m.draw<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
+            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUTPUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
@@ -756,11 +757,11 @@ void PannerUIBaseComponent::render()
             
             auto outputType = pannerState->m1Encode.getOutputMode();
             
-            auto& outputDropdownButton = m.draw<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
+            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                         80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).commit();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
-            auto& outputDropdownMenu = m.draw<M1DropdownMenu>({  m.getSize().width()/2 + 20,
+            auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
                                                                 120, output_options.size() * dropdownItemHeight })
                                                         .withOptions(output_options);
@@ -802,7 +803,7 @@ void PannerUIBaseComponent::render()
     m.setColor(200, 255);
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
 #ifdef CUSTOM_CHANNEL_LAYOUT
-    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
+    auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
     int labelYOffset;
     if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
@@ -810,7 +811,7 @@ void PannerUIBaseComponent::render()
     } else {
         labelYOffset = 30;
     }
-    auto& pannerLabel = m.draw<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - labelYOffset, 80, 20));
+    auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - labelYOffset, 80, 20));
 #endif
     pannerLabel.label = "PANNER";
     pannerLabel.alignment = TEXT_CENTER;

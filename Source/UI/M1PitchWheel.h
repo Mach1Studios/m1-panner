@@ -48,7 +48,7 @@ public:
             
             MurkaShape labelShape = {55, (i * minilineStep + 2), 150, 50};
             m.setColor(REF_LABEL_TEXT_COLOR);
-            m.draw<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
+            m.prepare<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
             labelValue -= 45;
         }
         
@@ -98,7 +98,7 @@ public:
             ctx.addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
                 m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8);
-                m.draw<murka::Label>({hintPosition.x,
+                m.prepare<murka::Label>({hintPosition.x,
                     hintPosition.y,
                    75 /* */,
                    20 /* */}).text(

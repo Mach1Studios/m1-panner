@@ -83,9 +83,9 @@ public:
                 m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8.5);
                 m.setColor(REF_LABEL_TEXT_COLOR);
                 MurkaShape zeroLabelShape = {(context.getSize().x/2) - 7.5, -2, 25, 15};
-                m.draw<murka::Label>(zeroLabelShape).text({"0"}).commit();
+                m.prepare<murka::Label>(zeroLabelShape).text({"0"}).commit();
                 MurkaShape oneEightyLabelShape = {(context.getSize().x/2) - 13, context.getSize().y - 12, 30, 15};
-                m.draw<murka::Label>(oneEightyLabelShape).text("180").commit();
+                m.prepare<murka::Label>(oneEightyLabelShape).text("180").commit();
             }
  
 			// MIXER - MONITOR DISPLAY
@@ -242,7 +242,7 @@ public:
         
         m.drawCircle(x, y, (10*reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (elevation/90)));
         // re-adjust label x offset for size of string
-        m.draw<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).commit();
+        m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).commit();
     }
     
     PannerReticleField & controlling (XYRD *dataToControl_) {
