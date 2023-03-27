@@ -108,7 +108,7 @@ public:
                 .withPrecision(2)
                 .forcingEditorToSelectAll(shouldForceEditorToSelectAll)
                 .onlyAllowNumbers(true)
-                .commit();
+                .draw();
             
             auto textFieldEditingFinished = textFieldObject.editingFinished;
             
@@ -134,7 +134,7 @@ public:
             m.prepare<murka::Label>({0, shape.size.x * 0.8 / width + 10,
                 shape.size.x / width, shape.size.y * 0.5})
                 .withAlignment(TEXT_CENTER).text(valueText)
-                .commit();
+                .draw();
         }
         
         bool hoveredValueText = false;

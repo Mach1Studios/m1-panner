@@ -163,7 +163,7 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.sSpread = pannerState->stereoSpread;
 		overlayReticleField.monitorState = monitorState;
 		overlayReticleField.pannerState = pannerState;
-		overlayReticleField.commit();
+		overlayReticleField.draw();
 
         if (overlayReticleField.changed) {
 			convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
@@ -197,7 +197,7 @@ void OverlayUIBaseComponent::render()
         divergeKnob.externalHover = reticleHoveredLastFrame;
         divergeKnob.cursorHide = cursorHide;
         divergeKnob.cursorShow = cursorShow;
-		divergeKnob.commit();
+		divergeKnob.draw();
 
         if (divergeKnob.changed) {
             // update this parameter here, notifying host

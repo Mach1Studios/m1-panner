@@ -157,7 +157,7 @@ void PannerUIBaseComponent::render()
     reticleField.m1Encode = &pannerState->m1Encode;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
-    reticleField.commit();
+    reticleField.draw();
     
     if (reticleField.results) {
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
@@ -194,7 +194,7 @@ void PannerUIBaseComponent::render()
     xKnob.externalHover = reticleHoveredLastFrame;
     xKnob.cursorHide = cursorHide;
     xKnob.cursorShow = cursorShowAndTeleportBack;
-    xKnob.commit();
+    xKnob.draw();
     
     if (xKnob.changed) {
 		// update this parameter here, notifying host
@@ -211,7 +211,7 @@ void PannerUIBaseComponent::render()
     xLabel.alignment = TEXT_CENTER;
     xLabel.enabled = true;
     xLabel.highlighted = xKnob.hovered || reticleHoveredLastFrame;
-    xLabel.commit();
+    xLabel.draw();
 
 	// Y
     auto& yKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
@@ -226,7 +226,7 @@ void PannerUIBaseComponent::render()
     yKnob.externalHover = reticleHoveredLastFrame;
     yKnob.cursorHide = cursorHide;
     yKnob.cursorShow = cursorShowAndTeleportBack;
-    yKnob.commit();
+    yKnob.draw();
     
     if (yKnob.changed) {
         convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
@@ -242,7 +242,7 @@ void PannerUIBaseComponent::render()
     yLabel.alignment = TEXT_CENTER;
     yLabel.enabled = true;
     yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
-    yLabel.commit();
+    yLabel.draw();
 
 	// Azimuth / Rotation
     auto& azKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
@@ -258,7 +258,7 @@ void PannerUIBaseComponent::render()
     azKnob.externalHover = reticleHoveredLastFrame;
     azKnob.cursorHide = cursorHide;
     azKnob.cursorShow = cursorShowAndTeleportBack;
-    azKnob.commit();
+    azKnob.draw();
 
     if (azKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
@@ -275,7 +275,7 @@ void PannerUIBaseComponent::render()
     azLabel.alignment = TEXT_CENTER;
     azLabel.enabled = true;
     azLabel.highlighted = azKnob.hovered || reticleHoveredLastFrame;
-    azLabel.commit();
+    azLabel.draw();
 
 	// Diverge
     auto& dKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
@@ -290,7 +290,7 @@ void PannerUIBaseComponent::render()
     dKnob.externalHover = reticleHoveredLastFrame;
     dKnob.cursorHide = cursorHide;
     dKnob.cursorShow = cursorShowAndTeleportBack;
-    dKnob.commit();
+    dKnob.draw();
     
     if (dKnob.changed) {
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
@@ -307,7 +307,7 @@ void PannerUIBaseComponent::render()
     dLabel.alignment = TEXT_CENTER;
     dLabel.enabled = true;
     dLabel.highlighted = dKnob.hovered || reticleHoveredLastFrame;
-    dLabel.commit();
+    dLabel.draw();
 
 	// Gain
     auto& gKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
@@ -324,7 +324,7 @@ void PannerUIBaseComponent::render()
     gKnob.externalHover = false;
     gKnob.cursorHide = cursorHide;
     gKnob.cursorShow = cursorShowAndTeleportBack;
-    gKnob.commit();
+    gKnob.draw();
     
     if (gKnob.changed) {
         processor->parameterChanged(processor->paramGain, pannerState->gain);
@@ -336,7 +336,7 @@ void PannerUIBaseComponent::render()
     gLabel.alignment = TEXT_CENTER;
     gLabel.enabled = true;
     gLabel.highlighted = gKnob.hovered || reticleHoveredLastFrame;
-    gLabel.commit();
+    gLabel.draw();
     
     // Z
     auto& zKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
@@ -353,7 +353,7 @@ void PannerUIBaseComponent::render()
     zKnob.externalHover = pitchWheelHoveredAtLastFrame;
     zKnob.cursorHide = cursorHide;
     zKnob.cursorShow = cursorShowAndTeleportBack;
-    zKnob.commit();
+    zKnob.draw();
     
     if (zKnob.changed) {
         processor->parameterChanged(processor->paramElevation, pannerState->elevation);
@@ -368,7 +368,7 @@ void PannerUIBaseComponent::render()
     zLabel.alignment = TEXT_CENTER;
     zLabel.enabled = true;
     zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
-    zLabel.commit();
+    zLabel.draw();
 
     /// Bottom Row of Parameters / Knobs
     
@@ -402,7 +402,7 @@ void PannerUIBaseComponent::render()
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
-    srKnob.commit();
+    srKnob.draw();
     
     if (srKnob.changed) {
         processor->parameterChanged(processor->paramStereoOrbitAzimuth, pannerState->stereoOrbitAzimuth);
@@ -414,7 +414,7 @@ void PannerUIBaseComponent::render()
     srLabel.alignment = TEXT_CENTER;
     srLabel.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
-    srLabel.commit();
+    srLabel.draw();
 
 	// S Spread
 
@@ -433,7 +433,7 @@ void PannerUIBaseComponent::render()
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
-    ssKnob.commit();
+    ssKnob.draw();
     
     if (ssKnob.changed) {
         processor->parameterChanged(processor->paramStereoSpread, pannerState->stereoSpread);
@@ -445,7 +445,7 @@ void PannerUIBaseComponent::render()
     ssLabel.alignment = TEXT_CENTER;
     ssLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
-    ssLabel.commit();
+    ssLabel.draw();
 
 	// S Pan
 
@@ -463,7 +463,7 @@ void PannerUIBaseComponent::render()
     spKnob.externalHover = false;
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
-    spKnob.commit();
+    spKnob.draw();
         
     if (spKnob.changed) {
         processor->parameterChanged(processor->paramStereoInputBalance, pannerState->stereoInputBalance);
@@ -475,7 +475,7 @@ void PannerUIBaseComponent::render()
     spLabel.alignment = TEXT_CENTER;
     spLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
-    spLabel.commit();
+    spLabel.draw();
 
 	/// CHECKBOXES
 	float checkboxSlotHeight = 28;
@@ -485,7 +485,7 @@ void PannerUIBaseComponent::render()
                                                 .controlling(&pannerState->overlay)
                                                 .withLabel("OVERLAY");
     overlayCheckbox.enabled = true;
-    overlayCheckbox.commit();
+    overlayCheckbox.draw();
     
     if (overlayCheckbox.changed) {
         setOverlayVisible(pannerState->overlay);
@@ -496,14 +496,14 @@ void PannerUIBaseComponent::render()
                                                 .controlling(&pannerState->isotropicMode)
                                                 .withLabel("ISOTROPIC");
     isotropicCheckbox.enabled = true;
-    isotropicCheckbox.commit();
+    isotropicCheckbox.draw();
 
     auto& equalPowerCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2,
                                                 200, 20 })
                                                 .controlling(&pannerState->equalpowerMode)
                                                 .withLabel("EQUALPOWER");
     equalPowerCheckbox.enabled = (pannerState->isotropicMode);
-    equalPowerCheckbox.commit();
+    equalPowerCheckbox.draw();
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed) {
         if (isotropicCheckbox.checked) {
@@ -525,7 +525,7 @@ void PannerUIBaseComponent::render()
                                                 .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
     autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
-    autoOrbitCheckbox.commit();
+    autoOrbitCheckbox.draw();
     
     if (autoOrbitCheckbox.changed) {
         processor->parameterChanged(processor->paramAutoOrbit, pannerState->autoOrbit);
@@ -543,7 +543,7 @@ void PannerUIBaseComponent::render()
     pitchWheel.externalHovered = zHovered;
     pitchWheel.mixerPitch = monitorState->pitch;
     pitchWheel.dataToControl = &pannerState->elevation;
-    pitchWheel.commit();
+    pitchWheel.draw();
     
     if (pitchWheel.changed) {
         processor->parameterChanged(processor->paramElevation, pannerState->elevation);
@@ -555,9 +555,9 @@ void PannerUIBaseComponent::render()
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 7);
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
-            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).commit();
+            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).draw();
             m.setColor(LABEL_TEXT_COLOR);
-            m.prepare<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).commit();
+            m.prepare<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).draw();
 		}
         
 		for (int i = 0; i <= 56; i += 6) {
@@ -566,7 +566,7 @@ void PannerUIBaseComponent::render()
             // Background line
             m.setColor(REF_LABEL_TEXT_COLOR);
             m.prepare<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
-                30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).commit();
+                30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).draw();
 		}
 	}
 	
@@ -593,7 +593,7 @@ void PannerUIBaseComponent::render()
         inputLabel.alignment = TEXT_CENTER;
         inputLabel.enabled = false;
         inputLabel.highlighted = false;
-        inputLabel.commit();
+        inputLabel.draw();
         
         std::string inputLabelText = "";
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeMono) inputLabelText = "MONO ";
@@ -618,7 +618,7 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
-                                                        .withLabel(inputLabelText).commit();
+                                                        .withLabel(inputLabelText).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
@@ -632,7 +632,7 @@ void PannerUIBaseComponent::render()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = 9;
-            inputDropdownMenu.commit();
+            inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
@@ -651,7 +651,7 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
-                                                        .withLabel(inputLabelText).commit();
+                                                        .withLabel(inputLabelText).draw();
             std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
@@ -665,7 +665,7 @@ void PannerUIBaseComponent::render()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = 9;
-            inputDropdownMenu.commit();
+            inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
@@ -685,7 +685,7 @@ void PannerUIBaseComponent::render()
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 33,
                                                                     80, 30 })
-                                                        .withLabel(inputLabelText).commit();
+                                                        .withLabel(inputLabelText).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO", "LCR ", "QUAD ", "LCRS ", "AFORMAT", "1OA-ACN", "1OA-FuMa", "5.0 Film", "5.1 Film", "5.1 DTS", "5.1 SMPTE"};
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
@@ -699,7 +699,7 @@ void PannerUIBaseComponent::render()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = 9;
-            inputDropdownMenu.commit();
+            inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
                 DBG("CHANGED!!!!");
@@ -743,7 +743,7 @@ void PannerUIBaseComponent::render()
             arrowLabel.alignment = TEXT_CENTER;
             arrowLabel.enabled = false;
             arrowLabel.highlighted = false;
-            arrowLabel.commit();
+            arrowLabel.draw();
             
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
@@ -753,13 +753,13 @@ void PannerUIBaseComponent::render()
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
             outputLabel.highlighted = false;
-            outputLabel.commit();
+            outputLabel.draw();
             
             auto outputType = pannerState->m1Encode.getOutputMode();
             
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                         80, 30 })
-                                                        .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).commit();
+                                                        .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8", "M1Spatial-12", "M1Spatial-14", "M1Spatial-32", "M1Spatial-36", "M1Spatial-48", "M1Spatial-60"};
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
@@ -771,7 +771,7 @@ void PannerUIBaseComponent::render()
             
             outputDropdownMenu.optionHeight = dropdownItemHeight;
             outputDropdownMenu.fontSize = 9;
-            outputDropdownMenu.commit();
+            outputDropdownMenu.draw();
 
             if (outputDropdownMenu.changed) {
                 if (outputDropdownMenu.selectedOption == 0) {
@@ -817,7 +817,7 @@ void PannerUIBaseComponent::render()
     pannerLabel.alignment = TEXT_CENTER;
     pannerLabel.enabled = false;
     pannerLabel.highlighted = false;
-    pannerLabel.commit();
+    pannerLabel.draw();
     
     m.setColor(200, 255);
 #ifdef CUSTOM_CHANNEL_LAYOUT

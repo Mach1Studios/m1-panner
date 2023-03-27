@@ -48,7 +48,7 @@ public:
             
             MurkaShape labelShape = {55, (i * minilineStep + 2), 150, 50};
             m.setColor(REF_LABEL_TEXT_COLOR);
-            m.prepare<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
+            m.prepare<murka::Label>(labelShape).text(std::to_string(labelValue)).draw();
             labelValue -= 45;
         }
         
@@ -102,7 +102,7 @@ public:
                     hintPosition.y,
                    75 /* */,
                    20 /* */}).text(
-                                   std::to_string(int(dataCache))).commit();
+                                   std::to_string(int(dataCache))).draw();
             }, this);
             
             changed = true;
