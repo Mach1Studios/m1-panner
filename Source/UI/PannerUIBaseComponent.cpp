@@ -135,7 +135,7 @@ void PannerUIBaseComponent::render()
     }
 
 	m.begin();
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
     m.setColor(BACKGROUND_GREY);
 	m.clear();
     
@@ -553,7 +553,7 @@ void PannerUIBaseComponent::render()
 
 	// Drawing volume meters
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 7);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
             auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).draw();
             m.setColor(LABEL_TEXT_COLOR);
@@ -584,7 +584,7 @@ void PannerUIBaseComponent::render()
         m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
         
         m.setColor(APP_LABEL_TEXT_COLOR);
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         
         // Input Channel Mode Selector
         m.setColor(200, 255);
@@ -737,7 +737,7 @@ void PannerUIBaseComponent::render()
         if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
             /// -> label
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
             auto& arrowLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
             arrowLabel.label = "-->";
             arrowLabel.alignment = TEXT_CENTER;
@@ -747,7 +747,7 @@ void PannerUIBaseComponent::render()
             
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
             auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUTPUT";
             outputLabel.alignment = TEXT_CENTER;
@@ -801,7 +801,7 @@ void PannerUIBaseComponent::render()
     
     /// Panner label
     m.setColor(200, 255);
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
 #ifdef CUSTOM_CHANNEL_LAYOUT
     auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
