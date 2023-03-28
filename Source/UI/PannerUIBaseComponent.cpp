@@ -649,32 +649,7 @@ void PannerUIBaseComponent::render()
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
-                DBG(String(inputDropdownMenu.selectedOption));
-                if (inputDropdownMenu.selectedOption == 0) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeMono, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 1) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeStereo, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 2) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeLCR, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 3) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeQuad, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 4) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeLCRS, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 5) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeAFormat, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 6) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAACN, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 7) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAFUMA, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 8) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot0, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 9) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1Film, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 10) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1DTS, processor->pannerSettings.m1Encode.getOutputMode());
-                } else if (inputDropdownMenu.selectedOption == 11) {
-                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1SMTPE, processor->pannerSettings.m1Encode.getOutputMode());
-                }
+                processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType(inputDropdownMenu.selectedOption), processor->pannerSettings.m1Encode.getOutputMode());
             }
         } else if (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4) {
             // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
