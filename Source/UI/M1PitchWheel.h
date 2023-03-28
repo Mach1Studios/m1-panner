@@ -36,7 +36,7 @@ public:
         
         // Drawing labels
         
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
 		for (int i = 0; i <= 4; i++) {
             float lineLength = minilineLength / 2;
             if (i == 2) lineLength *= 2;
@@ -97,7 +97,7 @@ public:
                             c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2) + 4)};
             ctx.addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
-                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8);
+                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
                 m.prepare<murka::Label>({hintPosition.x,
                     hintPosition.y,
                    75 /* */,

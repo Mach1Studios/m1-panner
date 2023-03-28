@@ -80,7 +80,7 @@ public:
                 m.setColor(BACKGROUND_GREY);
                 m.drawRectangle((context.getSize().x/2) - 10, 0, 20, 12);
                 m.drawRectangle((context.getSize().x/2) - 12, context.getSize().y - 15, 25, 20);
-                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8.5);
+                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-1.5);
                 m.setColor(REF_LABEL_TEXT_COLOR);
                 MurkaShape zeroLabelShape = {(context.getSize().x/2) - 7.5, -2, 25, 15};
                 m.prepare<murka::Label>(zeroLabelShape).text({"0"}).draw();
@@ -236,7 +236,7 @@ public:
     }
 
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, Murka& m) {
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (10 + 2 * A(reticleHovered) + (2 * (elevation/90))));
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered) + (2 * (elevation/90))));
         m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         
