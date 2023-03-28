@@ -554,10 +554,21 @@ void PannerUIBaseComponent::render()
 	// Drawing volume meters
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
+        auto outputChannelsCount = processor->pannerSettings.m1Encode.getOutputChannelsCount();
+        int lines = int((outputChannelsCount - 1) / 8) + 1; // rounding the
+        double lineHeight = 433.0 / double(lines);
+        int cursorX = 0, cursorY = 0;
+        
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
-            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * channelIndex, 30, 10, 400 }).withVolume(processor->outputMeterValuedB[channelIndex]).draw();
+            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 }).withVolume(processor->outputMeterValuedB[channelIndex]).draw();
             m.setColor(LABEL_TEXT_COLOR);
-            m.prepare<M1Label>({ 555 + 15 * channelIndex, 433, 60, 50 }).text(std::to_string(channelIndex + 1)).draw();
+            m.prepare<M1Label>({ 553 + 15 * cursorX, (cursorY + 1) * lineHeight, 60, 50 }).text(std::to_string(channelIndex + 1)).draw();
+            
+            cursorX ++;
+            if (cursorX > 8) {
+                cursorY += 1;
+                cursorX = 0;
+            }
 		}
         
 		for (int i = 0; i <= 56; i += 6) {
