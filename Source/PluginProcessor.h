@@ -148,8 +148,7 @@ public:
     juce::Array<float> outputMeterValuedB;
     
     double processorSampleRate = 44100; // only has to be something for the initilizer to work
-    void m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode);
-    void m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode);
+    void m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode);
     PannerSettings pannerSettings;
     MixerSettings monitorSettings;
     HostTimelineData hostTimelineData;
