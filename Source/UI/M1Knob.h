@@ -91,6 +91,7 @@ public:
             imChildren.erase(idToDelete);
         };
          
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         std::string valueText = prefix + displayString + postfix;
         auto font = m.getCurrentFont();
         auto valueTextBbox = font->getStringBoundingBox(valueText, 0, 0);
