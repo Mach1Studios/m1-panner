@@ -669,15 +669,15 @@ void PannerUIBaseComponent::render()
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeQuad);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeQuad, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 1) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCRS);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeLCRS, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 2) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeAFormat);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeAFormat, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 3) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAACN);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAACN, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 4) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAFUMA);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAFUMA, processor->pannerSettings.m1Encode.getOutputMode());
                 }
             }
         // Multichannel DAWs
@@ -705,31 +705,30 @@ void PannerUIBaseComponent::render()
                 DBG("CHANGED!!!!");
                 DBG(String(inputDropdownMenu.selectedOption));
                 if (inputDropdownMenu.selectedOption == 0) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeMono);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeMono, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 1) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeStereo);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeStereo, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 2) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCR);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeLCR, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 3) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeQuad);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeQuad, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 4) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeLCRS);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeLCRS, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 5) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeAFormat);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeAFormat, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 6) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAACN);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAACN, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 7) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputModeBFOAFUMA);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputModeBFOAFUMA, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 8) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot0);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot0, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 9) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1Film);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1Film, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 10) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1DTS);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1DTS, processor->pannerSettings.m1Encode.getOutputMode());
                 } else if (inputDropdownMenu.selectedOption == 11) {
-                    processor->m1EncodeChangeInputMode(Mach1EncodeInputMode5dot1SMTPE);
+                    processor->m1EncodeChangeInputOutputMode(Mach1EncodeInputMode5dot1SMTPE, processor->pannerSettings.m1Encode.getOutputMode());
                 }
-//                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
             }
         }
 
@@ -775,21 +774,21 @@ void PannerUIBaseComponent::render()
 
             if (outputDropdownMenu.changed) {
                 if (outputDropdownMenu.selectedOption == 0) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Horizon_4);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Horizon_4);
                 } else if (outputDropdownMenu.selectedOption == 1) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_8);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_8);
                 } else if (outputDropdownMenu.selectedOption == 2) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_12);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_12);
                 } else if (outputDropdownMenu.selectedOption == 3) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_14);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_14);
                 } else if (outputDropdownMenu.selectedOption == 4) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_32);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_32);
                 } else if (outputDropdownMenu.selectedOption == 5) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_36);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_36);
                 } else if (outputDropdownMenu.selectedOption == 6) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_48);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_48);
                 } else if (outputDropdownMenu.selectedOption == 7) {
-                    processor->m1EncodeChangeOutputMode(Mach1EncodeOutputModeM1Spatial_60);
+                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_60);
                 }
             }
         } else {
