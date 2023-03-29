@@ -196,7 +196,7 @@ public:
             changed = true;
         }
         
-        if (draggingNow) {
+        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.01) {
             if (abs(m.currentContext.mouseDelta.y) >= 1) {
                 
                 // Shift key fine-tune mode
