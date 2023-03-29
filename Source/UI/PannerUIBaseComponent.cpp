@@ -767,18 +767,17 @@ void PannerUIBaseComponent::render()
             outputLabel.highlighted = false;
             outputLabel.draw();
             
-            auto outputType = pannerState->m1Encode.getOutputMode();
-            
+            auto outputType = pannerState->m1Encode.getOutputMode();            
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
                                                         80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
-            if (processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
-            if (processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
-            if (processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
-            if (processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
-            if (processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
-            if (processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
 
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
