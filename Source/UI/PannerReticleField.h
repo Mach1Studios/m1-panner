@@ -201,7 +201,7 @@ public:
                                                 shape.size.x,
                                               context.mouseDelta.y /
                                                 shape.size.y};
-                if (context.mouseDelta.lengthSquared() > 0.01)  {
+                if (context.mouseDelta.lengthSquared() > 0.001)  {
                     std::get<0>(*xyrd) -= normalisedDelta.x * 200;
                     std::get<1>(*xyrd) += normalisedDelta.y * 200;
 

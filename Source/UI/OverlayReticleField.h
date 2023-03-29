@@ -108,10 +108,12 @@ public:
             if (draggingNow) {
                 MurkaPoint normalisedDelta = {context.mouseDelta.x / context.getSize().x,
                                               context.mouseDelta.y / context.getSize().y};
-                std::get<2>(*xyrz) -= normalisedDelta.x * 180 * 2;
-                std::get<3>(*xyrz) += normalisedDelta.y * 90 * 2;
+                if (context.mouseDelta.lengthSquared() > 0.001)  {
+                    std::get<2>(*xyrz) -= normalisedDelta.x * 180 * 2;
+                    std::get<3>(*xyrz) += normalisedDelta.y * 90 * 2;
 
-                changed = true;
+                    changed = true;
+                }
             }
         
             if (context.doubleClick) {
