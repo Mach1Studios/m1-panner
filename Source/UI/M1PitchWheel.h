@@ -78,7 +78,7 @@ public:
             cursorHide();
         }
         
-        if (draggingNow && ctx.mouseDelta.lengthSquared() > 0.01) {
+        if (draggingNow && ctx.mouseDelta.lengthSquared() > 0.001) {
             if (abs(ctx.mouseDelta.y) >= 1) {
                 *((float*)dataToControl) += ctx.mouseDelta.y / 2;
             }
