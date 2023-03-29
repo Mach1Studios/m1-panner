@@ -201,10 +201,12 @@ public:
                                                 shape.size.x,
                                               context.mouseDelta.y /
                                                 shape.size.y};
-                std::get<0>(*xyrd) -= normalisedDelta.x * 200;
-                std::get<1>(*xyrd) += normalisedDelta.y * 200;
-                
-                results = true;
+                if (context.mouseDelta.lengthSquared() > 0.01)  {
+                    std::get<0>(*xyrd) -= normalisedDelta.x * 200;
+                    std::get<1>(*xyrd) += normalisedDelta.y * 200;
+
+                    results = true;
+                }
             }
         
             if ((context.doubleClick) && (inside)) {

@@ -78,7 +78,7 @@ public:
             cursorHide();
         }
         
-        if (draggingNow) {
+        if (draggingNow && ctx.mouseDelta.lengthSquared() > 0.01) {
             if (abs(ctx.mouseDelta.y) >= 1) {
                 *((float*)dataToControl) += ctx.mouseDelta.y / 2;
             }
@@ -89,9 +89,7 @@ public:
             if (*((float*)dataToControl) > rangeFrom) {
                 *((float*)dataToControl) = rangeFrom;
             }
-        }
-
-        if (draggingNow) { // drawing tooltip
+            // drawing tooltip
             dataCache = *((float*)dataToControl);
             hintPosition = {c.currentViewShape.position.x - 1,
                             c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2) + 4)};
