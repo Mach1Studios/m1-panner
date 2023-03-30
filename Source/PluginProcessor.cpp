@@ -533,13 +533,14 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
 
     // multichannel temp buffer (also used for informing meters even when not processing to write pointers
+    // Note: Use buf.getNumChannels() for output size from this point on to not mismatch from new m1Encode size requests
     juce::AudioBuffer<float> buf(pannerSettings.m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
     buf.clear();
     // multichannel output buffer (if internal processing is active this will have the above copy into it)
     float* const* outBuffer = mainOutput.getArrayOfWritePointers();
 
     // prepare the output buffer
-    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
+    for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++) {
         // break if expected output channel num size does not match current output channel num size from host
         if (output_channel > mainOutput.getNumChannels()-1) {
             // TODO: Test for external_mixer because we are not seeing the expected multichannel output?
@@ -563,7 +564,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 float inValue = audioDataIn[input_channel][sample];
                 
                 // Apply to each of the output channels per input channel
-                for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++){
+                for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++){
                     // break if expected output channel num size does not match current output channel num size from host
                     
                     // Get the next Mach1Encode coeff
@@ -624,9 +625,9 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // update meters
-    outputMeterValuedB.resize(pannerSettings.m1Encode.getOutputChannelsCount()); // expand meter UI number
-    for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
-        outputMeterValuedB.set(output_channel, output_channel < pannerSettings.m1Encode.getOutputChannelsCount() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
+    outputMeterValuedB.resize(buf.getNumChannels()); // expand meter UI number
+    for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++) {
+        outputMeterValuedB.set(output_channel, output_channel < buf.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
     }
 
 }
