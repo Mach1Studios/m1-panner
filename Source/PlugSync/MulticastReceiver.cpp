@@ -35,7 +35,7 @@ MulticastReceiver::MulticastReceiver(ExternalMixerHandler& external_mixer, std::
 	m_multicast_port(multicast_port) {
 	m_listening_endpoint = ip::udp::endpoint(ip::make_address(m_listening_ip_address), m_multicast_port);
 
-	//EnableDebugWindow();
+	EnableDebugWindow();
 
 	// Open the socket for listening
 	m_socket_descriptor.open(m_listening_endpoint.protocol());
@@ -81,7 +81,6 @@ void MulticastReceiver::ReceiveFrom(const error_code& error, size_t bytes_receiv
 		const auto parsed_message = boost::json::parse(m_last_message);
 
 		const auto ip = parsed_message.at("ip").as_string().c_str();
-		// Yes, this is transmitted as a int
 		const auto port = parsed_message.at("port").as_int64();
 
 		m_external_mixer.InitiateConnection(ip, std::to_string(port));

@@ -1,4 +1,7 @@
 target_sources(${PLUGIN_NAME} PRIVATE Config.h
+
+        ${juce_header} # TODO: Makes no sense why with the upgrade of JUCE, we got the header missing, but it builds
+
         TypesForDataExchange.h
         PluginEditor.cpp
         PluginEditor.h
@@ -27,6 +30,9 @@ target_sources(${PLUGIN_NAME} PRIVATE Config.h
 
         # TODO: Extract sources in separate variable
 
+        PlugSync/AudioDataSender.h
+        PlugSync/AudioDataSender.cpp
+
         PlugSync/EnvironmentVariable.h
         PlugSync/PluginInstanceSynchronizer.cpp
         PlugSync/PluginInstanceSynchronizer.h
@@ -48,8 +54,11 @@ target_sources(${PLUGIN_NAME} PRIVATE Config.h
 
 add_subdirectory(PlugSync/shared/message_protocol_external_mixer)
 
-target_include_directories(${PLUGIN_NAME} PUBLIC
+
+get_target_property(juce_library_code ${PLUGIN_NAME} JUCE_GENERATED_SOURCES_DIRECTORY)
+target_include_directories(${PLUGIN_NAME} PUBLIC AFTER
         "$ENV{BG_M1_PATH}/boost_1_81_0"
+        "${juce_library_code}"
         PlugSync/shared/message_protocol_external_mixer/include)
 
 target_link_directories(${PLUGIN_NAME} PUBLIC "$ENV{BG_M1_PATH}/boost_1_81_0/stage/lib")

@@ -90,7 +90,7 @@ public:
             }
             imChildren.erase(idToDelete);
         };
-         
+
         std::string valueText = prefix + displayString + postfix;
         auto font = m.getCurrentFont();
         auto valueTextBbox = font->getStringBoundingBox(valueText, 0, 0);
@@ -102,7 +102,7 @@ public:
         
         if (editingTextNow) {
             auto& textFieldObject =
-                m.draw<TextField>({ valueTextShape.x() - 5, valueTextShape.y() - 5, 
+                m.draw<TextField>({ valueTextShape.x() - 5, valueTextShape.y() - 5,
                     valueTextShape.width() + 10, valueTextShape.height() + 10 })
                 .controlling(data)
                 .withPrecision(2)
@@ -193,7 +193,7 @@ public:
             changed = true;
         }
         
-        if (draggingNow) {
+        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.01) {
             if (abs(m.currentContext.mouseDelta.y) >= 1) {
                 
                 // Shift key fine-tune mode

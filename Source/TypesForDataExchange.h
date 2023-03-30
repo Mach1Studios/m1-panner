@@ -4,30 +4,30 @@
 #include "Mach1Encode.h"
 
 struct PannerSettings {
-    /// This object contains:
-    /// - `Mach1EncodeInputModeType`
-    /// - `Mach1EncodeOutputModeType`
-    /// - `Mach1EncodePannerMode`
-    Mach1Encode m1Encode;
-    
-    float x = 0.;
+	/// This object contains:
+	/// - `Mach1EncodeInputModeType`
+	/// - `Mach1EncodeOutputModeType`
+	/// - `Mach1EncodePannerMode`
+	Mach1Encode m1Encode;
+
+	float x = 0.;
 	float y = 70.7;
 	float azimuth = 0.;
-    float elevation = 0.; // also known as `z`
-    float diverge = 50;
+	float elevation = 0.; // also known as `z`
+	float diverge = 50;
 	float gain = 6.;
 	float stereoOrbitAzimuth = 0.;
 	float stereoSpread = 50.;
 	float stereoInputBalance = 0.;
-    bool autoOrbit = true;
+	bool autoOrbit = true;
 	bool overlay = false;
-    bool isotropicMode = false;
-    bool equalpowerMode = false;
-    
+	bool isotropicMode = false;
+	bool equalpowerMode = false;
+
 #ifdef ITD_PARAMETERS
-    bool itdActive = false;
-    int delayTime = 600;
-    float delayDistance = 1.0;
+	bool itdActive = false;
+	int delayTime = 600;
+	float delayDistance = 1.0;
 #endif
 };
 
@@ -37,9 +37,22 @@ struct MixerSettings {
 	float yaw;
 	float pitch;
 	float roll;
-    int monitor_mode;
+	int monitor_mode;
 
-    bool yawActive, pitchActive, rollActive = true;
+	bool yawActive, pitchActive, rollActive = true;
+};
+
+struct HostTimelineData {
+	// Currently implmenting via JUCE 6, however JUCE 7 will change require a change to this struct design
+	bool isPlaying;
+	bool isLooping;
+	double playheadPositionInSeconds;
+	
+
+	double hostBPM; // Used to calculate loop points in seconds
+	double loopStartPositionInSeconds; // for more detailed indication on timeline indicator
+	double loopEndPositionInSeconds; // for more detailed indication on timeline indicator
+	double editOriginPositionInSeconds;
 };
 
 #endif

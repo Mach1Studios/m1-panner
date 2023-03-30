@@ -37,7 +37,7 @@ public:
 
 	void InitiateConnection(const std::string& network_address, const std::string& port);
 
-	bool IsExternalMixerAvailable();
+	bool IsExternalMixerAvailable() const;
 
 	void StartListeningForExternalMixer();
 
@@ -51,7 +51,6 @@ public:
 	void UpdateInstanceInfo(PannerSettings& new_settings);
 
 	void UpdateTooltip(std::string message, size_t timeout_ms = 3000);
-	void StopNetworkHandler();
 
 private:
 	M1PannerAudioProcessor& m_owner;
@@ -63,6 +62,7 @@ private:
 	size_t m_current_plugin_index;
 	//std::string m_plugin_session_identifier;
 	std::thread m_multicast_listening_thread;
+	std::thread m_network_communicator_thread;
 };
 
 #endif //M1_PANNER_EXTERNALMIXERHANDLER_H

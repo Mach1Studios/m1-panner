@@ -22,6 +22,9 @@ ExternalMixerHandler::ExternalMixerHandler(M1PannerAudioProcessor& owner) :
 
 ExternalMixerHandler::~ExternalMixerHandler()
 {
+	m_network_communicator->Stop();
+	m_network_communicator_thread.join();
+
 	m_multicast_receiver->StopListening();
 	m_multicast_listening_thread.join();
 }
@@ -46,10 +49,13 @@ void ExternalMixerHandler::InitiateConnection(const std::string& network_address
 	m_network_communicator = std::make_unique<NetworkCommunicator>(*this, network_address, port);
 	m_network_communicator->SetInstanceInfo(GetPluginSessionIdentifier(), GetCurrentPluginIndex());
 	m_network_communicator->Connect();
-	m_network_communicator->Start();
+
+	m_network_communicator_thread = std::thread([this]() {
+		m_network_communicator->Start();
+	});
 }
 
-bool ExternalMixerHandler::IsExternalMixerAvailable()
+bool ExternalMixerHandler::IsExternalMixerAvailable() const
 {
 	return m_multicast_receiver->GetLastMessage().empty() ? false : true;
 }
@@ -79,9 +85,4 @@ void ExternalMixerHandler::UpdateInstanceInfo(PannerSettings& new_settings)
 void ExternalMixerHandler::UpdateTooltip(std::string message, size_t timeout_ms)
 {
 	m_network_communicator->UpdateTooltip(message, timeout_ms);
-}
-
-void ExternalMixerHandler::StopNetworkHandler()
-{
-	m_network_communicator->Stop();
 }

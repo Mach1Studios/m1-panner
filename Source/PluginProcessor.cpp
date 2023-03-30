@@ -129,13 +129,16 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 	parameters.addParameterListener(paramDelayDistance, this);
 #endif
 
+	// We check for the existence of the external mixer
+	// on every second; fine-tune if UX is not as desired
+	startTimer(1000);
+
 	m_mixer_handler.GetPlugSync().SetInstanceIdentificationDecorator(juce::Uuid().toString().toStdString());
 	m_mixer_handler.StartListeningForExternalMixer();
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
-	m_mixer_handler.StopNetworkHandler();
 }
 
 //==============================================================================
@@ -200,6 +203,16 @@ void M1PannerAudioProcessor::changeProgramName(int index, const juce::String& ne
 {
 }
 
+void M1PannerAudioProcessor::timerCallback()
+{
+	external_spatialmixer_active = m_mixer_handler.IsExternalMixerAvailable();
+}
+
+AudioProcessor::TrackProperties M1PannerAudioProcessor::GetTrackProperties() const
+{
+	return m_track_properties;
+}
+
 //==============================================================================
 void M1PannerAudioProcessor::createLayout() {
 	int numInChans, numOutChans;
@@ -222,6 +235,10 @@ void M1PannerAudioProcessor::createLayout() {
 	else {
 		// internal processing
 	}
+
+	// initialize the channel i/o
+    m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
+
 	layoutCreated = true; // flow control for static i/o
 	updateHostDisplay();
 }
@@ -258,7 +275,7 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 	mDelayBuffer.clear();
 	mExpectedReadPos = -1;
 #endif
-	}
+}
 
 void M1PannerAudioProcessor::releaseResources()
 {
@@ -312,7 +329,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 		parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
 		Mach1EncodeInputModeType inputType;
 		inputType = Mach1EncodeInputModeType((int)newValue);
-		m1EncodeChangeInputMode(inputType);
+        m1EncodeChangeInputOutputMode(inputType, pannerSettings.m1Encode.getOutputMode());
 		layoutCreated = false;
 		createLayout();
 	}
@@ -321,12 +338,17 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 		parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
 		Mach1EncodeOutputModeType outputType;
 		outputType = Mach1EncodeOutputModeType((int)newValue);
-		m1EncodeChangeOutputMode(outputType);
+        m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), outputType);
 		layoutCreated = false;
 		createLayout();
 	}
 
-	m_mixer_handler.UpdateInstanceInfo(pannerSettings);
+	std::cout << parameterID << "->" << newValue << std::endl;
+
+	//TODO:
+	if (external_spatialmixer_active) {
+		m_mixer_handler.UpdateInstanceInfo(pannerSettings);
+	}
 }
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
@@ -454,6 +476,45 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+	// Update the host playhead data external usage
+	if (external_spatialmixer_active && getPlayHead() != nullptr) {
+		auto ph = getPlayHead();
+		// Lots of defenses against hosts who do not support playhead data returns
+
+		// TODO: replace mess with a template
+		if (const auto currentPlayHeadInfo = ph->getPosition(); currentPlayHeadInfo.hasValue()) {
+			hostTimelineData.isPlaying = currentPlayHeadInfo->getIsPlaying();
+			hostTimelineData.isLooping = currentPlayHeadInfo->getIsLooping();
+
+			// TODO: This introduces a lot of IFs in the process call; we should possibly try to cache all the values we know we can get on startup
+			//if (currentPlayHeadInfo->getTimeInSeconds().hasValue())
+			{
+				hostTimelineData.playheadPositionInSeconds = (*currentPlayHeadInfo->getTimeInSeconds());
+			}
+
+			//if (currentPlayHeadInfo->getBpm().hasValue())
+			{
+				hostTimelineData.hostBPM = (*currentPlayHeadInfo->getBpm());
+			}
+
+			//if (currentPlayHeadInfo->getEditOriginTime().hasValue())
+			{
+				hostTimelineData.editOriginPositionInSeconds = (*currentPlayHeadInfo->getEditOriginTime());
+			}
+
+			//if (currentPlayHeadInfo->getLoopPoints().hasValue())
+			{
+				double ppq_start = (currentPlayHeadInfo->getLoopPoints())->ppqStart;
+				double ppq_end = (currentPlayHeadInfo->getLoopPoints())->ppqEnd;
+
+				hostTimelineData.loopStartPositionInSeconds = 60 * (ppq_start / hostTimelineData.hostBPM);
+				hostTimelineData.loopEndPositionInSeconds = 60 * (ppq_end / hostTimelineData.hostBPM);
+
+				//TODO: Send a network AudioTimelineUpdate
+			}
+		}
+	}
+
 	juce::ScopedNoDenormals noDenormals;
 	auto totalNumInputChannels = getTotalNumInputChannels();
 	auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -601,10 +662,11 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 						buf.addSample(output_channel, sample, inValue * spatialGainCoeff);
 
 						if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
-							// ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
+							/// ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
+							// TODO - SEND THE AUDIO DATA FROM HERE!
 						}
 						else {
-							// ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
+							/// ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
 
 							// apply processed output samples to become the output buffers
 							outBuffer[output_channel][sample] += buf.getSample(output_channel, sample);
@@ -629,18 +691,18 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 									float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
 									for (auto channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
 										ring->pushSample(channel, outBuffer[channel][sample]);
-						}
+									}
 									for (int channel = 0; channel < pannerSettings.m1Encode.getOutputChannelsCount(); channel++) {
 										outBuffer[channel][sample] = (outBuffer[channel][sample] * 0.707106781) + (ring->getSampleAtDelay(channel, udtime * delayCoeffs[0][channel]) * 0.707106781); // pan-law applied via `0.707106781`
 									}
 									ring->increment();
+						}
 					}
-				}
 #endif // end of ITD_PARAMETERS
+				}
 			}
 		}
 	}
-}
 }
 	}
 
@@ -695,36 +757,23 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 	return defVal;
 }
 
-void M1PannerAudioProcessor::m1EncodeChangeInputMode(Mach1EncodeInputModeType inputMode) {
+void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode) {
 	pannerSettings.m1Encode.setInputMode(inputMode);
+    pannerSettings.m1Encode.setOutputMode(outputMode);
 
 	auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
-	smoothedChannelCoeffs.resize(inputChannelsCount);
-
-	// Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
-	fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
-
-	for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++) {
-		smoothedChannelCoeffs[input_channel].resize(pannerSettings.m1Encode.getOutputChannelsCount());
-		for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
-			smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
-		}
-	}
-}
-
-void M1PannerAudioProcessor::m1EncodeChangeOutputMode(Mach1EncodeOutputModeType outputMode) {
-	pannerSettings.m1Encode.setOutputMode(outputMode);
-
 	auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
-	smoothedChannelCoeffs.resize(outputChannelsCount);
+
+    smoothedChannelCoeffs.resize(inputChannelsCount);
 	orderOfChans.resize(outputChannelsCount);
 	output_channel_indices.resize(outputChannelsCount);
 
 	// Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
-	fillChannelOrderArray(pannerSettings.m1Encode.getOutputChannelsCount());
+    fillChannelOrderArray(inputChannelsCount);
 
-	for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++) {
-		smoothedChannelCoeffs[input_channel].resize(pannerSettings.m1Encode.getOutputChannelsCount());
+    for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++) {
+        smoothedChannelCoeffs[input_channel] = std::vector<juce::LinearSmoothedValue<float>>();
+        smoothedChannelCoeffs[input_channel].resize(outputChannelsCount);
 		for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++) {
 			smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
 		}
@@ -828,13 +877,12 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
 			else {
 				// error
 			}
-			m1EncodeChangeInputMode(tempInputType);
+            m1EncodeChangeInputOutputMode(tempInputType, pannerSettings.m1Encode.getOutputMode());
 		}
 		if (prefix == "2.0.0") {
 			pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
 			pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
-			m1EncodeChangeInputMode(pannerSettings.m1Encode.getInputMode());
-			m1EncodeChangeOutputMode(pannerSettings.m1Encode.getOutputMode());
+            m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
 		}
 	}
 	else {
@@ -846,8 +894,11 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
 void M1PannerAudioProcessor::updateTrackProperties(const TrackProperties& properties)
 {
 	m_track_properties = properties;
-	m_mixer_handler.UpdateTrackInfo(m_track_properties.name.toStdString(),
-		m_track_properties.colour.toDisplayString(true).toStdString());
+
+	if (external_spatialmixer_active) {
+		m_mixer_handler.UpdateTrackInfo(m_track_properties.name.toStdString(),
+			m_track_properties.colour.toDisplayString(true).toStdString());
+	}
 }
 
 //==============================================================================
