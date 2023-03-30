@@ -555,7 +555,8 @@ void PannerUIBaseComponent::render()
     if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
         auto outputChannelsCount = processor->pannerSettings.m1Encode.getOutputChannelsCount();
-        int lines = int((outputChannelsCount - 1) / 8) + 1; // rounding the
+        
+        int lines = int((outputChannelsCount - 1) / 8) + 1; // rounded int value of rows
         double lineHeight = 433.0 / double(lines);
         int cursorX = 0, cursorY = 0;
         
@@ -565,20 +566,21 @@ void PannerUIBaseComponent::render()
             m.prepare<M1Label>({ 553 + 15 * cursorX, (cursorY + 1) * lineHeight, 60, 50 }).text(std::to_string(channelIndex + 1)).draw();
             
             cursorX ++;
-            if (cursorX > 8) {
+            if (cursorX > 7) {
                 cursorY += 1;
                 cursorX = 0;
             }
 		}
         
-		for (int i = 0; i <= 56; i += 6) {
-			float db = -i + 12;
-			float y = i * 7;
-            // Background line
-            m.setColor(REF_LABEL_TEXT_COLOR);
-            m.prepare<M1Label>({ 555 + 15 * processor->pannerSettings.m1Encode.getOutputChannelsCount(), 30 + y - m.getCurrentFont()->getLineHeight() / 2,
-                30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).draw();
-		}
+        for (int line = 0; line < lines; line++) {
+            for (int i = 0; i <= 56/lines; i += 6) {
+                float db = -i + 12;
+                float y = i * 7;
+                // Background line
+                m.setColor(REF_LABEL_TEXT_COLOR);
+                m.prepare<M1Label>({ 555 + 15 * (processor->pannerSettings.m1Encode.getOutputChannelsCount() == 4 ? 4 : 8), 30 + y - m.getCurrentFont()->getLineHeight() / 2, 30, 30 }).text( i != 100 ? std::to_string((int)db) : "dB" ).draw();
+            }
+        }
 	}
 	
     /// Bottom bar
