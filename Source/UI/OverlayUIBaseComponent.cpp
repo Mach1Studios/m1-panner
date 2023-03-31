@@ -137,7 +137,7 @@ void OverlayUIBaseComponent::render()
 	//OpenGLHelpers::clear (Colours::black);
 
 	// TODO
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
 	m.begin();
 
 	m.setColor(0, 0);
@@ -152,7 +152,7 @@ void OverlayUIBaseComponent::render()
 
 	if (pannerState) {
 		XYRZ xyrz = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->elevation };
-        auto& overlayReticleField = m.draw<OverlayReticleField>({0, 0, getWidth() * m.getScreenScale(), getHeight() * m.getScreenScale()}).controlling(&xyrz);
+        auto& overlayReticleField = m.prepare<OverlayReticleField>({0, 0, getWidth() * m.getScreenScale(), getHeight() * m.getScreenScale()}).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
         overlayReticleField.teleportCursor = teleportCursor;
@@ -163,7 +163,7 @@ void OverlayUIBaseComponent::render()
         overlayReticleField.sSpread = pannerState->stereoSpread;
 		overlayReticleField.monitorState = monitorState;
 		overlayReticleField.pannerState = pannerState;
-		overlayReticleField.commit();
+		overlayReticleField.draw();
 
         if (overlayReticleField.changed) {
 			convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
@@ -183,12 +183,12 @@ void OverlayUIBaseComponent::render()
 	m.setCircleResolution(128);
 
 	float labelAnimation = 0; // we will get the hover from knobs to highlight labels
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 10);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
 
 	// Diverge
 	if (pannerState) {
         
-        auto& divergeKnob = m.draw<M1Knob>({xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight})
+        auto& divergeKnob = m.prepare<M1Knob>({xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight})
             .controlling(&pannerState->diverge);
         divergeKnob.rangeFrom = -100;
         divergeKnob.rangeTo = 100;
@@ -197,7 +197,7 @@ void OverlayUIBaseComponent::render()
         divergeKnob.externalHover = reticleHoveredLastFrame;
         divergeKnob.cursorHide = cursorHide;
         divergeKnob.cursorShow = cursorShow;
-		divergeKnob.commit();
+		divergeKnob.draw();
 
         if (divergeKnob.changed) {
             // update this parameter here, notifying host
@@ -209,7 +209,7 @@ void OverlayUIBaseComponent::render()
 		labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);
 		divergeKnobDraggingNow = divergeKnob.draggingNow;
 		m.setColor(210 + 40 * labelAnimation, 255);
-        auto & dLabel = m.draw<M1Label>({xOffset, m.getWindowHeight() - knobHeight - 20 - labelOffsetY, knobWidth, knobHeight}).text("DIVERGE");
+        auto & dLabel = m.prepare<M1Label>({xOffset, m.getWindowHeight() - knobHeight - 20 - labelOffsetY, knobWidth, knobHeight}).text("DIVERGE");
         dLabel.alignment = TEXT_CENTER;
 	}
 

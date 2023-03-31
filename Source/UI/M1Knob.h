@@ -91,6 +91,7 @@ public:
             imChildren.erase(idToDelete);
         };
 
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         std::string valueText = prefix + displayString + postfix;
         auto font = m.getCurrentFont();
         auto valueTextBbox = font->getStringBoundingBox(valueText, 0, 0);
@@ -102,37 +103,39 @@ public:
         
         if (editingTextNow) {
             auto& textFieldObject =
-                m.draw<TextField>({ valueTextShape.x() - 5, valueTextShape.y() - 5,
+                m.prepare<TextField>({ valueTextShape.x() - 5, valueTextShape.y() - 5,
                     valueTextShape.width() + 10, valueTextShape.height() + 10 })
                 .controlling(data)
                 .withPrecision(2)
                 .forcingEditorToSelectAll(shouldForceEditorToSelectAll)
                 .onlyAllowNumbers(true)
-                .commit();
+                .draw();
             
-            auto textFieldResults = textFieldObject.results;
+            auto textFieldEditingFinished = textFieldObject.editingFinished;
             
             if (shouldForceEditorToSelectAll) {
                 // We force selection by sending the value to text editor field
                 shouldForceEditorToSelectAll = false;
             }
             
-            if (!textFieldResults) {
+            if (!textFieldEditingFinished) {
                 textFieldObject.activated = true;
                 ctx.claimKeyboardFocus(&textFieldObject);
+                
+                
             }
             
-            if (textFieldResults) {
+            if (textFieldEditingFinished) {
                 editingTextNow = false;
                 changed = true;
                 deleteTheTextField();
             }
             
         } else {
-            m.draw<murka::Label>({0, shape.size.x * 0.8 / width + 10,
+            m.prepare<murka::Label>({0, shape.size.x * 0.8 / width + 10,
                 shape.size.x / width, shape.size.y * 0.5})
                 .withAlignment(TEXT_CENTER).text(valueText)
-                .commit();
+                .draw();
         }
         
         bool hoveredValueText = false;
@@ -193,7 +196,7 @@ public:
             changed = true;
         }
         
-        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.01) {
+        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.001) {
             if (abs(m.currentContext.mouseDelta.y) >= 1) {
                 
                 // Shift key fine-tune mode

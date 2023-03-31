@@ -36,7 +36,7 @@ public:
         
         // Drawing labels
         
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
 		for (int i = 0; i <= 4; i++) {
             float lineLength = minilineLength / 2;
             if (i == 2) lineLength *= 2;
@@ -48,7 +48,7 @@ public:
             
             MurkaShape labelShape = {55, (i * minilineStep + 2), 150, 50};
             m.setColor(REF_LABEL_TEXT_COLOR);
-            m.draw<murka::Label>(labelShape).text(std::to_string(labelValue)).commit();
+            m.prepare<murka::Label>(labelShape).text(std::to_string(labelValue)).draw();
             labelValue -= 45;
         }
         
@@ -78,7 +78,7 @@ public:
             cursorHide();
         }
         
-        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.01) {
+        if (draggingNow && ctx.mouseDelta.lengthSquared() > 0.001) {
             if (abs(ctx.mouseDelta.y) >= 1) {
                 *((float*)dataToControl) += ctx.mouseDelta.y / 2;
             }
@@ -89,20 +89,18 @@ public:
             if (*((float*)dataToControl) > rangeFrom) {
                 *((float*)dataToControl) = rangeFrom;
             }
-        }
-
-        if (draggingNow) { // drawing tooltip
+            // drawing tooltip
             dataCache = *((float*)dataToControl);
             hintPosition = {c.currentViewShape.position.x - 1,
                             c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2) + 4)};
             ctx.addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
-                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 8);
-                m.draw<murka::Label>({hintPosition.x,
+                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
+                m.prepare<murka::Label>({hintPosition.x,
                     hintPosition.y,
                    75 /* */,
                    20 /* */}).text(
-                                   std::to_string(int(dataCache))).commit();
+                                   std::to_string(int(dataCache))).draw();
             }, this);
             
             changed = true;

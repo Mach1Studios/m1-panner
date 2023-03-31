@@ -108,10 +108,12 @@ public:
             if (draggingNow) {
                 MurkaPoint normalisedDelta = {context.mouseDelta.x / context.getSize().x,
                                               context.mouseDelta.y / context.getSize().y};
-                std::get<2>(*xyrz) -= normalisedDelta.x * 180 * 2;
-                std::get<3>(*xyrz) += normalisedDelta.y * 90 * 2;
+                if (context.mouseDelta.lengthSquared() > 0.001)  {
+                    std::get<2>(*xyrz) -= normalisedDelta.x * 180 * 2;
+                    std::get<3>(*xyrz) += normalisedDelta.y * 90 * 2;
 
-                changed = true;
+                    changed = true;
+                }
             }
 
             if (context.doubleClick) {
@@ -155,20 +157,20 @@ public:
             m.drawCircle(context.getSize().x-right_rollover+14, realy+5, (10 + 3 * A(reticleHovered)));
         }
         
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (10 + 2 * A(reticleHovered)));
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered)));
         m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
-        M1Label& l = m.draw<M1Label>(MurkaShape(realx-9, realy-7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
+        M1Label& l = m.prepare<M1Label>(MurkaShape(realx-9, realy-7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).draw();
         
         if (realx + 20 > context.getSize().x){
             //draw rollover shape on left side
             float left_rollover = (realx+8)-context.getSize().x;
-            m.draw<M1Label>(MurkaShape(left_rollover-16, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
+            m.prepare<M1Label>(MurkaShape(left_rollover-16, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).draw();
         }
         if (realx-20 < 0){
             //draw rollover shape on right side
             float right_rollover = abs(realx-8);
-            m.draw<M1Label>(MurkaShape(context.getSize().x-right_rollover, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).commit();
+            m.prepare<M1Label>(MurkaShape(context.getSize().x-right_rollover, realy-2 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).draw();
         }
     }
     

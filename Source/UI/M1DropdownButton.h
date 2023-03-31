@@ -27,7 +27,7 @@ public:
         m.setColor(LABEL_TEXT_COLOR);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
         // centered interior text
-        m.draw<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).commit();
+        m.prepare<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
 
         pressed = false;
         if ((context.isHovered()) && (context.mouseDownPressed[0])) {

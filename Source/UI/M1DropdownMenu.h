@@ -53,30 +53,26 @@ public:
                     m.drawRectangle(1, i * optionHeight, shape.size.x - 2, optionHeight);
                     m.setColor(BACKGROUND_GREY);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.draw<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
+                    m.prepare<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).draw();
                     
                     if (closingMode == mouseDown) {
                         if (c.mouseDownPressed[0]) {
                             opened = false; // Closing the menu
-                            if (selectedOption != i) {
-                                changed = true;
-                            }
+                            changed = true;
                             selectedOption = i;
                         }
                     }
                     if (closingMode == mouseUp) {
                         if (c.mouseReleased[0]) {
                             opened = false; // Closing the menu
-                            if (selectedOption != i) {
-                                changed = true;
-                            }
+                            changed = true;
                             selectedOption = i;
                         }
                     }
                 } else {
                     m.setColor(LABEL_TEXT_COLOR);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.draw<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).commit();
+                    m.prepare<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).draw();
                 }
                 
                 // Closing if pressed/released outside of the menu
