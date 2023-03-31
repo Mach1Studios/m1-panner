@@ -115,7 +115,7 @@ public:
                     changed = true;
                 }
             }
-        
+
             if (context.doubleClick) {
                 MurkaPoint normalisedMouse = {context.mousePosition.x / context.getSize().x,
                                               context.mousePosition.y / context.getSize().y};
