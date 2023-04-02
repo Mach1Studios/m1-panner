@@ -69,7 +69,6 @@ else()
                 "$ENV{BG_M1_PATH}/boost_1_81_0"
                 "${juce_library_code}"
                 PlugSync/shared/message_protocol_external_mixer/include)
-
         target_link_directories(${PLUGIN_NAME} PUBLIC "$ENV{BG_M1_PATH}/boost_1_81_0/stage/lib")
 endif()
 
