@@ -56,12 +56,22 @@ add_subdirectory(PlugSync/shared/message_protocol_external_mixer)
 
 
 get_target_property(juce_library_code ${PLUGIN_NAME} JUCE_GENERATED_SOURCES_DIRECTORY)
-target_include_directories(${PLUGIN_NAME} PUBLIC AFTER
-        "$ENV{BG_M1_PATH}/boost_1_81_0"
-        "${juce_library_code}"
-        PlugSync/shared/message_protocol_external_mixer/include)
 
-target_link_directories(${PLUGIN_NAME} PUBLIC "$ENV{BG_M1_PATH}/boost_1_81_0/stage/lib")
+find_package(Boost 1.81.0)
+if (Boost_FOUND)
+        target_include_directories(${PLUGIN_NAME} PUBLIC AFTER
+                ${Boost_INCLUDE_DIRS}
+                "${juce_library_code}"
+                PlugSync/shared/message_protocol_external_mixer/include)
+        target_link_directories(${PLUGIN_NAME} PUBLIC ${Boost_LIBRARY_DIRS})
+else()
+        target_include_directories(${PLUGIN_NAME} PUBLIC AFTER
+                "$ENV{BG_M1_PATH}/boost_1_81_0"
+                "${juce_library_code}"
+                PlugSync/shared/message_protocol_external_mixer/include)
+
+        target_link_directories(${PLUGIN_NAME} PUBLIC "$ENV{BG_M1_PATH}/boost_1_81_0/stage/lib")
+endif()
 
 if (APPLE)
     target_sources(${PLUGIN_NAME} PRIVATE WindowUtil.mm)
