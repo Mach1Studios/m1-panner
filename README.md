@@ -34,24 +34,33 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 
 ### Examples
 
-- MacOS setup M1-Panner
+#### MacOS setup M1-Panner
 ```
 cmake -Bbuild -G "Xcode" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="/Users/[USERNAME]/SDKs/aax-sdk-2-4-1" -DBUILD_AU=ON -DBUILD_VST=ON -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK" -DBUILD_AUV3=ON -DBUILD_UNITY=ON -DBUILD_STANDALONE=ON
 ```
 
-- MacOS setup & compile M1-Panner with specific I/O:
+#### MacOS setup & compile M1-Panner with specific I/O:
 ```
 cmake -Bbuild_i1o8 -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
 cmake --build build_i1o8 --config Release
 ```
 
-- Windows setup M1-Panner
+#### Windows setup M1-Panner
+
+- Install boost (1.81.0 or higher)
+- Set environment paths for Boost
+```
+    BOOST_INCLUDEDIR    C:\SDKs\boost_1_82_0\
+    BOOST_LIBRARYDIR    C:\SDKs\boost_1_82_0\lib64-msvc-14.2
+    BOOST_ROOT          C:\SDKs\boost_1_82_0\boost
+```
+- Run command on project dir
 ```
 cmake -Bbuild -G "Visual Studio 16 2019" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="D:/SDKs/aax-sdk-2-4-1" -DBUILD_VST=ON -DVST2_PATH="D:/SDKs/VST_SDK/vst2sdk" -DBUILD_STANDALONE=ON
 ```
 
-- Windows setup & compile M1-Panner with specific I/O:
+#### Windows setup & compile M1-Panner with specific I/O:
 ```
-cmake -Bbuild_i1o8 -G "Visual Studio 16 2019" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="D:/SDKs/VST_SDK_vst2/VST2_SDK"
+cmake -Bbuild_i1o8 -G "Visual Studio 16 2019" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="D:/SDKs/VST_SDK/vst2sdk"
 cmake --build build_i1o8 --config Release
 ```
