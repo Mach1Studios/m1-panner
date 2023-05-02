@@ -44,3 +44,14 @@ cmake -Bbuild -G "Xcode" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="/Users/[USER
 cmake -Bbuild_i1o8 -G "Xcode" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK"
 cmake --build build_i1o8 --config Release
 ```
+
+- Windows setup M1-Panner
+```
+cmake -Bbuild -G "Visual Studio 16 2019" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="D:/SDKs/aax-sdk-2-4-1" -DBUILD_VST=ON -DVST2_PATH="D:/SDKs/VST_SDK/vst2sdk" -DBUILD_STANDALONE=ON
+```
+
+- Windows setup & compile M1-Panner with specific I/O:
+```
+cmake -Bbuild_i1o8 -G "Visual Studio 16 2019" -DBUILD_WITH_CUSTOM_CHANNEL_LAYOUT=1 -DINPUTS=1 -DOUTPUTS=8 -DBUILD_VST2=1 -DVST2_PATH="D:/SDKs/VST_SDK_vst2/VST2_SDK"
+cmake --build build_i1o8 --config Release
+```
