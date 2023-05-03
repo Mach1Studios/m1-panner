@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15.0)
+cmake_minimum_required(VERSION 3.20.0)
 file(STRINGS VERSION CURRENT_VERSION)
 project(M1-Panner VERSION ${CURRENT_VERSION})
 
@@ -186,6 +186,19 @@ if(APPLE)
 else()
     set(MACH1SPATIAL_LIBS_UNIX_PATH ${MACH1SPATIAL_LIBS_PATH}/linux)
 endif()
+
+# add boost
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(BOOST_REQUESTED_VERSION "1.81.0")
+find_package(Boost COMPONENTS accumulators core)
+include_directories(${BOOST_INCLUDE_DIRS})
+target_link_libraries(${PLUGIN_NAME} PRIVATE ${Boost_LIBRARIES})
+set_target_properties(${PLUGIN_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PROJECT_BINARY_DIR}/bin/src/")
+set_target_properties(${PLUGIN_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_BINARY_DIR}/bin/src/")
+
+# add gtest
+find_package(GTest REQUIRED)
+target_link_libraries(${PLUGIN_NAME} PRIVATE GTest::gtest GTest::gtest_main)
 
 # link libraries
 if(WIN32 OR MSVC OR MINGW)

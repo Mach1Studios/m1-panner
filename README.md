@@ -46,15 +46,6 @@ cmake --build build_i1o8 --config Release
 ```
 
 #### Windows setup M1-Panner
-
-- Install boost (1.81.0 or higher)
-- Set environment paths for Boost
-```
-    BOOST_INCLUDEDIR    C:\SDKs\boost_1_82_0\
-    BOOST_LIBRARYDIR    C:\SDKs\boost_1_82_0\lib64-msvc-14.2
-    BOOST_ROOT          C:\SDKs\boost_1_82_0\boost
-```
-- Run command on project dir
 ```
 cmake -Bbuild -G "Visual Studio 16 2019" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="D:/SDKs/aax-sdk-2-4-1" -DBUILD_VST=ON -DVST2_PATH="D:/SDKs/VST_SDK/vst2sdk" -DBUILD_STANDALONE=ON
 ```
