@@ -17,7 +17,7 @@ public:
     }
     
     void internalDraw(Murka & m) {
-            results = false; 
+            results = false;
 
             MurkaContext& context = m.currentContext;
             bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
@@ -33,7 +33,7 @@ public:
                     m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
                     m.drawLine(0, linestep * i, shape.size.x, linestep * i);
                 }
-            } 
+            }
 
             m.setColor(GRID_LINES_2);
             linestep = shape.size.x / 4;
@@ -88,92 +88,38 @@ public:
                 m.prepare<murka::Label>(oneEightyLabelShape).text("180").draw();
             }
  
-			// MIXER - MONITOR DISPLAY
-			{
-				float centerX = 0;
-				float centerY = 0;
-				float radiusX = center.x - 1;
-				float radiusY = center.y - 1;
-				for (int i = 45; i <= 90 + 45; i += 5) {
-					float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
-					float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
-					vects.push_back(MurkaPoint(x, y));
-				}
-			}
+            // MIXER - MONITOR DISPLAY
+            {
+                MurkaPoint center = { context.getSize().x / 2, context.getSize().x / 2 };
+                std::vector<MurkaPoint> vects;
+                // arc
+                {
+                    float centerX = 0;
+                    float centerY = 0;
+                    float radiusX = center.x - 1;
+                    float radiusY = center.y - 1;
+                    for (int i = 45; i <= 90 + 45; i += 5) {
+                        float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
+                        float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
+                        vects.push_back(MurkaPoint(x, y));
+                    }
+                }
 
-			m.pushStyle();
-			m.pushMatrix();
-			m.translate(center.x, center.y, 0);
-			m.rotateZRad(juce::degreesToRadians(monitorState->yaw - 180)); //TODO: Why do we need -180?
-			m.setColor(ENABLED_PARAM);
+                m.pushStyle();
+                m.pushMatrix();
+                m.translate(center.x, center.y, 0);
+                m.rotateZRad(juce::degreesToRadians(monitorState->yaw - 180)); //TODO: Why do we need -180?
+                m.setColor(ENABLED_PARAM);
 
-			// temp
-			for (size_t i = 1; i < vects.size(); i++) {
-				m.drawLine(vects[i - 1].x, vects[i - 1].y, vects[i].x, vects[i].y);
-			}
-
-			m.drawLine(0, 0, 0, center.y - 10);
-			m.popMatrix();
-			m.popStyle();
-		}
-		// MIXER - MONITOR DISPLAY - END
-
-		MurkaPoint reticlePositionInWidgetSpace = { context.getSize().x / 2 + (std::get<0>(*xyrd) / 100.) * context.getSize().x / 2,
-			context.getSize().y / 2 + (-std::get<1>(*xyrd) / 100.) * context.getSize().y / 2 };
-		auto center = MurkaPoint(context.getSize().x / 2,
-			context.getSize().y / 2);
-
-		if ((draggingNow) || (shouldDrawRotateGuideLine)) {
-			m.setColor(M1_ACTION_YELLOW);
-			m.disableFill();
-			m.drawCircle(center.x,
-				center.y, (std::get<3>(*xyrd) / 100.) * context.getSize().x / sqrt(2));
-		}
-
-		if ((draggingNow) || (shouldDrawDivergeGuideLine)) {
-			m.setColor(M1_ACTION_YELLOW);
-			m.disableFill();
-			auto center = MurkaPoint(shape.size.x / 2,
-				shape.size.y / 2);
-			m.drawLine((reticlePositionInWidgetSpace.x - center.x) * 30 + center.x,
-				(reticlePositionInWidgetSpace.y - center.y) * 30 + center.y,
-				-(reticlePositionInWidgetSpace.x - center.x) * 30 + center.x,
-				-(reticlePositionInWidgetSpace.y - center.y) * 30 + center.y);
-		}
-
-		bool reticleHovered = MurkaShape(reticlePositionInWidgetSpace.x - 10,
-			reticlePositionInWidgetSpace.y - 10,
-			20,
-			20).inside(context.mousePosition) + draggingNow;
-
-		// Drawing central reticle
-		m.enableFill();
-		m.setColor(M1_ACTION_YELLOW);
-		m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (elevation / 90))));
-		m.setColor(BACKGROUND_GREY); // background color for internal circle
-		m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (elevation / 90))));
-
-		m.setColor(M1_ACTION_YELLOW);
-		m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
-
-		// Reticles
-		std::vector<Mach1Point3D> points = m1Encode->getPoints();
-		std::vector<std::string> pointsNames = m1Encode->getPointsNames();
-		if (m1Encode->getInputChannelsCount() > 1) {
-			for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-				MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
-				clamp(point.x, 0, shape.size.x);
-				clamp(point.y, 0, shape.size.y);
-				if (m1Encode->getInputMode() <= Mach1EncodeInputModeStereo) {
-					drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
-				}
-				else if (m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) {
-					drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
-				}
-				else {
-					drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
-				}
-			}
+                // temp
+                for (size_t i = 1; i < vects.size(); i++) {
+                    m.drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
+                }
+                
+                m.drawLine(0, 0, 0, center.y - 10);
+                m.popMatrix();
+                m.popStyle();
+            }
             // MIXER - MONITOR DISPLAY - END
 
             MurkaPoint reticlePositionInWidgetSpace = {context.getSize().x / 2 + (std::get<0>(*xyrd) / 100.) * context.getSize().x / 2,
@@ -186,7 +132,7 @@ public:
                 m.disableFill();
                 m.drawCircle(center.x,
                              center.y, (std::get<3>(*xyrd) / 100.) * context.getSize().x / sqrt(2));
-            } 
+            }
         
             if ((draggingNow) || (shouldDrawDivergeGuideLine)) {
                 m.setColor(M1_ACTION_YELLOW);
@@ -215,7 +161,7 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
         
             // Reticles
-			std::vector<Mach1Point3D> points = m1Encode->getPoints();
+            std::vector<Mach1Point3D> points = m1Encode->getPoints();
             std::vector<std::string> pointsNames = m1Encode->getPointsNames();
             if (m1Encode->getInputChannelsCount() > 1) {
                 for (int i = 0; i < m1Encode->getPointsCount(); i++) {

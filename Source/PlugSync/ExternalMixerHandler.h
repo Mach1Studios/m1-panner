@@ -4,6 +4,7 @@
 #include "PluginInstanceSynchronizer.h"
 
 #include <memory>
+#include <thread>
 #include <boost/smart_ptr/shared_ptr.hpp>
 
 // Due to boost complaining about winsock being already defined

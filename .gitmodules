@@ -15,3 +15,6 @@
 [submodule "Source/PlugSync/shared/message_protocol_external_mixer"]
 	path = Source/PlugSync/shared/message_protocol_external_mixer
 	url = ssh://git@git.jetbrains.space/gpu-audio/mach-1/message_protocol_external_mixer.git
+[submodule "cmake/boost-cmake"]
+	path = cmake/boost-cmake
+	url = git@github.com:himwho/boost-cmake.git

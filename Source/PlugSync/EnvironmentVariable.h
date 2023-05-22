@@ -1,89 +1,117 @@
-#ifndef M1_NOTEPAD_ENVIRONMENTVARIABLE_H
-#define M1_NOTEPAD_ENVIRONMENTVARIABLE_H
+#ifndef M1_PANNER_ENVIRONMENTVARIABLE_H
+#define M1_PANNER_ENVIRONMENTVARIABLE_H
 
 #include <string>
 #include <iostream>
 #include <array>
 #include <vector>
+#include <stdlib.h>
 
 namespace GA {
-	class IEnvironmentHandler {
-	public:
-		virtual ~IEnvironmentHandler() = default;
-		/**
-		 * Sets an environment variable
-		 * @param variable_name Variable name
-		 * @param variable_value Variable value
-		 */
-		virtual void SetEnvVariable(std::string variable_name, std::string variable_value) = 0;
+    class IEnvironmentHandler {
+    public:
+        virtual ~IEnvironmentHandler() = default;
 
-		/**
-		 * Remove an environment variable
-		 */
-		virtual int RemoveEnvVariable(std::string variable_name) = 0;
+        /**
+         * Sets an environment variable
+         * @param variable_name Variable name
+         * @param variable_value Variable value
+         */
+        virtual void SetEnvVariable(std::string variable_name, std::string variable_value) = 0;
 
-		/**
-		 * Retrieve environment variable
-		 * @param variable_name Requested variable
-		 * @return String containing the variable value
-		 */
-		virtual std::string GetEnvVariable(std::string variable_name) = 0;
-	};
+        /**
+         * Remove an environment variable
+         */
+        virtual int RemoveEnvVariable(std::string variable_name) = 0;
+
+        /**
+         * Retrieve environment variable
+         * @param variable_name Requested variable
+         * @return String containing the variable value
+         */
+        virtual std::string GetEnvVariable(std::string variable_name) = 0;
+    };
 
 #ifdef _WIN32
 
-	class EnvironmentHandler : public IEnvironmentHandler {
-		void CheckError() const
-		{
-			if (errno) {
-				std::array<char, 1024> buffer{};
-				std::cout << strerror_s(buffer.data(), buffer.size(), errno);
-			}
-		}
+    class EnvironmentHandler : public IEnvironmentHandler {
+        void CheckError() const
+        {
+            if (errno) {
+                std::array<char, 1024> buffer{};
+                std::cout << strerror_s(buffer.data(), buffer.size(), errno);
+            }
+        }
 
-	public:
-		void SetEnvVariable(std::string variable_name, std::string variable_value) override {
-			_putenv_s(variable_name.c_str(), variable_value.c_str());
-			CheckError();
-		}
+    public:
+        void SetEnvVariable(std::string variable_name, std::string variable_value) override {
+            _putenv_s(variable_name.c_str(), variable_value.c_str());
+            CheckError();
+        }
 
-		int RemoveEnvVariable(std::string variable_name) override {
-			const auto result = _putenv_s(variable_name.c_str(), "");
-			CheckError();
-			return result;
-		}
+        int RemoveEnvVariable(std::string variable_name) override {
+            const auto result = _putenv_s(variable_name.c_str(), "");
+            CheckError();
+            return result;
+        }
 
-		std::string GetEnvVariable(std::string variable_name) override {
-			std::vector<char> to_return{};
-			// Used to query the
-			size_t required_size;
+        std::string GetEnvVariable(std::string variable_name) override {
+            std::vector<char> to_return{};
+            // Used to query the
+            size_t required_size;
 
-			// TODO: Expand class to used proper *_s functions on Windows.
+            // TODO: Expand class to used proper *_s functions on Windows.
 
-			getenv_s(&required_size,
-				nullptr,
-				0 /* Buffer count*/,
-				variable_name.c_str());
+            getenv_s(&required_size,
+                nullptr,
+                0 /* Buffer count*/,
+                variable_name.c_str());
 
-			if (required_size == 0) {
-				// Envvar was not found
-				return {};
-			}
+            if (required_size == 0) {
+                // Envvar was not found
+                return {};
+            }
 
-			to_return.resize(required_size);
+            to_return.resize(required_size);
 
-			getenv_s(&required_size,
-				to_return.data(),
-				to_return.size(),
-				variable_name.c_str());
+            getenv_s(&required_size,
+                to_return.data(),
+                to_return.size(),
+                variable_name.c_str());
 
-			return { to_return.begin(), to_return.end() };
-		}
-	};
+            return { to_return.begin(), to_return.end() };
+        }
+    };
 
 #elif defined(__APPLE__)
+
+    class EnvironmentHandler : public IEnvironmentHandler {
+        void CheckError() const {
+            if (errno) {
+                std::array<char, 1024> buffer{};
+                std::cout << strerror(errno);
+            }
+        }
+
+    public:
+        void SetEnvVariable(std::string variable_name, std::string variable_value) override {
+            setenv(variable_name.c_str(), variable_value.c_str(), 0);
+            CheckError();
+        }
+
+        int RemoveEnvVariable(std::string variable_name) override {
+            const auto result = unsetenv(variable_name.c_str());
+            CheckError();
+            return result;
+        }
+
+        std::string GetEnvVariable(std::string variable_name) override {
+            const auto result = getenv(variable_name.c_str());
+            return {result};
+        }
+    };
 
 #endif
 }
 
-#endif //M1_NOTEPAD_ENVIRONMENTVARIABLE_H
+#endif //M1_PANNER_ENVIRONMENTVARIABLE_H

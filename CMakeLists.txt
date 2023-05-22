@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.25)
 file(STRINGS VERSION CURRENT_VERSION)
 project(M1-Panner VERSION ${CURRENT_VERSION})
 
@@ -15,9 +15,20 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # IDEs:  Create a folder in the IDE with the JUCE Module code.
 option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Show all module sources in IDE projects" ON)
 
+# setup boost
+set(BOOST_REQUESTED_VERSION "1.82.0")
+set(BOOST_VERSION_SHA256 "a6e1ab9b0860e6a2881dd7b21fe9f737a095e5f33a3a874afc6a345228597ee6")
+option(USE_SYSTEM_BOOST OFF)
+option(BOOST_USE_STATIC_LIBS ON)
+add_subdirectory(cmake/boost-cmake)
+
+# setup gtest
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+find_package(GTest REQUIRED)
+
 # add JUCE
 add_subdirectory(JUCE)
-# add custom modules
+# add custom deps and modules
 add_subdirectory(Modules)
 
 if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/JUCE_deps)
@@ -171,7 +182,7 @@ set_target_properties(Resources PROPERTIES FOLDER "Targets")
 # add required flags
 juce_generate_juce_header(${PLUGIN_NAME})
 
-target_link_libraries(${PLUGIN_NAME} PRIVATE juce::juce_audio_basics juce::juce_audio_devices juce::juce_audio_formats juce::juce_audio_plugin_client juce::juce_audio_processors juce::juce_audio_utils juce::juce_core juce::juce_cryptography juce::juce_data_structures juce::juce_dsp juce::juce_events juce::juce_graphics juce::juce_gui_basics juce::juce_gui_extra juce::juce_opengl juce::juce_osc juce::juce_product_unlocking juce_murka)
+target_link_libraries(${PLUGIN_NAME} PRIVATE juce::juce_audio_basics juce::juce_audio_devices juce::juce_audio_formats juce::juce_audio_plugin_client juce::juce_audio_processors juce::juce_audio_utils juce::juce_core juce::juce_cryptography juce::juce_data_structures juce::juce_dsp juce::juce_events juce::juce_graphics juce::juce_gui_basics juce::juce_gui_extra juce::juce_opengl juce::juce_osc juce_murka)
 target_link_libraries(${PLUGIN_NAME} PRIVATE Resources PUBLIC juce::juce_recommended_warning_flags juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
 target_link_libraries(${PLUGIN_NAME} PRIVATE MessageProtocol)
 
@@ -188,16 +199,9 @@ else()
 endif()
 
 # add boost
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-set(BOOST_REQUESTED_VERSION "1.81.0")
-find_package(Boost COMPONENTS accumulators core)
-include_directories(${BOOST_INCLUDE_DIRS})
-target_link_libraries(${PLUGIN_NAME} PRIVATE ${Boost_LIBRARIES})
-set_target_properties(${PLUGIN_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PROJECT_BINARY_DIR}/bin/src/")
-set_target_properties(${PLUGIN_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_BINARY_DIR}/bin/src/")
+target_link_libraries(${PLUGIN_NAME} PUBLIC Boost::atomic Boost::system Boost::serialization Boost::thread Boost::boost)
 
 # add gtest
-find_package(GTest REQUIRED)
 target_link_libraries(${PLUGIN_NAME} PRIVATE GTest::gtest GTest::gtest_main)
 
 # link libraries

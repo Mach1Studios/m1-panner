@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include <boost/json.hpp>
+#include <boost/json/src.hpp>
 
 using namespace GA;
 using namespace boost::system;
