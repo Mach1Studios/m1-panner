@@ -8,10 +8,11 @@ using namespace murka;
 class M1VolumeDisplayLine : public murka::View<M1VolumeDisplayLine> {
 public:
     void internalDraw(Murka & m) {
-        MurkaContext& context = m.currentContext;
 
-        bool inside = context.isHovered() * !areInteractiveChildrenHovered(context) * hasMouseFocus(m);
-        
+        bool isInside = inside();
+        //* !areInteractiveChildrenHovered(c) *
+        //hasMouseFocus(m);
+
         m.setColor(DISABLED_PARAM);
         m.drawRectangle(shape.size.x / 2 - 2,
                          0,

@@ -14,28 +14,24 @@ class M1Checkbox : public murka::View<M1Checkbox> {
 public:
     void internalDraw(Murka & m) {
         bool* data = dataToControl;
-        
-        MurkaContext& context = m.currentContext;
-        bool inside = context.isHovered() * !areInteractiveChildrenHovered(m) * hasMouseFocus(m);
-        auto& c = context;
-        
+                
         if (didntInitialiseYet) {
             animatedData = *((bool*)dataToControl) ? 1.0 : 0.0;
             didntInitialiseYet = false;
         }
         
-        float animation = A(inside * enabled);
+        float animation = A(inside() * enabled);
         
 		m.pushStyle();
         m.setColor(100 + 110 * enabled + 30 * animation, 220);
-        m.drawCircle(c.getSize().y / 2, c.getSize().y / 2, c.getSize().y / 2);
+        m.drawCircle(getSize().y / 2, getSize().y / 2, getSize().y / 2);
         m.setColor(40 + 20 * !enabled, 255);
-        m.drawCircle(c.getSize().y / 2, c.getSize().y / 2, c.getSize().y / 2 - 2);
+        m.drawCircle(getSize().y / 2, getSize().y / 2, getSize().y / 2 - 2);
         
         m.setColor(100 + 110 * enabled + 30 * animation, 220);
         
         animatedData = A(*((bool*)dataToControl));
-        m.drawCircle(c.getSize().y / 2, c.getSize().y / 2,
+        m.drawCircle(getSize().y / 2, getSize().y / 2,
                           4 * animatedData);
 
         m.setColor(100 + 110 * enabled + 30 * animation, 220);
@@ -44,7 +40,7 @@ public:
         m.popStyle();
 
         // Action
-        if ((context.mouseDownPressed[0]) && (inside) && enabled) {
+        if ((mouseDownPressed(0)) && (inside()) && enabled) {
             *((bool*)dataToControl) = !*((bool*)dataToControl);
             changed = true;
 		}

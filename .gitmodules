@@ -2,9 +2,6 @@
 	path = Modules/juce_murka
 	url = git@github.com:Kiberchaika/juce_murka.git
 	branch = 1_0
-[submodule "Modules/m1_orientation_client"]
-	path = Modules/m1_orientation_client
-	url = git@github.com:Mach1Studios/m1_orientation_client.git
 [submodule "Modules/m1-sdk"]
 	path = Modules/m1-sdk
 	url = git@github.com:Mach1Studios/m1-sdk.git

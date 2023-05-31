@@ -11,16 +11,15 @@ class M1Knob : public murka::View<M1Knob> {
 public:
     void internalDraw(Murka & m) {
         float* data = dataToControl;
-        MurkaContext& ctx = m.currentContext;
 
-        bool inside = ctx.isHovered() *
+        bool isInside = inside() *
 //        Had to temporary remove the areInteractiveChildrenHovered because of the bug in Murka with the non-deleting children widgets. TODO: fix this
 //        !areInteractiveChildrenHovered(ctx) *
 //            hasMouseFocus(m) *
              (!editingTextNow);
         
         changed = false;
-        hovered = inside + draggingNow; // for external views to be highlighted too if needed
+        hovered = isInside + draggingNow; // for external views to be highlighted too if needed
         bool hoveredLocal = hovered + externalHover; // shouldn't propel hoveredLocal outside so it doesn't feedback
 
         if (!enabled) {
@@ -62,7 +61,7 @@ public:
         }
         
         m.rotateZRad(inputValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
-        m.drawRectangle(-width * (4 + A(1 * inside)), 0, width * (8 + A(2 * inside)), shape.size.x * (0.25 + A(0.02 * inside)));
+        m.drawRectangle(-width * (4 + A(1 * inside())), 0, width * (8 + A(2 * inside())), shape.size.x * (0.25 + A(0.02 * inside())));
         
         // A white rectangle inside a grey colored one
         m.setColor(100 + 110 * enabled + A(30 * hoveredLocal) * enabled, 255);
@@ -120,9 +119,7 @@ public:
             
             if (!textFieldEditingFinished) {
                 textFieldObject.activated = true;
-                ctx.claimKeyboardFocus(&textFieldObject);
-                
-                
+                //ctx.claimKeyboardFocus(&textFieldObject); // TODO: is this still needed?
             }
             
             if (textFieldEditingFinished) {
@@ -139,7 +136,7 @@ public:
         }
         
         bool hoveredValueText = false;
-        if (valueTextShape.inside(m.currentContext.mousePosition) && !editingTextNow && enabled) {
+        if (valueTextShape.inside(mousePosition()) && !editingTextNow && enabled) {
             m.drawRectangle(valueTextShape.x() - 2,
                              valueTextShape.y(),
                              2,
@@ -161,50 +158,50 @@ public:
         
         // Action
 
-        if ((m.currentContext.mouseDownPressed[0]) && (!m.currentContext.isHovered()) && (editingTextNow)) {
+        if ((mouseDownPressed(0)) && (!isHovered()) && (editingTextNow)) {
             // Pressed outside the knob widget while editing text. Aborting the text edit
             editingTextNow = false;
             deleteTheTextField();
         }
         
-        if ((hoveredValueText) && (m.currentContext.doubleClick) && (enabled)) {
+        if ((hoveredValueText) && (doubleClick()) && (enabled)) {
             editingTextNow = true;
             shouldForceEditorToSelectAll = true;
         }
         
-        if ((m.currentContext.mouseDownPressed[0]) && (inside) && (m.currentContext.mousePosition.y < labelPositionY) &&
+        if ((mouseDownPressed(0)) && (inside()) && (mousePosition().y < labelPositionY) &&
             (!draggingNow) && (enabled)) {
             draggingNow = true;
             cursorHide();
         }
 
-        if ((draggingNow) && (!m.currentContext.mouseDown[0])) {
+        if ((draggingNow) && (!mouseDownPressed(0))) {
             draggingNow = false;
             cursorShow();
         }
         
         // Setting knob value to default if pressed alt while clicking
-        bool shouldSetDefault = m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && m.currentContext.mouseDownPressed[0];
+        bool shouldSetDefault = isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT) && mouseDownPressed(0);
         
         // Don't set default by doubleclick if the mouse is in the Label/Text editor zone
-        if (m.currentContext.mousePosition.y >= labelPositionY) shouldSetDefault = false;
+        if (mousePosition().y >= labelPositionY) shouldSetDefault = false;
 
-        if (shouldSetDefault && inside) {
+        if (shouldSetDefault && inside()) {
             draggingNow = false;
             *((float*)dataToControl) = defaultValue;
             cursorShow();
             changed = true;
         }
         
-        if (draggingNow && m.currentContext.mouseDelta.lengthSquared() > 0.001) {
-            if (abs(m.currentContext.mouseDelta.y) >= 1) {
+        if (draggingNow && mouseDelta().lengthSquared() > 0.001) {
+            if (abs(mouseDelta().y) >= 1) {
                 
                 // Shift key fine-tune mode
                 float s = speed;  // TODO: check if this speed constant should be dependent on UIScale
-                if (m.currentContext.isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
+                if (isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
                     s *= 10;
                 }
-                *((float*)dataToControl) += ( m.currentContext.mouseDelta.y / s) * (rangeTo - rangeFrom);
+                *((float*)dataToControl) += ( mouseDelta().y / s) * (rangeTo - rangeFrom);
             }
             
             if (*((float*)dataToControl) > rangeTo) {
