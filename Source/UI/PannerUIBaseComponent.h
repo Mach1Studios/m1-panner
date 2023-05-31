@@ -22,9 +22,7 @@
 #include "M1Checkbox.h"
 #include "M1DropdownMenu.h"
 #include "M1DropdownButton.h"
-#include "m1_orientation_client/UI/M1Label.h"
-#include "m1_orientation_client/UI/M1OrientationWindowToggleButton.h"
-#include "m1_orientation_client/UI/M1OrientationClientWindow.h"
+#include "PannerReticleField.h"
 
 //==============================================================================
 /*

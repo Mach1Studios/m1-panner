@@ -1,5 +1,4 @@
 #include "PannerUIBaseComponent.h"
-#include "PannerReticleField.h"
 
 using namespace murka;
 

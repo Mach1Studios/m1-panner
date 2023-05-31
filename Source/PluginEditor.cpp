@@ -8,7 +8,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include <Mach1Encode.h>
 
 //==============================================================================
 M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p)

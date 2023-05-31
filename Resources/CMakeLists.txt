@@ -6,9 +6,9 @@ if(EXISTS "Resources/ProximaNovaReg.ttf" AND NOT IS_DIRECTORY "Resources/Proxima
 	set(DEFAULT_FONT_SIZE 10)
     juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png ProximaNovaReg.ttf)
 else()
-	set(DEFAULT_FONT_SIZE 11)
 	set(FOUND_FONT AileronSemiBold)
 	set(FOUND_FONT_TYPE ttf)
+	set(DEFAULT_FONT_SIZE 11)
     juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png AileronSemiBold.ttf)
 endif()
 

@@ -8,23 +8,24 @@ using namespace murka;
 class M1PitchWheel : public murka::View<M1PitchWheel> {
 public:
     void internalDraw(Murka & m) {
-        MurkaContext& ctx = m.currentContext;
 
-        bool inside = ctx.isHovered() * !areInteractiveChildrenHovered(ctx) * hasMouseFocus(m);
-        hovered = inside + draggingNow;
+        bool isInside = inside();
+        //* !areInteractiveChildrenHovered(c) *
+        //hasMouseFocus(m);
+
+        hovered = isInside + draggingNow;
         bool hoveredLocal = hovered + externalHovered; // this variable is not used outside the widget to avoid feedback loop
         changed = false; // false unless the user changed a value using this knob
-        auto& c = ctx;
 		
 		// Reticle calculation
 		float reticlePositionNorm = (*((float*)dataToControl) - rangeFrom) / (rangeTo - rangeFrom);
 
-		MurkaShape reticlePosition = { c.getSize().x / 2 - 6,
+		MurkaShape reticlePosition = { getSize().x / 2 - 6,
 									  offset + (shape.size.y - offset * 2) * reticlePositionNorm - 6,
 									  12,
 									  12 };
 		bool reticleHover = false + draggingNow;
-		if (reticlePosition.inside(ctx.mousePosition)) {
+		if (reticlePosition.inside(mousePosition())) {
 			reticleHover = true;
 		}
 
@@ -41,9 +42,9 @@ public:
             float lineLength = minilineLength / 2;
             if (i == 2) lineLength *= 2;
 			m.setColor(57 + 20 * A(reticleHover + externalHovered));
-            m.drawLine(c.getSize().x / 2 - lineLength,
+            m.drawLine(getSize().x / 2 - lineLength,
                         i * minilineStep + offset,
-                        c.getSize().x / 2 + lineLength,
+                        getSize().x / 2 + lineLength,
                         i * minilineStep + offset);
             
             MurkaShape labelShape = {55, (i * minilineStep + 2), 150, 50};
@@ -53,7 +54,7 @@ public:
         }
         
 		m.setColor(133 + 20 * A(reticleHover + externalHovered));
-        m.drawLine(c.getSize().x / 2, offset,
+        m.drawLine(getSize().x / 2, offset,
 			shape.size.x / 2, shape.size.y - offset);
 
         // Reticle
@@ -73,14 +74,14 @@ public:
 
         // Action
         
-        if ((ctx.mouseDownPressed[0]) && (inside) && (!draggingNow)) {
+        if ((mouseDownPressed(0)) && (inside()) && (!draggingNow)) {
             draggingNow = true;
             cursorHide();
         }
         
-        if (draggingNow && ctx.mouseDelta.lengthSquared() > 0.001) {
-            if (abs(ctx.mouseDelta.y) >= 1) {
-                *((float*)dataToControl) += ctx.mouseDelta.y / 2;
+        if (draggingNow && mouseDelta().lengthSquared() > 0.001) {
+            if (abs(mouseDelta().y) >= 1) {
+                *((float*)dataToControl) += mouseDelta().y / 2;
             }
             // TODO: why is the order inversed here?
             if (*((float*)dataToControl) < rangeTo) {
@@ -91,9 +92,9 @@ public:
             }
             // drawing tooltip
             dataCache = *((float*)dataToControl);
-            hintPosition = {c.currentViewShape.position.x - 1,
-                            c.currentViewShape.position.y + (reticlePositionNorm * (c.currentViewShape.size.y - offset * 2) + 4)};
-            ctx.addOverlay([&]() {
+            hintPosition = {shape.position.x - 1,
+                shape.position.y + (reticlePositionNorm * (shape.size.y - offset * 2) + 4)};
+            addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
                 m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
                 m.prepare<murka::Label>({hintPosition.x,
@@ -106,7 +107,7 @@ public:
             changed = true;
         }
 
-        if ((draggingNow) && (!ctx.mouseDown[0])) {
+        if ((draggingNow) && (!mouseDown(0))) {
             draggingNow = false;
             cursorShow();
         }

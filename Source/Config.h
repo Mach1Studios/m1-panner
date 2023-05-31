@@ -115,3 +115,4 @@
 #pragma message XSTR(PLUGIN_FONT)
 #pragma message XSTR(BINARYDATA_FONT)
 #pragma message XSTR(BINARYDATA_FONT_SIZE)
+#pragma message XSTR(DEFAULT_FONT_SIZE)

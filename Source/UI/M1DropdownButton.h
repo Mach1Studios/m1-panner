@@ -13,16 +13,15 @@ using namespace murka;
 class M1DropdownButton : public murka::View<M1DropdownButton> {
 public:
     void internalDraw(Murka & m) {
-        MurkaContext& context = m.currentContext;
-        bool inside = context.isHovered() * !areInteractiveChildrenHovered(m) * hasMouseFocus(m);
-
-        // outline border
-        m.setColor(ENABLED_PARAM);
-        m.drawRectangle(0, 0,
-                        shape.size.x, shape.size.y);
-        m.setColor(BACKGROUND_GREY);
-        m.drawRectangle(1, 1,
-                        shape.size.x - 2, shape.size.y - 2);
+        if (outlineEnabled) {
+            // outline border
+            m.setColor(ENABLED_PARAM);
+            m.drawRectangle(0, 0,
+                            shape.size.x, shape.size.y);
+            m.setColor(BACKGROUND_GREY);
+            m.drawRectangle(1, 1,
+                            shape.size.x - 2, shape.size.y - 2);
+        }
 
         m.setColor(LABEL_TEXT_COLOR);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
@@ -30,7 +29,7 @@ public:
         m.prepare<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
 
         pressed = false;
-        if ((context.isHovered()) && (context.mouseDownPressed[0])) {
+        if ((isHovered()) && (mouseDownPressed(0))) {
             pressed = true; // Only sets to true the frame the "pressed" happened
         }
 
@@ -40,13 +39,19 @@ public:
     std::string label = "";    
     bool pressed = false;
     double fontSize = 10;
-    
+    bool outlineEnabled = true;
+
     operator bool() {
         return pressed;
     }
         
     M1DropdownButton & withLabel(std::string label_) {
         label = label_;
+        return *this;
+    }
+    
+    M1DropdownButton & withOutline(bool outlineEnabled_ = false) {
+        outlineEnabled = outlineEnabled_;
         return *this;
     }
     
