@@ -103,13 +103,13 @@ public:
         if ((draggingNow) && (!mouseDown(0))) {
             draggingNow = false;
             cursorShow();
-            teleportCursor(currentViewShape.position.x + reticlePositionInWidgetSpace.x, currentViewShape.position.x + reticlePositionInWidgetSpace.y);
+            teleportCursor(shape.position.x + reticlePositionInWidgetSpace.x, shape.position.x + reticlePositionInWidgetSpace.y);
         }
     
         if (draggingNow) {
-            MurkaPoint normalisedDelta = {mouseDelta.x / getSize().x,
-                                          mouseDelta.y / getSize().y};
-            if (mouseDelta.lengthSquared() > 0.001)  {
+            MurkaPoint normalisedDelta = {mouseDelta().x / getSize().x,
+                                          mouseDelta().y / getSize().y};
+            if (mouseDelta().lengthSquared() > 0.001)  {
                 std::get<2>(*xyrz) -= normalisedDelta.x * 180 * 2;
                 std::get<3>(*xyrz) += normalisedDelta.y * 90 * 2;
 
@@ -117,9 +117,9 @@ public:
             }
         }
     
-        if (doubleClick) {
-            MurkaPoint normalisedMouse = {mousePosition.x / getSize().x,
-                                          mousePosition.y / getSize().y};
+        if (doubleClick()) {
+            MurkaPoint normalisedMouse = {mousePosition().x / getSize().x,
+                                          mousePosition().y / getSize().y};
             std::get<2>(*xyrz) = 180 * 2 * (normalisedMouse.x  - 0.5);
             std::get<3>(*xyrz) = 90 * 2 * (-normalisedMouse.y + 0.5);
             
@@ -139,7 +139,7 @@ public:
         return normalized_x;
     }
     
-    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, Murka& m, MurkaContext& context) {
+    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, Murka& m) {
         float realx = x;
         float realy = y;
         
@@ -175,7 +175,7 @@ public:
         }
     }
     
-    void drawMonitorYaw(float yawAngle, float pitchAngle){
+    void drawMonitorYaw(float yawAngle, float pitchAngle, Murka& m){
         float yaw = normalize(yawAngle, -180., 180.); //TODO: fix this
         float pitch = pitchAngle + 90.; //TODO: fix this
         float divider = 4.; // Diameter/width of drawn object

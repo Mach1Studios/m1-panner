@@ -117,13 +117,10 @@ void PannerUIBaseComponent::initialise()
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
-void PannerUIBaseComponent::render()
+void PannerUIBaseComponent::draw()
 {
-    
     // This clears the context with our background.
     //juce::OpenGLHelpers::clear(juce::Colour(255.0, 198.0, 30.0));
-
-    currentMousePosition = m.currentContext.mousePosition * 0.7;
     
     float scale = (float)openGLContext.getRenderingScale() * 0.7; // (Desktop::getInstance().getMainMouseSource().getScreenPosition().x / 300.0); //  0.7;
 

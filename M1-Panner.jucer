@@ -44,6 +44,7 @@
       <FILE id="KBZIHM" name="WindowUtil.cpp" compile="1" resource="0" file="Source/WindowUtil.cpp"/>
       <FILE id="Ij83lH" name="WindowUtil.mm" compile="1" resource="0" file="Source/WindowUtil.mm"/>
       <GROUP id="{9C402C38-70FE-774E-A921-CD4A15433E2C}" name="UI">
+        <FILE id="MpHlnF" name="M1Label.h" compile="0" resource="0" file="Source/UI/M1Label.h"/>
         <FILE id="AKmxuq" name="M1Checkbox.h" compile="0" resource="0" file="Source/UI/M1Checkbox.h"/>
         <FILE id="m10ewU" name="M1Knob.h" compile="0" resource="0" file="Source/UI/M1Knob.h"/>
         <FILE id="XbIyic" name="M1DropdownButton.h" compile="0" resource="0"
@@ -99,7 +100,6 @@
         <MODULEPATH id="juce_product_unlocking" path="JUCE/modules"/>
         <MODULEPATH id="juce_cryptography" path="JUCE/modules"/>
         <MODULEPATH id="juce_murka" path="Modules"/>
-        <MODULEPATH id="m1_orientation_client" path="Modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2017 targetFolder="Builds/VisualStudio2017" externalLibraries="Mach1EncodeCAPI.lib"
@@ -129,7 +129,6 @@
         <MODULEPATH id="juce_product_unlocking" path="JUCE/modules"/>
         <MODULEPATH id="juce_cryptography" path="JUCE/modules"/>
         <MODULEPATH id="juce_murka" path="Modules"/>
-        <MODULEPATH id="m1_orientation_client" path="Modules"/>
       </MODULEPATHS>
     </VS2017>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" externalLibraries="Mach1EncodeCAPI"
@@ -159,7 +158,6 @@
         <MODULEPATH id="juce_product_unlocking" path="JUCE/modules"/>
         <MODULEPATH id="juce_cryptography" path="JUCE/modules"/>
         <MODULEPATH id="juce_murka" path="Modules"/>
-        <MODULEPATH id="m1_orientation_client" path="Modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
@@ -184,6 +182,5 @@
     <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0"
             useGlobalPath="0"/>
-    <MODULE id="m1_orientation_client" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
 </JUCERPROJECT>

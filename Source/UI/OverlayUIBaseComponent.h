@@ -12,11 +12,11 @@
 
 #include "juce_murka/JuceMurkaBaseComponent.h"
 
+#include "M1Label.h"
 #include "M1Knob.h"
 #include "M1PitchWheel.h"
 #include "M1VolumeDisplayLine.h"
 #include "M1Checkbox.h"
-#include "m1_orientation_client/UI/M1Label.h"
 
 #include "../TypesForDataExchange.h"
 #include "../PluginProcessor.h"
@@ -39,7 +39,7 @@ public:
 
     //==============================================================================
     void initialise() override;
-    void render() override;
+    void draw() override;
 
 	void convertRCtoXYRaw(float r, float d, float &x, float &y);
 	void convertXYtoRCRaw(float x, float y, float &r, float &d);
