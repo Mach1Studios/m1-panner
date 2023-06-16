@@ -134,13 +134,9 @@ void OverlayUIBaseComponent::draw()
     // This clears the context with a black background.
 	//OpenGLHelpers::clear (Colours::black);
 
-	// TODO
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
-	m.begin();
-
 	m.setColor(0, 0);
 	m.clear();
-
 	m.pushView();
 	m.pushStyle();
 

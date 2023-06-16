@@ -61,7 +61,7 @@ public:
         }
         
         m.rotateZRad(inputValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
-        m.drawRectangle(-width * (4 + A(1 * inside())), 0, width * (8 + A(2 * inside())), shape.size.x * (0.25 + A(0.02 * inside())));
+        m.drawRectangle(-width * (4 + A(1 * isInside)), 0, width * (8 + A(2 * isInside)), shape.size.x * (0.25 + A(0.02 * isInside)));
         
         // A white rectangle inside a grey colored one
         m.setColor(100 + 110 * enabled + A(30 * hoveredLocal) * enabled, 255);
@@ -170,7 +170,7 @@ public:
             shouldForceEditorToSelectAll = true;
         }
         
-        if ((mouseDownPressed(0)) && (inside()) && (mousePosition().y < labelPositionY) &&
+        if ((mouseDownPressed(0)) && (isInside) && (mousePosition().y < labelPositionY) &&
             (!draggingNow) && (enabled)) {
             draggingNow = true;
             cursorHide();
