@@ -9,9 +9,7 @@ typedef std::tuple<float&, float&, float&, float&> XYRZ;
 class OverlayReticleField : public murka::View<OverlayReticleField> {
 public:
     void internalDraw(Murka & m) {
-        bool isInside = inside();
-        //* !areInteractiveChildrenHovered(c) *
-        //hasMouseFocus(m);
+        bool isInside = inside() * hasMouseFocus(m);
         XYRZ *xyrz = (XYRZ*)dataToControl;
 
         m.enableFill();

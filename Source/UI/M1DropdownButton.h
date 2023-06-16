@@ -29,7 +29,7 @@ public:
         m.prepare<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
 
         pressed = false;
-        if ((isHovered()) && (mouseDownPressed(0))) {
+        if ((inside()) && (mouseDownPressed(0))) {
             pressed = true; // Only sets to true the frame the "pressed" happened
         }
 

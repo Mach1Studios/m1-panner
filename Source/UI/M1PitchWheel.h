@@ -8,10 +8,7 @@ using namespace murka;
 class M1PitchWheel : public murka::View<M1PitchWheel> {
 public:
     void internalDraw(Murka & m) {
-
         bool isInside = inside();
-        //* !areInteractiveChildrenHovered(c) *
-        //hasMouseFocus(m);
 
         hovered = isInside + draggingNow;
         bool hoveredLocal = hovered + externalHovered; // this variable is not used outside the widget to avoid feedback loop
@@ -79,7 +76,7 @@ public:
             cursorHide();
         }
         
-        if (draggingNow && mouseDelta().lengthSquared() > 0.001) {
+        if (draggingNow) {
             if (abs(mouseDelta().y) >= 1) {
                 *((float*)dataToControl) += mouseDelta().y / 2;
             }
@@ -92,8 +89,8 @@ public:
             }
             // drawing tooltip
             dataCache = *((float*)dataToControl);
-            hintPosition = {shape.position.x - 1,
-                shape.position.y + (reticlePositionNorm * (shape.size.y - offset * 2) + 4)};
+            hintPosition = {getAbsoluteViewPosition().x - 1,
+                getAbsoluteViewPosition().y + (reticlePositionNorm * (getSize().y - offset * 2) + 4)};
             addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
                 m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
