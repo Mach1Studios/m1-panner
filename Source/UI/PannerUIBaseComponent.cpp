@@ -131,6 +131,7 @@ void PannerUIBaseComponent::draw()
     }
 
 	m.begin();
+    currentMousePosition = m.mousePosition();
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
     m.setColor(BACKGROUND_GREY);
 	m.clear();

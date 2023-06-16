@@ -16,10 +16,6 @@ public:
     void internalDraw(Murka & m) {
         results = false;
 
-        bool isInside = inside();
-        //* !areInteractiveChildrenHovered(c) *
-        //hasMouseFocus(m);
-
         XYRD *xyrd = (XYRD*)dataToControl;
 
         // Increase circle resolution

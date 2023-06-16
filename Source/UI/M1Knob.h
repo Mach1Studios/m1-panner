@@ -12,7 +12,7 @@ public:
     void internalDraw(Murka & m) {
         float* data = dataToControl;
 
-        bool isInside = inside() *
+        bool isInside = isHovered() *
 //        Had to temporary remove the areInteractiveChildrenHovered because of the bug in Murka with the non-deleting children widgets. TODO: fix this
 //        !areInteractiveChildrenHovered(ctx) *
 //            hasMouseFocus(m) *
@@ -108,6 +108,7 @@ public:
                 .withPrecision(2)
                 .forcingEditorToSelectAll(shouldForceEditorToSelectAll)
                 .onlyAllowNumbers(true)
+                .grabKeyboardFocus()
                 .draw();
             
             auto textFieldEditingFinished = textFieldObject.editingFinished;
@@ -119,7 +120,7 @@ public:
             
             if (!textFieldEditingFinished) {
                 textFieldObject.activated = true;
-                //ctx.claimKeyboardFocus(&textFieldObject); // TODO: is this still needed?
+                claimKeyboardFocus(&textFieldObject);
             }
             
             if (textFieldEditingFinished) {
@@ -175,7 +176,7 @@ public:
             cursorHide();
         }
 
-        if ((draggingNow) && (!mouseDownPressed(0))) {
+        if ((draggingNow) && (!mouseDown(0))) {
             draggingNow = false;
             cursorShow();
         }
@@ -186,14 +187,14 @@ public:
         // Don't set default by doubleclick if the mouse is in the Label/Text editor zone
         if (mousePosition().y >= labelPositionY) shouldSetDefault = false;
 
-        if (shouldSetDefault && inside()) {
+        if (shouldSetDefault && isInside) {
             draggingNow = false;
             *((float*)dataToControl) = defaultValue;
             cursorShow();
             changed = true;
         }
         
-        if (draggingNow && mouseDelta().lengthSquared() > 0.001) {
+        if (draggingNow) {
             if (abs(mouseDelta().y) >= 1) {
                 
                 // Shift key fine-tune mode
