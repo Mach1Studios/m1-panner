@@ -157,7 +157,10 @@ public:
     
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
-    
+   
+	Mach1EncodeInputModeType m1EncodeInputMode;
+	Mach1EncodeOutputModeType m1EncodeOutputMode;
+
 private:
     void createLayout();
     
@@ -167,7 +170,8 @@ private:
     // Channel input
     std::vector<std::vector<float>> audioDataIn;
     std::vector<std::vector<juce::LinearSmoothedValue<float>>> smoothedChannelCoeffs;
-    
+  
+
 #ifdef ITD_PARAMETERS
     inline void processBuffers (AudioSampleBuffer& buffer,
                         std::vector<int> orderChans, std::vector<std::vector<float> > delayCoeffs);

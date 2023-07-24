@@ -719,14 +719,14 @@ void PannerUIBaseComponent::draw()
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeMono);
+					processor->m1EncodeInputMode = Mach1EncodeInputModeMono;
                     processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 } else if (inputDropdownMenu.selectedOption == 1) {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeStereo);
+					processor->m1EncodeInputMode = Mach1EncodeInputModeStereo;
                     processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 }
                 processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
-            }
+			}
         }
 
         // OUTPUT DROPDOWN & LABELS
@@ -777,21 +777,21 @@ void PannerUIBaseComponent::draw()
 
             if (outputDropdownMenu.changed) {
                 if (outputDropdownMenu.selectedOption == 0) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Horizon_4);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Horizon_4;
                 } else if (outputDropdownMenu.selectedOption == 1) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_8);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_8;
                 } else if (outputDropdownMenu.selectedOption == 2) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_12);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_12;
                 } else if (outputDropdownMenu.selectedOption == 3) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_14);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_14;
                 } else if (outputDropdownMenu.selectedOption == 4) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_32);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_32;
                 } else if (outputDropdownMenu.selectedOption == 5) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_36);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_36;
                 } else if (outputDropdownMenu.selectedOption == 6) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_48);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_48;
                 } else if (outputDropdownMenu.selectedOption == 7) {
-                    processor->m1EncodeChangeInputOutputMode(processor->pannerSettings.m1Encode.getInputMode(), Mach1EncodeOutputModeM1Spatial_60);
+					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_60;
                 }
             }
         } else {
