@@ -9,7 +9,7 @@ struct PannerSettings {
     /// - `Mach1EncodeOutputModeType`
     /// - `Mach1EncodePannerMode`
     Mach1Encode m1Encode;
-    
+
     float x = 0.;
 	float y = 70.7;
 	float azimuth = 0.;

@@ -427,6 +427,10 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+	if (pannerSettings.m1Encode.getInputMode() != m1EncodeInputMode || pannerSettings.m1Encode.getOutputMode() != m1EncodeOutputMode) {
+		m1EncodeChangeInputOutputMode(m1EncodeInputMode, m1EncodeOutputMode);
+	}
+
     // Update the host playhead data external usage
     if (external_spatialmixer_active && getPlayHead() != nullptr) {
         juce::AudioPlayHead* ph = getPlayHead();
@@ -688,7 +692,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
     output_channel_indices.resize(outputChannelsCount);
 
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
-    fillChannelOrderArray(inputChannelsCount);
+    fillChannelOrderArray(outputChannelsCount);
     
     for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++) {
         smoothedChannelCoeffs[input_channel] = std::vector<juce::LinearSmoothedValue<float>>();
@@ -697,6 +701,9 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
+
+	m1EncodeInputMode = inputMode;
+	m1EncodeOutputMode = outputMode;
 }
 
 void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
