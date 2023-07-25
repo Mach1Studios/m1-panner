@@ -456,8 +456,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     float _gain = pannerSettings.gain;
 
     // TODO: Check for a monitor if none is connected
-    
-    if (monitorSettings.monitor_mode == 2) { // StereoSafe mode is on
+    if (monitorSettings.monitor_mode == 1) { // StereoSafe mode is on
         //store diverge for gain
         float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
         //Setup for stereoSafe diverge range to gain
