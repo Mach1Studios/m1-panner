@@ -1,4 +1,3 @@
-
 #include "PannerOSC.h"
 
 void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
@@ -20,7 +19,6 @@ PannerOSC::PannerOSC()
 	// find available port
 	for (port = 10001; port < 10100; port++)
 	{
-		//if (OSCReceiver::connect(port)) break;
 		if (socket.bindToPort(port))
 		{
 			socket.shutdown();
@@ -28,7 +26,6 @@ PannerOSC::PannerOSC()
 			break;
 		}
 	}
-
     juce::OSCReceiver::addListener(this);
 }
 
@@ -36,7 +33,7 @@ void PannerOSC::update()
 {
 	if (!isConnected)
 	{
-		if (juce::OSCSender::connect("127.0.0.1", 10000))
+		if (juce::OSCSender::connect("127.0.0.1", 6345))
 		{
             juce::OSCMessage msg("/panner/port");
 			msg.addInt32(port);
