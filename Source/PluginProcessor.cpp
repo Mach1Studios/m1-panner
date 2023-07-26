@@ -126,6 +126,28 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayTime, this);
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
+    
+    pannerOSC.AddListener([&](OSCMessage msg) {
+        // Capturing monitor mode
+        int mode = msg[0].getInt32();
+        monitorSettings.monitor_mode = mode;
+        
+        if (msg.size() >= 2) {
+            // Capturing Monitor's Yaw
+            if (msg[1].isFloat32()){
+                float yaw = msg[1].getFloat32();
+                monitorSettings.yaw = yaw; // normalised
+            }
+        }
+        if (msg.size() >= 3) {
+            // Capturing Monitor's Pitch
+            if (msg[2].isFloat32()){
+                float pitch = msg[2].getFloat32();
+                monitorSettings.pitch = pitch; // normalized
+            }
+        }
+    });
+    //addListener(this);
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()

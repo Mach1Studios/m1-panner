@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include <Mach1Encode.h>
 #include "Config.h"
+#include "PannerOSC.h"
 #include "TypesForDataExchange.h"
 //#include "LegacyParameters.h"
 
