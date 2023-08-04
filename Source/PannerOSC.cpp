@@ -1,12 +1,5 @@
 #include "PannerOSC.h"
 
-void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
-{
-	if (messageReceived != nullptr)
-	{
-		messageReceived(msg);
-	}
-}
 
 // finds the server port via the settings json file
 bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
@@ -70,6 +63,15 @@ PannerOSC::PannerOSC()
     juce::OSCReceiver::addListener(this);
 }
 
+void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
+{
+    if (messageReceived != nullptr)
+    {
+        messageReceived(msg);
+    }
+    lastMessageTime = juce::Time::getMillisecondCounter();
+}
+
 void PannerOSC::update()
 {
 	if (!isConnected)
@@ -81,6 +83,15 @@ void PannerOSC::update()
 			isConnected = juce::OSCSender::send(msg);
 		}
 	}
+    
+    if (isConnected)
+    {
+        auto currentTime = juce::Time::getMillisecondCounter();
+        if ((currentTime - lastMessageTime) > 2000) // 2000 milliseconds = 2 seconds
+        {
+            isConnected = false;
+        }
+    }
 }
 
 void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageReceived)
