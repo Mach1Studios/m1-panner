@@ -156,6 +156,9 @@ public:
     juce::PluginHostType hostType;
     bool layoutCreated = false;
     
+    // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
+    PannerOSC pannerOSC;
+    
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
    

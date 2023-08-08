@@ -147,7 +147,6 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             }
         }
     });
-    //addListener(this);
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()

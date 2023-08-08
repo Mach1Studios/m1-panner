@@ -4,9 +4,8 @@
 #include <JuceHeader.h>
 
 class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
-
 {
-    virtual bool init(int serverPort) = 0;
+    bool init(int serverPort);
     bool initFromSettings(std::string jsonSettingsFilePath);
 	int serverPort, port;
 	bool isConnected = false;
