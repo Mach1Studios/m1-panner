@@ -1,5 +1,23 @@
 #include "PannerOSC.h"
 
+bool PannerOSC::init(int serverPort) {
+    // check port
+    juce::DatagramSocket socket(false);
+    socket.setEnablePortReuse(false);
+    
+    // find available port
+    for (port = 10001; port < 10200; port++) {
+        if (socket.bindToPort(port)) {
+            socket.shutdown();
+            juce::OSCReceiver::connect(port);
+            break; // stops the incrementing on the first available port
+        }
+    }
+    
+    if (port > 10000) {
+        return true;
+    }
+}
 
 // finds the server port via the settings json file
 bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
@@ -38,35 +56,34 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
     return true;
 }
 
-
 PannerOSC::PannerOSC()
 {
 	isConnected = false;
-	 
-	// check port
-	juce::DatagramSocket socket(false);
-	socket.setEnablePortReuse(false);
-
-    std::string settingsFilePath = (juce::File::getCurrentWorkingDirectory().getFullPathName() + "/settings.json").toStdString();
-    initFromSettings(settingsFilePath);
     
-	// find available port
-	for (port = 10001; port < 10200; port++)
-	{
-		if (socket.bindToPort(port))
-		{
-			socket.shutdown();
-            juce::OSCReceiver::connect(port);
-			break;
-		}
-	}
+    // We will assume the folders are properly created during the installation step
+    juce::File settingsFile;
+    // Using common support files installation location
+    juce::File m1SupportDirectory = juce::File::getSpecialLocation(juce::File::commonApplicationDataDirectory);
+
+    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
+        // test for any mac OS
+        settingsFile = m1SupportDirectory.getChildFile("Application Support").getChildFile("Mach1");
+    } else if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::Windows) != 0) {
+        // test for any windows OS
+        settingsFile = m1SupportDirectory.getChildFile("Mach1");
+    } else {
+        settingsFile = m1SupportDirectory.getChildFile("Mach1");
+    }
+    settingsFile = settingsFile.getChildFile("settings.json");
+    DBG("Opening settings file: " + settingsFile.getFullPathName().quoted());
+    
+    initFromSettings(settingsFile.getFullPathName().toStdString());
     juce::OSCReceiver::addListener(this);
 }
 
 void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 {
-    if (messageReceived != nullptr)
-    {
+    if (messageReceived != nullptr) {
         messageReceived(msg);
     }
     lastMessageTime = juce::Time::getMillisecondCounter();
@@ -74,21 +91,17 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 
 void PannerOSC::update()
 {
-	if (!isConnected)
-	{
-		if (juce::OSCSender::connect("127.0.0.1", serverPort))
-		{
+	if (!isConnected) {
+		if (juce::OSCSender::connect("127.0.0.1", serverPort)) {
             juce::OSCMessage msg("/m1-register-plugin/port");
 			msg.addInt32(port);
 			isConnected = juce::OSCSender::send(msg);
 		}
 	}
     
-    if (isConnected)
-    {
+    if (isConnected) {
         auto currentTime = juce::Time::getMillisecondCounter();
-        if ((currentTime - lastMessageTime) > 2000) // 2000 milliseconds = 2 seconds
-        {
+        if ((currentTime - lastMessageTime) > 2000) { // 2000 milliseconds = 2 seconds
             isConnected = false;
         }
     }
