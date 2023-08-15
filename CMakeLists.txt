@@ -7,10 +7,11 @@ project(M1-Panner VERSION ${CURRENT_VERSION})
 #        Instead, we explicitely specify which targets require schemes.
 set(CMAKE_XCODE_GENERATE_SCHEME OFF)
 # Enable to build universal binaries on macOS, increasing build time
-# This only affects local builds, GitHub actions always builds Universals
-set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Support macOS down to High Sierra")
-# IDEs:  Enable grouping of source files into folders in IDEs.
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version" FORCE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Architectures" FORCE)
+    set(CMAKE_XCODE_ATTRIBUTE_MACOSX_DEPLOYMENT_TARGET[arch=arm64] "11.0" CACHE STRING "arm 64 minimum deployment target" FORCE)
+endif()# IDEs:  Enable grouping of source files into folders in IDEs.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # IDEs:  Create a folder in the IDE with the JUCE Module code.
 option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Show all module sources in IDE projects" ON)
@@ -104,7 +105,7 @@ juce_add_plugin(${PLUGIN_NAME}
                 PLUGIN_NAME ${PLUGIN_NAME}
                 PRODUCT_NAME ${PLUGIN_NAME}
                 IS_SYNTH FALSE
-                COPY_PLUGIN_AFTER_BUILD TRUE)
+                COPY_PLUGIN_AFTER_BUILD FALSE)
 
 target_compile_definitions(${PLUGIN_NAME}
     PUBLIC 
