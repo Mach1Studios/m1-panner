@@ -135,6 +135,8 @@ void PannerUIBaseComponent::draw()
     m.setColor(BACKGROUND_GREY);
 	m.clear();
     
+    m.setLineWidth(2);
+    
 	XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
     auto & reticleField = m.prepare<PannerReticleField>(MurkaShape(25, 30, 400, 400));
     reticleField.controlling(&xyrd);
@@ -586,7 +588,7 @@ void PannerUIBaseComponent::draw()
     if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
         
         // Show bottom bar
-        
+        m.setLineWidth(1);
         m.setColor(GRID_LINES_3_RGBA);
         m.drawLine(0, m.getSize().height()-36, m.getSize().width(), m.getSize().height()-36); // Divider line
         m.setColor(BACKGROUND_GREY);

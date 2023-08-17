@@ -22,7 +22,7 @@
 //==============================================================================
 /**
 */
-class M1PannerAudioProcessor  : public juce::AudioProcessor, public juce::AudioProcessorValueTreeState::Listener
+class M1PannerAudioProcessor  : public juce::AudioProcessor, juce::AudioProcessorValueTreeState::Listener, juce::Timer
 {
 public:
     //==============================================================================
@@ -157,6 +157,7 @@ public:
     bool layoutCreated = false;
     
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
+    void timerCallback() override;
     PannerOSC pannerOSC;
     
     // TODO: change this

@@ -27,6 +27,7 @@ public:
 		}
 
 		m.pushStyle();
+        m.setLineWidth(1);
        
         int minilineStep = (shape.size.y - offset * 2) / 4;
         int minilineLength = shape.size.x / 6;

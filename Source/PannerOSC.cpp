@@ -96,12 +96,13 @@ void PannerOSC::update()
             juce::OSCMessage msg("/m1-register-plugin/port");
 			msg.addInt32(port);
 			isConnected = juce::OSCSender::send(msg);
+            DBG("[OSC] Registered: "+std::to_string(port));
 		}
 	}
     
     if (isConnected) {
-        auto currentTime = juce::Time::getMillisecondCounter();
-        if ((currentTime - lastMessageTime) > 2000) { // 2000 milliseconds = 2 seconds
+        uint32 currentTime = juce::Time::getMillisecondCounter();
+        if ((currentTime - lastMessageTime) > 10000) { // 2000 milliseconds = 10 seconds
             isConnected = false;
         }
     }
