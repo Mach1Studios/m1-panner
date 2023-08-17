@@ -104,8 +104,7 @@ juce_add_plugin(${PLUGIN_NAME}
                 BUNDLE_ID ${CUSTOM_BUNDLE_ID}
                 PLUGIN_NAME ${PLUGIN_NAME}
                 PRODUCT_NAME ${PLUGIN_NAME}
-                IS_SYNTH FALSE
-                COPY_PLUGIN_AFTER_BUILD FALSE)
+                IS_SYNTH FALSE)
 
 target_compile_definitions(${PLUGIN_NAME}
     PUBLIC 
