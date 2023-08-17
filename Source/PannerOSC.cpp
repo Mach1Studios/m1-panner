@@ -4,6 +4,7 @@ bool PannerOSC::init(int serverPort) {
     // check port
     juce::DatagramSocket socket(false);
     socket.setEnablePortReuse(false);
+    this->serverPort = serverPort;
     
     // find available port
     for (port = 10001; port < 10200; port++) {
@@ -93,7 +94,7 @@ void PannerOSC::update()
 {
 	if (!isConnected) {
 		if (juce::OSCSender::connect("127.0.0.1", serverPort)) {
-            juce::OSCMessage msg("/m1-register-plugin/port");
+            juce::OSCMessage msg("/m1-register-plugin");
 			msg.addInt32(port);
 			isConnected = juce::OSCSender::send(msg);
             DBG("[OSC] Registered: "+std::to_string(port));
@@ -102,7 +103,7 @@ void PannerOSC::update()
     
     if (isConnected) {
         uint32 currentTime = juce::Time::getMillisecondCounter();
-        if ((currentTime - lastMessageTime) > 10000) { // 2000 milliseconds = 10 seconds
+        if ((currentTime - lastMessageTime) > 10000) { // 10000 milliseconds = 10 seconds
             isConnected = false;
         }
     }

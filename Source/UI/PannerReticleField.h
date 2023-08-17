@@ -90,24 +90,22 @@ public:
         }
 
         // MIXER - MONITOR DISPLAY
-        {
-            MurkaPoint center = { getSize().x / 2, getSize().x / 2 };
+        if (isConnected) {
+            MurkaPoint center = { getSize().x/2, getSize().y/2 };
             std::vector<MurkaPoint> vects;
             // arc
-            float centerX = 0;
-            float centerY = 0;
             float radiusX = center.x - 1;
             float radiusY = center.y - 1;
             for (int i = 45; i <= 90 + 45; i += 5) {
-                float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
-                float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
+                float x = center.x + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
+                float y = center.y + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
                 vects.push_back(MurkaPoint(x, y));
             }
 
             m.pushStyle();
             m.pushMatrix();
             m.translate(center.x, center.y, 0);
-            m.rotateZRad(juce::degreesToRadians(monitorState->yaw - 180)); //TODO: Why do we need -180?
+            m.rotateZRad(juce::degreesToRadians(monitorState->yaw));
             m.setColor(ENABLED_PARAM);
 
             // temp
@@ -115,7 +113,7 @@ public:
                 m.drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
             }
 
-            m.drawLine(0, 0, 0, center.y - 10);
+            m.drawLine(center.x, 0, center.x, center.y - 10);
             m.popMatrix();
             m.popStyle();
         }
@@ -263,12 +261,14 @@ public:
     std::function<void(int, int)> teleportCursor;
     bool shouldDrawDivergeGuideLine = false;
     bool shouldDrawRotateGuideLine = false;
+    // TODO: cleanup these vars to inheret from pannerstate
     Mach1Encode* m1Encode = nullptr;
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
     bool autoOrbit = false;
     float azimuth = 0, elevation = 0, diverge = 0, sRotate = 0, sSpread = 50;
-
+    bool isConnected = false;
+    
     // The results type, you also need to define it even if it's nothing.
     typedef bool Results;
 };

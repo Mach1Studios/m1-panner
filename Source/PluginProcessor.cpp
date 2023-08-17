@@ -289,32 +289,34 @@ void M1PannerAudioProcessor::releaseResources()
 
 void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
+    // incoming value expected as normalized
+    // use this to update and sync parameter & monitorSettings
     if (parameterID == paramAzimuth) {
-        parameters.getParameter(paramAzimuth)->setValue(newValue);
+        pannerSettings.azimuth = parameters.getParameter(paramAzimuth)->convertFrom0to1(newValue);
     } else if (parameterID == paramElevation) {
-        parameters.getParameter(paramElevation)->setValue(newValue);
+        pannerSettings.elevation = parameters.getParameter(paramElevation)->convertFrom0to1(newValue);
     } else if (parameterID == paramDiverge) {
-        parameters.getParameter(paramDiverge)->setValue(newValue);
+        pannerSettings.diverge = parameters.getParameter(paramDiverge)->convertFrom0to1(newValue);
     } else if (parameterID == paramGain) {
-        parameters.getParameter(paramGain)->setValue(newValue);
+        pannerSettings.gain = parameters.getParameter(paramGain)->convertFrom0to1(newValue);
     } else if (parameterID == paramX) {
-        parameters.getParameter(paramX)->setValue(newValue);
+        pannerSettings.x = parameters.getParameter(paramX)->convertFrom0to1(newValue);
     } else if (parameterID == paramY) {
-        parameters.getParameter(paramY)->setValue(newValue);
+        pannerSettings.y = parameters.getParameter(paramY)->convertFrom0to1(newValue);
     } else if (parameterID == paramAutoOrbit) {
-        parameters.getParameter(paramAutoOrbit)->setValue(newValue);
+        pannerSettings.autoOrbit = (bool)parameters.getParameter(paramAutoOrbit)->convertFrom0to1(newValue);
     } else if (parameterID == paramStereoOrbitAzimuth) {
-        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
+        pannerSettings.stereoOrbitAzimuth = parameters.getParameter(paramStereoOrbitAzimuth)->convertFrom0to1(newValue);
     } else if (parameterID == paramStereoSpread) {
-        parameters.getParameter(paramStereoSpread)->setValue(newValue);
+        pannerSettings.stereoSpread = parameters.getParameter(paramStereoSpread)->convertFrom0to1(newValue);
     } else if (parameterID == paramStereoInputBalance) {
-        parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
+        pannerSettings.stereoInputBalance = parameters.getParameter(paramStereoInputBalance)->convertFrom0to1(newValue);
         //TODO: add this via processing?
     } else if (parameterID == paramIsotropicEncodeMode) {
-        parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
+        pannerSettings.isotropicMode = (bool)parameters.getParameter(paramIsotropicEncodeMode)->convertFrom0to1(newValue);
         // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
-        parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
+        pannerSettings.equalpowerMode = (bool)parameters.getParameter(paramEqualPowerEncodeMode)->convertFrom0to1(newValue);
         // set in UI
     } else if (parameterID == paramInputMode) {
         juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
