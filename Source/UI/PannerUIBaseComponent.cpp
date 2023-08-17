@@ -155,6 +155,7 @@ void PannerUIBaseComponent::draw()
     reticleField.m1Encode = &pannerState->m1Encode;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
+    reticleField.isConnected = processor->pannerOSC.IsConnected();
     reticleField.draw();
     
     if (reticleField.results) {
