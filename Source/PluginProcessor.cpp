@@ -128,6 +128,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #endif
     
     pannerOSC.AddListener([&](OSCMessage msg) {
+        DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32()));
         // Capturing monitor mode
         int mode = msg[0].getInt32();
         monitorSettings.monitor_mode = mode;
@@ -147,10 +148,14 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             }
         }
     });
+    
+    // pannerOSC update timer loop
+    startTimer(200);
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
+    stopTimer();
 }
 
 //==============================================================================
@@ -654,6 +659,11 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         outputMeterValuedB.set(output_channel, output_channel < buf.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144 );
     }
 
+}
+
+void M1PannerAudioProcessor::timerCallback() {
+    // Added if we need to move the OSC stuff from the processorblock
+    pannerOSC.update();
 }
 
 //==============================================================================

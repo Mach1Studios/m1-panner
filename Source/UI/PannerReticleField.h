@@ -21,6 +21,8 @@ public:
         // Increase circle resolution
         m.setCircleResolution(64);
     
+        m.setLineWidth(1);
+
         m.setColor(GRID_LINES_1_RGBA);
         auto linestep = getSize().x / (96);
         for (int i = 0; i < (96); i++) {
@@ -41,6 +43,8 @@ public:
         m.drawLine(0, 0, getSize().x, getSize().y);
         m.drawLine(getSize().x, 0, 0, getSize().y);
     
+        m.setLineWidth(2);
+        
         // GUIDE CIRCLES
         if (monitorState->monitor_mode != 2){
             //inside circle
@@ -51,7 +55,9 @@ public:
             //middle circle
             //r->drawCircle(getSize().x / 2, getSize().y / 2, sqrt(pow(getSize().y / 4, 2) + pow(getSize().y / 4, 2)));
         }
+
         m.enableFill();
+        m.setLineWidth(1);
 
         // GRID FILLS
         if (monitorState->monitor_mode != 2){
@@ -59,7 +65,7 @@ public:
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 10);
             m.drawRectangle((getSize().x/2) - 10, getSize().y - 10, 20, 10);
         }
-    
+            
         // LARGE GRID LINES
         m.setColor(GRID_LINES_3_RGBA);
         linestep = getSize().x / 4;
@@ -69,7 +75,7 @@ public:
                 m.drawLine(0, linestep * i, getSize().x, linestep * i);
             }
         }
-    
+            
         // GRID LABELS
         if (monitorState->monitor_mode != 2){
             m.setColor(BACKGROUND_GREY);
@@ -88,16 +94,14 @@ public:
             MurkaPoint center = { getSize().x / 2, getSize().x / 2 };
             std::vector<MurkaPoint> vects;
             // arc
-            {
-                float centerX = 0;
-                float centerY = 0;
-                float radiusX = center.x - 1;
-                float radiusY = center.y - 1;
-                for (int i = 45; i <= 90 + 45; i += 5) {
-                    float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
-                    float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
-                    vects.push_back(MurkaPoint(x, y));
-                }
+            float centerX = 0;
+            float centerY = 0;
+            float radiusX = center.x - 1;
+            float radiusY = center.y - 1;
+            for (int i = 45; i <= 90 + 45; i += 5) {
+                float x = centerX + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
+                float y = centerY + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
+                vects.push_back(MurkaPoint(x, y));
             }
 
             m.pushStyle();
@@ -110,7 +114,7 @@ public:
             for (size_t i = 1; i < vects.size(); i++) {
                 m.drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
             }
-            
+
             m.drawLine(0, 0, 0, center.y - 10);
             m.popMatrix();
             m.popStyle();
