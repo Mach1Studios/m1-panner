@@ -14,7 +14,7 @@ struct PannerSettings {
 	float y = 70.7;
 	float azimuth = 0.;
     float elevation = 0.; // also known as `z`
-    float diverge = 50;
+    float diverge = 50.;
 	float gain = 6.;
 	float stereoOrbitAzimuth = 0.;
 	float stereoSpread = 50.;

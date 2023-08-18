@@ -163,6 +163,8 @@ public:
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
    
+    // used to flag a change in a thread safe way
+    // TODO: remove this and directly check m1encode obj
 	Mach1EncodeInputModeType m1EncodeInputMode;
 	Mach1EncodeOutputModeType m1EncodeOutputMode;
 
@@ -175,7 +177,6 @@ private:
     // Channel input
     std::vector<std::vector<float>> audioDataIn;
     std::vector<std::vector<juce::LinearSmoothedValue<float>>> smoothedChannelCoeffs;
-  
 
 #ifdef ITD_PARAMETERS
     inline void processBuffers (AudioSampleBuffer& buffer,
