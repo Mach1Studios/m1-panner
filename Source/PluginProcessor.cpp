@@ -137,14 +137,14 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             // Capturing Monitor's Yaw
             if (msg[1].isFloat32()){
                 float yaw = msg[1].getFloat32();
-                monitorSettings.yaw = yaw; // normalised
+                monitorSettings.yaw = yaw; // un-normalised
             }
         }
         if (msg.size() >= 3) {
             // Capturing Monitor's Pitch
             if (msg[2].isFloat32()){
                 float pitch = msg[2].getFloat32();
-                monitorSettings.pitch = pitch; // normalized
+                monitorSettings.pitch = pitch; // un-normalized
             }
         }
     });
