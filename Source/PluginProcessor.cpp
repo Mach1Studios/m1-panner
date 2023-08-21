@@ -128,7 +128,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #endif
     
     pannerOSC.AddListener([&](OSCMessage msg) {
-        DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32()));
+        DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32())+", P: "+std::to_string(msg[2].getFloat32()));
         // Capturing monitor mode
         int mode = msg[0].getInt32();
         monitorSettings.monitor_mode = mode;

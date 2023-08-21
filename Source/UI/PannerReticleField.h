@@ -235,7 +235,7 @@ public:
     
     void drawMonitorYaw(float yawAngle, Murka& m){
         MurkaPoint center = { getSize().x/2, getSize().y/2 };
-        float yawRad = degreesToRadians(yawAngle + 90.0f); //TODO: fix this
+        float yawRad = degreesToRadians(yawAngle + 90.0f);
         float yawX = cos(yawRad);
         float yawY = sin(yawRad);
         float diameter = getSize().y/2;

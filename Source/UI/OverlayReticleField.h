@@ -68,25 +68,27 @@ public:
         // Draw additional reticles for each input channel
         std::vector<std::string> pointsNames = m1Encode->getPointsNames();
         std::vector<Mach1Point3D> points = m1Encode->getPoints();
-        for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-            float r, d;
-            float x = points[i].z;
-            float y = points[i].x;
-            if (x == 0 && y == 0) {
-                r = 0;
-                d = 0;
-            } else {
-                d = sqrtf(x*x + y * y) / sqrt(2.0);
-                float rotation_radian = atan2(x, y);//acos(x/d);
-                float rotation_degree = juce::radiansToDegrees(rotation_radian);
-                r = (rotation_degree/360.) + 0.5; // normalize 0->1
+        if (m1Encode->getPointsCount() > 1) { // do not draw additional points if only mono input
+            for (int i = 0; i < m1Encode->getPointsCount(); i++) {
+                float r, d;
+                float x = points[i].z;
+                float y = points[i].x;
+                if (x == 0 && y == 0) {
+                    r = 0;
+                    d = 0;
+                } else {
+                    d = sqrtf(x*x + y * y) / sqrt(2.0);
+                    float rotation_radian = atan2(x, y);//acos(x/d);
+                    float rotation_degree = juce::radiansToDegrees(rotation_radian);
+                    r = (rotation_degree/360.) + 0.5; // normalize 0->1
+                }
+                drawAdditionalReticle(r * shape.size.x, (-points[i].y + 1.0)/2 * shape.size.y, pointsNames[i], reticleHovered, m);
             }
-            drawAdditionalReticle(r * shape.size.x, (-points[i].y + 1.0)/2 * shape.size.y, pointsNames[i], reticleHovered, m);
         }
-
+        
         // MIXER - MONITOR DISPLAY
-        if (monitorState->monitor_mode != 1){
-            drawMonitorYaw(monitorState->yaw - 180., monitorState->pitch, m); //TODO: Why do we need -180?
+        if (isConnected && monitorState->monitor_mode != 1){
+            drawMonitorYaw(monitorState->yaw - 180., -monitorState->pitch, m);
         }
     
         reticleHoveredLastFrame = reticleHovered;
@@ -218,4 +220,5 @@ public:
     Mach1Encode* m1Encode = nullptr;
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
+    bool isConnected = false;
 };
