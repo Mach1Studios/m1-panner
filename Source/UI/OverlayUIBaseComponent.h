@@ -14,9 +14,6 @@
 
 #include "M1Label.h"
 #include "M1Knob.h"
-#include "M1PitchWheel.h"
-#include "M1VolumeDisplayLine.h"
-#include "M1Checkbox.h"
 
 #include "../TypesForDataExchange.h"
 #include "../PluginProcessor.h"
