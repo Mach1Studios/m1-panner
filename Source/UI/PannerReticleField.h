@@ -26,7 +26,7 @@ public:
         m.setColor(GRID_LINES_1_RGBA);
         auto linestep = getSize().x / (96);
         for (int i = 0; i < (96); i++) {
-            if (monitorState->monitor_mode != 2){
+            if (monitorState->monitor_mode != 1){
                 m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
                 m.drawLine(0, linestep * i, shape.size.x, linestep * i);
             }
@@ -46,7 +46,7 @@ public:
         m.setLineWidth(2);
         
         // GUIDE CIRCLES
-        if (monitorState->monitor_mode != 2){
+        if (monitorState->monitor_mode != 1){
             //inside circle
             m.disableFill();
             m.drawCircle(getSize().x / 2, getSize().y / 2, getSize().y / 4);
@@ -60,7 +60,7 @@ public:
         m.setLineWidth(1);
 
         // GRID FILLS
-        if (monitorState->monitor_mode != 2){
+        if (monitorState->monitor_mode != 1){
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 10);
             m.drawRectangle((getSize().x/2) - 10, getSize().y - 10, 20, 10);
@@ -77,7 +77,7 @@ public:
         }
             
         // GRID LABELS
-        if (monitorState->monitor_mode != 2){
+        if (monitorState->monitor_mode != 1){
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 12);
             m.drawRectangle((getSize().x/2) - 12, getSize().y - 15, 25, 20);
@@ -90,35 +90,22 @@ public:
         }
 
         // MIXER - MONITOR DISPLAY
-        if (isConnected) {
-            MurkaPoint center = { getSize().x/2, getSize().y/2 };
-            std::vector<MurkaPoint> vects;
-            // arc
-            float radiusX = center.x - 1;
-            float radiusY = center.y - 1;
-            for (int i = 45; i <= 90 + 45; i += 5) {
-                float x = center.x + (radiusX * cosf(juce::degreesToRadians(1.0 * i)));
-                float y = center.y + (radiusY * sinf(juce::degreesToRadians(1.0 * i)));
-                vects.push_back(MurkaPoint(x, y));
-            }
-
-            m.pushStyle();
-            m.pushMatrix();
-            m.translate(center.x, center.y, 0);
-            m.rotateZRad(juce::degreesToRadians(monitorState->yaw));
-            m.setColor(ENABLED_PARAM);
-
-            // temp
-            for (size_t i = 1; i < vects.size(); i++) {
-                m.drawLine(vects[i-1].x, vects[i - 1].y, vects[i].x, vects[i].y);
-            }
-
-            m.drawLine(center.x, 0, center.x, center.y - 10);
-            m.popMatrix();
-            m.popStyle();
+        if (isConnected && monitorState->monitor_mode != 1) {
+            drawMonitorYaw(monitorState->yaw-180, m);
         }
-        // MIXER - MONITOR DISPLAY - END
 
+        if (monitorState->monitor_mode == 1) {
+            m.setColor(BACKGROUND_GREY);
+            m.drawRectangle((getSize().x/2) - 110, getSize().y - 20, 220, 20);
+            m.setColor(ENABLED_PARAM);
+            auto& stereoSafeLabel = m.prepare<M1Label>(MurkaShape(getSize().x/2 - 100, getSize().y - 20, 200, 20));
+            stereoSafeLabel.label = "STEREO SAFE MODE";
+            stereoSafeLabel.alignment = TEXT_CENTER;
+            stereoSafeLabel.enabled = false;
+            stereoSafeLabel.highlighted = false;
+            stereoSafeLabel.draw();
+        }
+        
         MurkaPoint reticlePositionInWidgetSpace = {getSize().x / 2 + (std::get<0>(*xyrd) / 100.) * getSize().x / 2,
             getSize().y / 2 + (-std::get<1>(*xyrd) / 100.) * getSize().y / 2};
         auto center = MurkaPoint(getSize().x / 2,
@@ -148,29 +135,31 @@ public:
                                          20).inside(mousePosition()) + draggingNow;
     
         // Drawing central reticle
-        m.enableFill();
-        m.setColor(M1_ACTION_YELLOW);
-        m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (elevation/90))));
-        m.setColor(BACKGROUND_GREY); // background color for internal circle
-        m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (elevation/90))));
-        
-        m.setColor(M1_ACTION_YELLOW);
-        m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
-    
-        // Reticles
-        std::vector<Mach1Point3D> points = m1Encode->getPoints();
-        std::vector<std::string> pointsNames = m1Encode->getPointsNames();
-        if (m1Encode->getInputChannelsCount() > 1) {
-            for (int i = 0; i < m1Encode->getPointsCount(); i++) {
-                MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
-                clamp(point.x, 0, shape.size.x);
-                clamp(point.y, 0, shape.size.y);
-                if (m1Encode->getInputMode() <= Mach1EncodeInputModeStereo) {
-                    drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
-                } else if (m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) {
-                    drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
-                } else {
-                    drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
+        if (monitorState->monitor_mode != 1){
+            m.enableFill();
+            m.setColor(M1_ACTION_YELLOW);
+            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (elevation/90))));
+            m.setColor(BACKGROUND_GREY); // background color for internal circle
+            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (elevation/90))));
+            
+            m.setColor(M1_ACTION_YELLOW);
+            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
+            
+            // Reticles
+            std::vector<Mach1Point3D> points = m1Encode->getPoints();
+            std::vector<std::string> pointsNames = m1Encode->getPointsNames();
+            if (m1Encode->getInputChannelsCount() > 1) {
+                for (int i = 0; i < m1Encode->getPointsCount(); i++) {
+                    MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
+                    clamp(point.x, 0, shape.size.x);
+                    clamp(point.y, 0, shape.size.y);
+                    if (m1Encode->getInputMode() <= Mach1EncodeInputModeStereo) {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
+                    } else if (m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
+                    } else {
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
+                    }
                 }
             }
         }
@@ -242,6 +231,32 @@ public:
         m.drawCircle(x, y, (10*reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (elevation/90)));
         // re-adjust label x offset for size of string
         m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).draw();
+    }
+    
+    void drawMonitorYaw(float yawAngle, Murka& m){
+        MurkaPoint center = { getSize().x/2, getSize().y/2 };
+        float yawRad = degreesToRadians(yawAngle + 90.0f); //TODO: fix this
+        float yawX = cos(yawRad);
+        float yawY = sin(yawRad);
+        float diameter = getSize().y/2;
+        m.setColor(ENABLED_PARAM);
+        m.drawLine(center.x, center.y, yawX * diameter + center.x, yawY * diameter + center.y);
+        
+        // reference arc
+        float angleSize = PI/2;
+
+        int numsteps = 60;
+        for (int i = 0; i < numsteps; i++) {
+            float phase0 = (float)i / (float)numsteps;
+            float phase1 = ((float)i + 1) / (float)numsteps;
+            
+            float angle0 = phase0 * angleSize + yawRad - angleSize * 0.5;
+            float angle1 = phase1 * angleSize + yawRad - angleSize * 0.5;
+            
+            MurkaPoint lineStart = center + MurkaPoint(cos(angle0 - 0.01) * (center.x - 1), sin(angle0 - 0.01) * (center.y - 1));
+            MurkaPoint lineEnd = center + MurkaPoint(cos(angle1 + 0.01) * (center.x - 1), sin(angle1 + 0.01) * (center.y - 1));
+            m.drawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y);
+        }
     }
     
     PannerReticleField & controlling (XYRD *dataToControl_) {

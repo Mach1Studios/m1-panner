@@ -85,7 +85,7 @@ public:
         }
 
         // MIXER - MONITOR DISPLAY
-        if (monitorState->monitor_mode != 2){
+        if (monitorState->monitor_mode != 1){
             drawMonitorYaw(monitorState->yaw - 180., monitorState->pitch, m); //TODO: Why do we need -180?
         }
     
