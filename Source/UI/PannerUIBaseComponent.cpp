@@ -540,7 +540,8 @@ void PannerUIBaseComponent::draw()
     pitchWheel.rangeFrom = 90.;
     pitchWheel.rangeTo = -90.;
     pitchWheel.externalHovered = zHovered;
-    pitchWheel.mixerPitch = monitorState->pitch;
+    pitchWheel.isConnected = processor->pannerOSC.IsConnected();
+    pitchWheel.monitorState = monitorState;
     pitchWheel.dataToControl = &pannerState->elevation;
     pitchWheel.draw();
     
