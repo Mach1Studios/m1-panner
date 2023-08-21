@@ -52,23 +52,22 @@ public:
         }
         
 		m.setColor(133 + 20 * A(reticleHover + externalHovered));
-        m.drawLine(getSize().x / 2, offset,
-			shape.size.x / 2, shape.size.y - offset);
+        m.drawLine(getSize().x / 2, offset, shape.size.x / 2, shape.size.y - offset);
 
         // Reticle
         m.setColor(M1_ACTION_YELLOW);
         m.drawCircle(shape.size.x / 2, offset + (shape.size.y - offset * 2) * reticlePositionNorm, (6 + 3 * A(reticleHover + externalHovered)));
         
-		/*
         // MIXER - MONITOR DISPLAY
-        r->setColor(ENABLED_PARAM);
-        //TODO: fix these crazy fixes for monitor->pitch display
-        r->drawLine(c.getSize().x / 2 - c.getSize().x/6,
-                    (std::max)((float)params->offset,(float)((-params->mixerPitch+90)/180.) * (std::min)(c.getSize().y+params->offset, c.getSize().y-params->offset)),
-                    c.getSize().x / 2 + c.getSize().x /6,
-					(std::max)((float)params->offset,(float)((-params->mixerPitch+90)/180.) * (std::min)(c.getSize().y+params->offset, c.getSize().y-params->offset))
-                    );
-        */
+        if (isConnected && monitorState->monitor_mode != 1) {
+            m.setColor(ENABLED_PARAM);
+            float pitchNorm = normalize(monitorState->pitch, 90, -90); // inversed for UI
+            float topBottomPadding = 10; // to clamp the monitor preview within the slider
+            m.drawLine(getSize().x/2 - getSize().x/6,
+                       std::max(topBottomPadding, pitchNorm * getSize().y-topBottomPadding),
+                       getSize().x/2 + getSize().x/6,
+                       std::max(topBottomPadding, pitchNorm * getSize().y-topBottomPadding));
+        }
 
         // Action
         
@@ -113,12 +112,18 @@ public:
 		m.popStyle();
     }
     
+    float normalize(float input, float min, float max){
+        float normalized_x = (input-min)/(max-min);
+        return normalized_x;
+    }
+    
     float dataCache = 0.0; // for hint drawing
     MurkaPoint hintPosition = {0, 0};
     bool draggingNow = false;
 
     std::function<void()> cursorHide, cursorShow;
-    float mixerPitch = 0;
+    MixerSettings* monitorState = nullptr;
+    bool isConnected = false;
     bool hovered = false;
     bool changed = false;
 
