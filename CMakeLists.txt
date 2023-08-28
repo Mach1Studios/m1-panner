@@ -140,17 +140,15 @@ set_target_properties(Resources PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 foreach(target ${FORMATS} "All")
     if(TARGET ${PLUGIN_NAME}_${target})
-        if (${target} STREQUAL "VST" OR ${target} STREQUAL "VST3")
+        if(${target} STREQUAL "VST" OR ${target} STREQUAL "VST3")
                 set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
-                # Tuck the actual plugin targets into a folder where they won't bother us
-                FOLDER "Targets"
-                
-                # MacOS only: Sets the default executable that Xcode will open on build
-                # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
-                #XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
+                FOLDER "Targets"                
                 XCODE_SCHEME_EXECUTABLE /Applications/REAPER.app
-
-                # Let us build the target in Xcode
+                XCODE_GENERATE_SCHEME ON)
+        elseif(${target} STREQUAL "AAX")
+                set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
+                FOLDER "Targets"
+                XCODE_SCHEME_EXECUTABLE /Applications/Pro\ Tools\ Developer.app
                 XCODE_GENERATE_SCHEME ON)
         else()
             set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
