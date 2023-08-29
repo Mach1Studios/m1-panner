@@ -9,6 +9,13 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+/*
+ Architecture:
+    - UI or host sends parameterChanged() new I/O
+    - parameterChanged() updates the parameters and calls the m1EncodeChangeInputOutputMode() to update the pannerSettings memory
+    parameters expect normalized 0->1 where all the rest of the i/o expects int
+ */
+
 juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
 juce::String M1PannerAudioProcessor::paramElevation("elevation"); // also Z
 juce::String M1PannerAudioProcessor::paramDiverge("diverge");
@@ -222,11 +229,11 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 
 //==============================================================================
 void M1PannerAudioProcessor::createLayout(){
-    int numInChans, numOutChans;
-    numInChans = pannerSettings.m1Encode.getInputChannelsCount();
-    numOutChans = pannerSettings.m1Encode.getOutputChannelsCount();
+    int numInputsFromPannerSettings = pannerSettings.m1Encode.getInputChannelsCount();
+    int numOutputsFromPannerSettings = pannerSettings.m1Encode.getOutputChannelsCount();
     
     if (external_spatialmixer_active) {
+        /// EXTERNAL MULTICHANNEL PROCESSING
         // INPUT
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputModeMono){
             getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
@@ -237,11 +244,21 @@ void M1PannerAudioProcessor::createLayout(){
         // OUTPUT
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
-        // internal processing
+        /// INTERNAL MULTICHANNEL PROCESSING
+        if (hostType.isProTools()) {
+//            if (getMainBusNumInputChannels() == 4 || numInputsFromPannerSettings == 4) {
+//                if ((parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
+//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
+//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
+//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
+//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
+//                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
+//                    m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeQuad;
+//                    parameterChanged(paramInputMode, m1EncodeInputMode);
+//                }
+//            }
+        }
     }
-    
-    // initialize the channel i/o
-    m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
     
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
@@ -361,6 +378,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
             &&
+            // TODO: Expand this to use size of channel or other channels and properly reorder
             (   layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1()
              || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()) ) {
                 return true;
@@ -401,6 +419,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     
     if(!chanset.isDiscreteLayout() && numOutputChannels == 8) {
         // Layout for Pro Tools
+        // TODO: expand this for not just 7.1
         if (hostType.isProTools()){
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
             orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
@@ -465,7 +484,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         if (ph->getCurrentPosition(currentPlayHeadInfo)) {
             hostTimelineData.isPlaying = currentPlayHeadInfo.isPlaying;
             hostTimelineData.playheadPositionInSeconds = currentPlayHeadInfo.timeInSeconds;
-            
         }
     }
     
@@ -481,7 +499,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     float _diverge = pannerSettings.diverge;
     float _gain = pannerSettings.gain;
 
-    // TODO: Check for a monitor if none is connected
     if (monitorSettings.monitor_mode == 1) { // StereoSafe mode is on
         //store diverge for gain
         float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
@@ -534,7 +551,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         mainInput.applyGain(0, 0, buffer.getNumSamples(), std::cos(p)); // gain for Left
         mainInput.applyGain(1, 0, buffer.getNumSamples(), std::sin(p)); // gain for Right
     }
-
+    
     // resize the processing buffer and zero it out so it works despite how many of the expected channels actually exist host side
     audioDataIn.resize(mainInput.getNumChannels()); // resizing the process data to what the host can support
     // TODO: error handle for when requested m1Encode input size is more than the host supports
@@ -712,6 +729,8 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 }
 
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode) {
+    // this should only be called from parameterChanged() and updates the local pannerSettings and resizes memory
+    
     pannerSettings.m1Encode.setInputMode(inputMode);
     pannerSettings.m1Encode.setOutputMode(outputMode);
 
@@ -732,7 +751,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
-
+    
 	m1EncodeInputMode = inputMode;
 	m1EncodeOutputMode = outputMode;
 }
