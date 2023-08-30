@@ -11,8 +11,10 @@
 
 /*
  Architecture:
-    - UI or host sends parameterChanged() new I/O
-    - parameterChanged() updates the parameters and calls the m1EncodeChangeInputOutputMode() to update the pannerSettings memory
+    - all changes to I/O should be made to pannerSettings first
+    - use parameterChanged() with the pannerSettings values
+    - parameterChanged() updates the i/o layout
+    - parameterChanged() checks if matched with pannerSettings and otherwise updates this too
     parameters expect normalized 0->1 where all the rest of the i/o expects int
  */
 
@@ -245,21 +247,8 @@ void M1PannerAudioProcessor::createLayout(){
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
         /// INTERNAL MULTICHANNEL PROCESSING
-        if (hostType.isProTools()) {
-//            if (getMainBusNumInputChannels() == 4 || numInputsFromPannerSettings == 4) {
-//                if ((parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
-//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
-//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
-//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
-//                    (parameters.getParameter(paramInputMode)->getValue() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
-//                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
-//                    m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeQuad;
-//                    parameterChanged(paramInputMode, m1EncodeInputMode);
-//                }
-//            }
-        }
     }
-    
+        
     layoutCreated = true; // flow control for static i/o
     updateHostDisplay();
 }
@@ -278,6 +267,43 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     if (pannerSettings.m1Encode.getOutputChannelsCount() != getMainBusNumOutputChannels()){
         bool channel_io_error = -1;
         // error handling here?
+    }
+    
+    // check if there is a mismatch of the current bus size on PT
+    if (hostType.isProTools()) {
+        if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
+            if (getBus(true, 0)->getCurrentLayout().size() == 1) {
+                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
+            } else if (getBus(true, 0)->getCurrentLayout().size() == 2) {
+                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeStereo);
+            } else if (getBus(true, 0)->getCurrentLayout().size() == 3) {
+                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCR);
+            } else if (getBus(true, 0)->getCurrentLayout().size() == 4) {
+                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
+                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
+                } else {
+                    // already set
+                }
+            } else if (getBus(true, 0)->getCurrentLayout().size() == 5) {
+                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot0);
+            } else if (getBus(true, 0)->getCurrentLayout().size() == 6) {
+                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE)) {
+                    // if we are not one of the 4ch formats in pro tools then force default of 5.1 film
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
+                } else {
+                    // already set
+                }
+            } else {
+                // an unsupported format
+            }
+        }
     }
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
@@ -334,22 +360,33 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
     } else if (parameterID == paramInputMode) {
+        if (hostType.isProTools()) {
+            if (getMainBusNumInputChannels() == 4) {
+                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
+                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
+                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
+                }
+            }
+        }
         juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
         parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
-        Mach1EncodeInputModeType inputType;
-        inputType = Mach1EncodeInputModeType((int)newValue);
+        Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
         m1EncodeChangeInputOutputMode(inputType, pannerSettings.m1Encode.getOutputMode());
         layoutCreated = false;
         createLayout();
     } else if (parameterID == paramOutputMode) {
         juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramInputMode);
         parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
-        Mach1EncodeOutputModeType outputType;
-        outputType = Mach1EncodeOutputModeType((int)newValue);
+        Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
         m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), outputType);
         layoutCreated = false;
         createLayout();
     }
+    pannerSettings.m1Encode.generatePointResults(); // TODO: check if this is too much
 }
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
@@ -417,6 +454,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     
     juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
     
+    // TODO: fix this for PT
     if(!chanset.isDiscreteLayout() && numOutputChannels == 8) {
         // Layout for Pro Tools
         // TODO: expand this for not just 7.1
@@ -472,8 +510,11 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-	if (pannerSettings.m1Encode.getInputMode() != m1EncodeInputMode || pannerSettings.m1Encode.getOutputMode() != m1EncodeOutputMode) {
-		m1EncodeChangeInputOutputMode(m1EncodeInputMode, m1EncodeOutputMode);
+    // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
+	if (pannerSettings.m1Encode.getInputMode() != parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()) || pannerSettings.m1Encode.getOutputMode() != parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
+        DBG("Unexpected Input/Output mismatch! Inputs="+std::to_string(pannerSettings.m1Encode.getInputMode())+"|"+std::to_string(parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) + ", Outputs="+std::to_string(pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string(parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
+        parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
+        parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
 	}
 
     // Update the host playhead data external usage
@@ -729,8 +770,6 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 }
 
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode) {
-    // this should only be called from parameterChanged() and updates the local pannerSettings and resizes memory
-    
     pannerSettings.m1Encode.setInputMode(inputMode);
     pannerSettings.m1Encode.setOutputMode(outputMode);
 
@@ -751,9 +790,6 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
-    
-	m1EncodeInputMode = inputMode;
-	m1EncodeOutputMode = outputMode;
 }
 
 void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)

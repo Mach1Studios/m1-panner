@@ -153,9 +153,9 @@ public:
                     MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
                     clamp(point.y, 0, shape.size.y);
-                    if (m1Encode->getInputMode() <= Mach1EncodeInputModeStereo) {
+                    if (m1Encode->getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeStereo) {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
-                    } else if (m1Encode->getInputMode() == Mach1EncodeInputModeAFormat) {
+                    } else if (m1Encode->getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
                     } else {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
