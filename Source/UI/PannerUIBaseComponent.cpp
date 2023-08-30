@@ -770,8 +770,8 @@ void PannerUIBaseComponent::draw()
         }
 
         // OUTPUT DROPDOWN & LABELS
-        if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
-            /// -> label
+        if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {            /// -> label
+            //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
             auto& arrowLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
@@ -780,7 +780,9 @@ void PannerUIBaseComponent::draw()
             arrowLabel.enabled = false;
             arrowLabel.highlighted = false;
             arrowLabel.draw();
+        }
             
+        if (!processor->hostType.isProTools()) {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
