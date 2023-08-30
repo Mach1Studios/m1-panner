@@ -271,6 +271,7 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     
     // check if there is a mismatch of the current bus size on PT
     if (hostType.isProTools()) {
+        // update the pannerSettings if there is a mismatch
         if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
             if (getBus(true, 0)->getCurrentLayout().size() == 1) {
                 pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
@@ -360,18 +361,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
     } else if (parameterID == paramInputMode) {
-        if (hostType.isProTools()) {
-            if (getMainBusNumInputChannels() == 4) {
-                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
-                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
-                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
-                }
-            }
-        }
         juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
         parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
         Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
@@ -884,12 +873,19 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             } else {
                 // error
             }
-            m1EncodeChangeInputOutputMode(tempInputType, pannerSettings.m1Encode.getOutputMode());
-        }
-        if (prefix == "2.0.0") {
-            pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-            pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
-            m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
+            pannerSettings.m1Encode.setInputMode(tempInputType);
+            parameterChanged(paramInputMode, tempInputType);
+        } else if (prefix == "2.0.0") {
+            // if the parsed input from xml is not the default value
+            if (getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode()) != pannerSettings.m1Encode.getInputMode()) {
+                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+                parameterChanged(paramInputMode, Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+            }
+            // if the parsed output from xml is not the default value
+            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode()) != pannerSettings.m1Encode.getOutputMode()) {
+                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
+                parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
+            }
         }
     } else {
         // Legacy recall
