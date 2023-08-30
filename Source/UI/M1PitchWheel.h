@@ -62,11 +62,12 @@ public:
         if (isConnected && monitorState->monitor_mode != 1) {
             m.setColor(ENABLED_PARAM);
             float pitchNorm = normalize(monitorState->pitch, 90, -90); // inversed for UI
+            pitchNorm = (pitchNorm > 0.975f) ? 0.975f : pitchNorm; // limit to the top bound of UI slider
             float topBottomPadding = 10; // to clamp the monitor preview within the slider
             m.drawLine(getSize().x/2 - getSize().x/6,
-                       std::max(topBottomPadding, pitchNorm * getSize().y-topBottomPadding),
+                       std::max(topBottomPadding, pitchNorm * getSize().y),
                        getSize().x/2 + getSize().x/6,
-                       std::max(topBottomPadding, pitchNorm * getSize().y-topBottomPadding));
+                       std::max(topBottomPadding, pitchNorm * getSize().y));
         }
 
         // Action
