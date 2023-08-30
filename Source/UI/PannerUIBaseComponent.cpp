@@ -458,7 +458,7 @@ void PannerUIBaseComponent::draw()
     spKnob.speed = knobSpeed;
     spKnob.defaultValue = 0;
     spKnob.isEndlessRotary = false;
-    spKnob.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    spKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     spKnob.externalHover = false;
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
@@ -472,7 +472,7 @@ void PannerUIBaseComponent::draw()
     auto& spLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
-    spLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    spLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
     spLabel.draw();
 
