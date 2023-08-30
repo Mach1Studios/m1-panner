@@ -620,15 +620,15 @@ void PannerUIBaseComponent::draw()
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1Film) inputLabelText = "5.1 Film";
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1DTS) inputLabelText = "5.1 DTS";
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1SMTPE) inputLabelText = "5.1 SMPTE";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1st Order ACNSN3D";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1st Order FuMa";
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1OA ACN";
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1OA FuMa";
         
         // INPUT DROPDOWN
         int dropdownItemHeight = 25;
         
         if (processor->hostType.isProTools()) {
             // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
-            if (processor->getMainBusNumInputChannels() >= 4) {
+            if (processor->getMainBusNumInputChannels() == 4) {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
@@ -652,17 +652,49 @@ void PannerUIBaseComponent::draw()
                 
                 if (inputDropdownMenu.changed) {
                     if (inputDropdownMenu.selectedOption == 0) {
-                        processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeQuad;
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
                     } else if (inputDropdownMenu.selectedOption == 1) {
-                        processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS;
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS);
                     } else if (inputDropdownMenu.selectedOption == 2) {
-                        processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat;
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat);
                     } else if (inputDropdownMenu.selectedOption == 3) {
-                        processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN;
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN);
                     } else if (inputDropdownMenu.selectedOption == 4) {
-                        processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA;
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA);
                     }
-                    processor->parameterChanged(processor->paramInputMode, processor->m1EncodeInputMode);
+                    processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
+                }
+            } else if (processor->getMainBusNumInputChannels() == 6) {
+                // Displaying options only available as 4 channel INPUT
+                // Dropdown is used for QUADMODE indication only
+                auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
+                    m.getSize().height() - 33,
+                    80, 30 })
+                .withLabel(inputLabelText).draw();
+                std::vector<std::string> input_options = {"5.1 Film", "5.1 DTS", "5.1 SMPTE"};
+                auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
+                    m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                    80, input_options.size() * dropdownItemHeight })
+                .withOptions(input_options);
+                
+                if (inputDropdownButton.pressed) {
+                    inputDropdownMenu.open();
+                    inputDropdownMenu.selectedOption = (int)processor->pannerSettings.m1Encode.getInputMode();
+                }
+                
+                inputDropdownMenu.optionHeight = dropdownItemHeight;
+                inputDropdownMenu.fontSize = 9;
+                inputDropdownMenu.draw();
+                
+                if (inputDropdownMenu.changed) {
+                    if (inputDropdownMenu.selectedOption == 0) {
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
+                    } else if (inputDropdownMenu.selectedOption == 1) {
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS);
+                    } else if (inputDropdownMenu.selectedOption == 2) {
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE);
+                    }
+                    processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 }
             }
             // TODO: add other dropdown modes for 5, 6, 7, etc input channels on PT
@@ -691,11 +723,11 @@ void PannerUIBaseComponent::draw()
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
-                                                        .withOptions(input_options);
+                                                                .withOptions(input_options);
 
             if (inputDropdownButton.pressed) {
                 inputDropdownMenu.open();
-                inputDropdownMenu.selectedOption = (int)processor->pannerSettings.m1Encode.getInputMode();
+                inputDropdownMenu.selectedOption = (int)pannerState->m1Encode.getInputMode();
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
@@ -703,6 +735,7 @@ void PannerUIBaseComponent::draw()
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
+                pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType(inputDropdownMenu.selectedOption));
                 processor->parameterChanged(processor->paramInputMode, Mach1EncodeInputModeType(inputDropdownMenu.selectedOption));
             }
         } else {
@@ -728,11 +761,9 @@ void PannerUIBaseComponent::draw()
 
             if (inputDropdownMenu.changed) {
                 if (inputDropdownMenu.selectedOption == 0) {
-					processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeMono;
-                    processor->parameterChanged(processor->paramInputMode, processor->m1EncodeInputMode);
+					pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
                 } else if (inputDropdownMenu.selectedOption == 1) {
-					processor->m1EncodeInputMode = Mach1EncodeInputModeType::Mach1EncodeInputModeStereo;
-                    processor->parameterChanged(processor->paramInputMode, processor->m1EncodeInputMode);
+                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeStereo);
                 }
                 processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
 			}
@@ -786,23 +817,23 @@ void PannerUIBaseComponent::draw()
 
             if (outputDropdownMenu.changed) {
                 if (outputDropdownMenu.selectedOption == 0) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Horizon_4;
+					pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4);
                 } else if (outputDropdownMenu.selectedOption == 1) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_8;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
                 } else if (outputDropdownMenu.selectedOption == 2) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_12;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12);
                 } else if (outputDropdownMenu.selectedOption == 3) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_14;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
                 } else if (outputDropdownMenu.selectedOption == 4) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_32;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32);
                 } else if (outputDropdownMenu.selectedOption == 5) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_36;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
                 } else if (outputDropdownMenu.selectedOption == 6) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_48;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48);
                 } else if (outputDropdownMenu.selectedOption == 7) {
-					processor->m1EncodeOutputMode = Mach1EncodeOutputModeM1Spatial_60;
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
                 }
-                processor->parameterChanged(processor->paramOutputMode, processor->m1EncodeOutputMode);
+                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
             }
         } else {
             // PT & 4 channels

@@ -163,11 +163,6 @@ public:
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
    
-    // used to flag a change in a thread safe way
-    // TODO: remove this and directly check m1encode obj
-	Mach1EncodeInputModeType m1EncodeInputMode;
-	Mach1EncodeOutputModeType m1EncodeOutputMode;
-
 private:
     void createLayout();
     
