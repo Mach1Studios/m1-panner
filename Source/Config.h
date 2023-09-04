@@ -77,10 +77,6 @@
 
 // ---
 
-#ifndef PI
-#define PI       3.14159265358979323846
-#endif
-
 /// Static Color Scheme
 #define M1_ACTION_YELLOW 255, 198, 30
 // 204, 204, 204 seen on ENABLED knobs in legacy as well
