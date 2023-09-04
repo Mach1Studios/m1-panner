@@ -272,6 +272,7 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // check if there is a mismatch of the current bus size on PT
     if (hostType.isProTools()) {
         // update the pannerSettings if there is a mismatch
+        /// INPUTS
         if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
             if (getBus(true, 0)->getCurrentLayout().size() == 1) {
                 pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
@@ -305,6 +306,46 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
                 // an unsupported format
             }
         }
+        // update parameter from start
+        parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
+
+        /// OUTPUTS
+        if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputMode()) {
+            if (getBus(false, 0)->getCurrentLayout().size() == 4) {
+                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4);
+            } else if (getBus(false, 0)->getCurrentLayout().size() == 8) {
+                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
+            } else if (getBus(false, 0)->getCurrentLayout().size() == 16) {
+                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)) {
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
+                }
+            } else if (getBus(false, 0)->getCurrentLayout().size() == 36) {
+                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)) {
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
+                }
+            } else if (getBus(false, 0)->getCurrentLayout().size() == 64) {
+                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48) ||
+                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)) {
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
+                }
+            }
+        }
+        // update parameter from start
+        parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(pannerSettings.m1Encode.getOutputMode()));
     }
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
@@ -375,7 +416,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         layoutCreated = false;
         createLayout();
     }
-    pannerSettings.m1Encode.generatePointResults(); // TODO: check if this is too much
 }
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
@@ -404,9 +444,12 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
             &&
-            // TODO: Expand this to use size of channel or other channels and properly reorder
             (   layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1()
-             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()) ) {
+             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()
+             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3)
+             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5)
+             //|| layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)
+            ) ) {
                 return true;
         } else {
             return false;
@@ -500,8 +543,8 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
-	if (pannerSettings.m1Encode.getInputMode() != parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()) || pannerSettings.m1Encode.getOutputMode() != parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
-        DBG("Unexpected Input/Output mismatch! Inputs="+std::to_string(pannerSettings.m1Encode.getInputMode())+"|"+std::to_string(parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) + ", Outputs="+std::to_string(pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string(parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
+	if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()) || (int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
+        DBG("Unexpected Input/Output mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) + ", Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
         parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
         parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
 	}
