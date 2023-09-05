@@ -200,7 +200,7 @@ public:
                 // Shift key fine-tune mode
                 float s = speed;  // TODO: check if this speed constant should be dependent on UIScale
                 if (isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT)) {
-                    s *= 10;
+                    s /= 10;
                 }
                 *((float*)dataToControl) += ( mouseDelta().y / s) * (rangeTo - rangeFrom);
             }

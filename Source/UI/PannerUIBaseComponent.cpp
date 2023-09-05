@@ -171,7 +171,7 @@ void PannerUIBaseComponent::draw()
 //    return;
 
 	// Changes the default knob reaction speed to mouse. The higher the slower.
-	float knobSpeed = 350;
+	float knobSpeed = 250;
     
 	int xOffset = 0;
 	int yOffset = 499;
@@ -397,7 +397,7 @@ void PannerUIBaseComponent::draw()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
+    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
@@ -411,7 +411,7 @@ void PannerUIBaseComponent::draw()
     auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
+    srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
     srLabel.draw();
 
@@ -428,7 +428,7 @@ void PannerUIBaseComponent::draw()
     ssKnob.speed = knobSpeed;
     ssKnob.defaultValue = 50.;
     ssKnob.isEndlessRotary = false;
-    ssKnob.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    ssKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
@@ -442,7 +442,7 @@ void PannerUIBaseComponent::draw()
     auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
     ssLabel.draw();
 
@@ -523,7 +523,7 @@ void PannerUIBaseComponent::draw()
                                                 200, 20 })
                                                 .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
-    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     autoOrbitCheckbox.draw();
     
     if (autoOrbitCheckbox.changed) {
@@ -770,7 +770,12 @@ void PannerUIBaseComponent::draw()
         }
 
         // OUTPUT DROPDOWN & LABELS
-        if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {            /// -> label
+        /// -> label
+        if (!processor->hostType.isProTools() || // is not PT
+            (processor->hostType.isProTools() && // or has an input dropdown in PT
+             (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)) ||
+            (processor->hostType.isProTools() && // or has an output dropdown in PT
+             (processor->getMainBusNumOutputChannels() == 16 || processor->getMainBusNumOutputChannels() == 36 || processor->getMainBusNumOutputChannels() == 64))) {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
@@ -782,7 +787,9 @@ void PannerUIBaseComponent::draw()
             arrowLabel.draw();
         }
             
-        if (!processor->hostType.isProTools()) {
+        if (!processor->hostType.isProTools() || // is not PT
+            (processor->hostType.isProTools() && // or has an output dropdown in PT
+             (processor->getMainBusNumOutputChannels() == 16 || processor->getMainBusNumOutputChannels() == 36 || processor->getMainBusNumOutputChannels() == 64))) {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
@@ -798,13 +805,34 @@ void PannerUIBaseComponent::draw()
                                                         80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
-
+            if (processor->hostType.isProTools()) {
+                // more selective assignment in PT only
+                if (processor->getMainBusNumOutputChannels() == 16) {
+                    output_options.push_back("M1Spatial-12");
+                    output_options.push_back("M1Spatial-14");
+                } else if (processor->getMainBusNumOutputChannels() == 36) {
+                    output_options.push_back("M1Spatial-12");
+                    output_options.push_back("M1Spatial-14");
+                    output_options.push_back("M1Spatial-32");
+                    output_options.push_back("M1Spatial-36");
+                } else if (processor->getMainBusNumOutputChannels() == 64) {
+                    output_options.push_back("M1Spatial-12");
+                    output_options.push_back("M1Spatial-14");
+                    output_options.push_back("M1Spatial-32");
+                    output_options.push_back("M1Spatial-36");
+                    output_options.push_back("M1Spatial-48");
+                    output_options.push_back("M1Spatial-60");
+                }
+            } else {
+                // add the outputs based on discovered number of channels from host
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
+                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
+            }
+            
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
                                                                 120, output_options.size() * dropdownItemHeight })
