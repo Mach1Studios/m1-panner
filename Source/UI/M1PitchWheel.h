@@ -65,9 +65,9 @@ public:
             pitchNorm = (pitchNorm > 0.975f) ? 0.975f : pitchNorm; // limit to the top bound of UI slider
             float topBottomPadding = 10; // to clamp the monitor preview within the slider
             m.drawLine(getSize().x/2 - getSize().x/6,
-                       std::max(topBottomPadding, pitchNorm * getSize().y),
+                       (std::max)(topBottomPadding, pitchNorm * getSize().y),
                        getSize().x/2 + getSize().x/6,
-                       std::max(topBottomPadding, pitchNorm * getSize().y));
+                       (std::max)(topBottomPadding, pitchNorm * getSize().y));
         }
 
         // Action
