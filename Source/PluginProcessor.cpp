@@ -266,10 +266,10 @@ void M1PannerAudioProcessor::createLayout(){
                 } else if (getBus(true, 0)->getCurrentLayout().size() == 3) {
                     pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCR);
                 } else if (getBus(true, 0)->getCurrentLayout().size() == 4) {
-                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
-                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
-                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
-                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
+                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) &&
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) &&
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) &&
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) &&
                         (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
                         // if we are not one of the 4ch formats in pro tools then force default of QUAD
                         pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
@@ -279,8 +279,8 @@ void M1PannerAudioProcessor::createLayout(){
                 } else if (getBus(true, 0)->getCurrentLayout().size() == 5) {
                     pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot0);
                 } else if (getBus(true, 0)->getCurrentLayout().size() == 6) {
-                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film) ||
-                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS) ||
+                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film) &&
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS) &&
                         (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE)) {
                         // if we are not one of the 4ch formats in pro tools then force default of 5.1 film
                         pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
@@ -615,7 +615,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
     
-    // Set temp values for processing
+    // Set m1Encode obj values for processing
     updateM1EncodePoints();
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
