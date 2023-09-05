@@ -236,6 +236,7 @@ void M1PannerAudioProcessor::createLayout(){
     
     if (external_spatialmixer_active) {
         /// EXTERNAL MULTICHANNEL PROCESSING
+        
         // INPUT
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputModeMono){
             getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
@@ -461,7 +462,6 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
     } else {
         // Test for all available Mach1Encode configs
         // manually maintained for-loop of first enum element to last enum element
-        // TODO: brainstorm a way to not require manual maintaining of listed enum elements
         for (int inputEnum = Mach1EncodeInputModeMono; inputEnum != Mach1EncodeInputMode5dot1SMTPE; inputEnum++ ) {
             configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
             // test each input, if the input has the number of channels as the input testing layout has move on to output testing
