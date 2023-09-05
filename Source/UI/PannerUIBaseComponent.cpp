@@ -397,7 +397,7 @@ void PannerUIBaseComponent::draw()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
+    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
@@ -411,7 +411,7 @@ void PannerUIBaseComponent::draw()
     auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = ((pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono) && !pannerState->autoOrbit);
+    srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
     srLabel.draw();
 
@@ -428,7 +428,7 @@ void PannerUIBaseComponent::draw()
     ssKnob.speed = knobSpeed;
     ssKnob.defaultValue = 50.;
     ssKnob.isEndlessRotary = false;
-    ssKnob.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    ssKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
@@ -442,7 +442,7 @@ void PannerUIBaseComponent::draw()
     auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
     ssLabel.draw();
 
@@ -523,7 +523,7 @@ void PannerUIBaseComponent::draw()
                                                 200, 20 })
                                                 .controlling(&pannerState->autoOrbit)
                                                 .withLabel("AUTO ORBIT");
-    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() != Mach1EncodeInputModeMono);
+    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
     autoOrbitCheckbox.draw();
     
     if (autoOrbitCheckbox.changed) {
