@@ -146,15 +146,16 @@ void PannerUIBaseComponent::draw()
     reticleField.teleportCursor = teleportCursor;
     reticleField.shouldDrawDivergeGuideLine = divergeKnobDraggingNow;
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
-    reticleField.azimuth = pannerState->azimuth;
-    reticleField.elevation = pannerState->elevation;
-    reticleField.diverge = pannerState->diverge;
-    reticleField.autoOrbit = pannerState->autoOrbit;
-    reticleField.sRotate = pannerState->stereoOrbitAzimuth;
-    reticleField.sSpread = pannerState->stereoSpread;
-    reticleField.m1Encode = &pannerState->m1Encode;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
+    reticleField.m1encodeUpdate = [&]() {
+        juce::AudioPlayHead::CurrentPositionInfo currentPosition;
+        if (processor->getPlayHead() != nullptr) {
+            if (!currentPosition.isPlaying) {
+                processor->updateM1EncodePoints();
+            }
+        }
+    };
     reticleField.isConnected = processor->pannerOSC.IsConnected();
     reticleField.draw();
     
