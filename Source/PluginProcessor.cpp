@@ -620,7 +620,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     
     // input pan balance for stereo input
     if (mainInput.getNumChannels() > 1 && pannerSettings.m1Encode.getInputChannelsCount() == 2) {
-        float p = PI * (pannerSettings.stereoInputBalance + 1)/4;
+        float p = juce::MathConstants<float>::pi * (pannerSettings.stereoInputBalance + 1)/4;
         mainInput.applyGain(0, 0, buffer.getNumSamples(), std::cos(p)); // gain for Left
         mainInput.applyGain(1, 0, buffer.getNumSamples(), std::sin(p)); // gain for Right
     }
