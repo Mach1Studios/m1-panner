@@ -96,7 +96,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramIsotropicEncodeMode, 1), TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
                     std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramEqualPowerEncodeMode, 1), TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
 #ifndef CUSTOM_CHANNEL_LAYOUT
-                    std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeStereo),
+                    std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeMono),
                     std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
 #endif
 #ifdef ITD_PARAMETERS
@@ -248,6 +248,92 @@ void M1PannerAudioProcessor::createLayout(){
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
     } else {
         /// INTERNAL MULTICHANNEL PROCESSING
+        
+        // check if there is a mismatch of the current bus size on PT
+        if (hostType.isProTools()) {
+            // update the pannerSettings if there is a mismatch
+            
+            // I/O Concept
+            // Inputs: for this plugin we are more literal about inputs, only allowing the number of channels available by host to dictate the input mode
+            // Outputs: for this plugin we allow the m1Encode object to have a higher channel count output mode than what the host allows to support more configurations on channel specific hosts
+
+            /// INPUTS
+            if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
+                if (getBus(true, 0)->getCurrentLayout().size() == 1) {
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
+                } else if (getBus(true, 0)->getCurrentLayout().size() == 2) {
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeStereo);
+                } else if (getBus(true, 0)->getCurrentLayout().size() == 3) {
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCR);
+                } else if (getBus(true, 0)->getCurrentLayout().size() == 4) {
+                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
+                        // if we are not one of the 4ch formats in pro tools then force default of QUAD
+                        pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
+                    } else {
+                        // already set
+                    }
+                } else if (getBus(true, 0)->getCurrentLayout().size() == 5) {
+                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot0);
+                } else if (getBus(true, 0)->getCurrentLayout().size() == 6) {
+                    if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS) ||
+                        (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE)) {
+                        // if we are not one of the 4ch formats in pro tools then force default of 5.1 film
+                        pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
+                    } else {
+                        // already set
+                    }
+                } else {
+                    // an unsupported format
+                }
+            }
+            // update parameter from start
+            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
+
+            /// OUTPUTS
+            if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputMode()) {
+                if (getBus(false, 0)->getCurrentLayout().size() == 4) {
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4);
+                } else if (getBus(false, 0)->getCurrentLayout().size() == 8) {
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
+                } else if (getBus(false, 0)->getCurrentLayout().size() == 16) {
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)) {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
+                    }
+                } else if (getBus(false, 0)->getCurrentLayout().size() == 36) {
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)) {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
+                    }
+                } else if (getBus(false, 0)->getCurrentLayout().size() == 64) {
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48) ||
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)) {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
+                    }
+                }
+            }
+            // update parameter from start
+            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(pannerSettings.m1Encode.getOutputMode()));
+        }
+        // apply the i/o to the plugin
+        m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
     }
         
     layoutCreated = true; // flow control for static i/o
@@ -268,85 +354,6 @@ void M1PannerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     if (pannerSettings.m1Encode.getOutputChannelsCount() != getMainBusNumOutputChannels()){
         bool channel_io_error = -1;
         // error handling here?
-    }
-    
-    // check if there is a mismatch of the current bus size on PT
-    if (hostType.isProTools()) {
-        // update the pannerSettings if there is a mismatch
-        /// INPUTS
-        if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
-            if (getBus(true, 0)->getCurrentLayout().size() == 1) {
-                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
-            } else if (getBus(true, 0)->getCurrentLayout().size() == 2) {
-                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeStereo);
-            } else if (getBus(true, 0)->getCurrentLayout().size() == 3) {
-                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCR);
-            } else if (getBus(true, 0)->getCurrentLayout().size() == 4) {
-                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeQuad) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA)) {
-                    // if we are not one of the 4ch formats in pro tools then force default of QUAD
-                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
-                } else {
-                    // already set
-                }
-            } else if (getBus(true, 0)->getCurrentLayout().size() == 5) {
-                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot0);
-            } else if (getBus(true, 0)->getCurrentLayout().size() == 6) {
-                if ((pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS) ||
-                    (pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE)) {
-                    // if we are not one of the 4ch formats in pro tools then force default of 5.1 film
-                    pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
-                } else {
-                    // already set
-                }
-            } else {
-                // an unsupported format
-            }
-        }
-        // update parameter from start
-        parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
-
-        /// OUTPUTS
-        if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputMode()) {
-            if (getBus(false, 0)->getCurrentLayout().size() == 4) {
-                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4);
-            } else if (getBus(false, 0)->getCurrentLayout().size() == 8) {
-                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
-            } else if (getBus(false, 0)->getCurrentLayout().size() == 16) {
-                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)) {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
-                }
-            } else if (getBus(false, 0)->getCurrentLayout().size() == 36) {
-                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)) {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
-                }
-            } else if (getBus(false, 0)->getCurrentLayout().size() == 64) {
-                if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48) ||
-                    (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)) {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
-                }
-            }
-        }
-        // update parameter from start
-        parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(pannerSettings.m1Encode.getOutputMode()));
     }
     
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
@@ -403,19 +410,23 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
     } else if (parameterID == paramInputMode) {
-        juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
-        parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
-        Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
-        m1EncodeChangeInputOutputMode(inputType, pannerSettings.m1Encode.getOutputMode());
-        layoutCreated = false;
-        createLayout();
+        // stop pro tools from using plugin data to change input after creation
+        if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
+            juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
+            parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
+            Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
+            layoutCreated = false;
+            createLayout();
+        }
     } else if (parameterID == paramOutputMode) {
-        juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramInputMode);
-        parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
-        Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
-        m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), outputType);
-        layoutCreated = false;
-        createLayout();
+        // stop pro tools from using plugin data to change output after creation
+        if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8)) {
+            juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramInputMode);
+            parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
+            Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
+            layoutCreated = false;
+            createLayout();
+        }
     }
 }
 
@@ -542,13 +553,22 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    
+    // Use this method as the place to do any pre-playback
+    if (!layoutCreated) {
+        createLayout();
+    }
+    
     // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
 	if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()) || (int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
         DBG("Unexpected Input/Output mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) + ", Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
         parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
         parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
 	}
-
+    
     // Update the host playhead data external usage
     if (external_spatialmixer_active && getPlayHead() != nullptr) {
         juce::AudioPlayHead* ph = getPlayHead();
@@ -559,14 +579,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             hostTimelineData.playheadPositionInSeconds = currentPlayHeadInfo.timeInSeconds;
         }
     }
-    
-    juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    // if you've got more output channels than input clears extra outputs
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
     
     // Set temp values for processing
     float _diverge = pannerSettings.diverge;
@@ -921,12 +933,12 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             parameterChanged(paramInputMode, tempInputType);
         } else if (prefix == "2.0.0") {
             // if the parsed input from xml is not the default value
-            if (getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode()) != pannerSettings.m1Encode.getInputMode()) {
+            if (getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode()) != (int)pannerSettings.m1Encode.getInputMode()) {
                 pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
                 parameterChanged(paramInputMode, Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
             }
             // if the parsed output from xml is not the default value
-            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode()) != pannerSettings.m1Encode.getOutputMode()) {
+            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode()) != (int)pannerSettings.m1Encode.getOutputMode()) {
                 pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
                 parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
             }
