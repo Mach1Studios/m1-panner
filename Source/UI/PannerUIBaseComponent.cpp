@@ -377,7 +377,7 @@ void PannerUIBaseComponent::draw()
     yOffset += 140;
 #else
     if (processor->hostType.isProTools()) { // remove I/O bar for PT
-        if (processor->getMainBusNumInputChannels() >= 4) { // unless we need space for the input dropdown menu
+        if (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) { // unless we need space for the input dropdown menu
             yOffset += 140 - 10;
         } else {
             yOffset += 140;
@@ -588,8 +588,10 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     // Remove bottom bar for CUSTOM_CHANNEL_LAYOUT macro
 #else
-    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) { // if not protools or protools 4ch input
-        
+    if (!processor->hostType.isProTools() || // not protools
+        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
+
         // Show bottom bar
         m.setLineWidth(1);
         m.setColor(GRID_LINES_3_RGBA);
@@ -880,7 +882,9 @@ void PannerUIBaseComponent::draw()
     auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
     int labelYOffset;
-    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
+    if (!processor->hostType.isProTools() || // not protools
+        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
         labelYOffset = 26;
     } else {
         labelYOffset = 30;
@@ -897,7 +901,9 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else
-    if (!processor->hostType.isProTools() || (processor->hostType.isProTools() && processor->getMainBusNumInputChannels() >= 4)) {
+    if (!processor->hostType.isProTools() || // not protools
+        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
         m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
     } else {
         m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
