@@ -171,7 +171,7 @@ void PannerUIBaseComponent::draw()
 //    return;
 
 	// Changes the default knob reaction speed to mouse. The higher the slower.
-	float knobSpeed = 350;
+	float knobSpeed = 250;
     
 	int xOffset = 0;
 	int yOffset = 499;
