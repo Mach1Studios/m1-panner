@@ -243,7 +243,7 @@ public:
         m.drawLine(center.x, center.y, yawX * diameter + center.x, yawY * diameter + center.y);
         
         // reference arc
-        float angleSize = PI/2;
+        float angleSize = juce::MathConstants<float>::pi/2;
 
         int numsteps = 60;
         for (int i = 0; i < numsteps; i++) {
