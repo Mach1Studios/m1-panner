@@ -31,7 +31,7 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
             "",
             nullptr,
             juce::ModalCallbackFunction::create(([&](int result) {
-                juce::JUCEApplicationBase::quit();
+                //juce::JUCEApplicationBase::quit();
                 }))
         );
         return false;
@@ -48,7 +48,7 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
                 "",
                 nullptr,
                 juce::ModalCallbackFunction::create(([&](int result) {
-                    juce::JUCEApplicationBase::quit();
+                   // juce::JUCEApplicationBase::quit();
                     }))
             );
             return false;
@@ -92,7 +92,7 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 
 void PannerOSC::update()
 {
-	if (!isConnected) {
+	if (!isConnected && serverPort > 0) {
 		if (juce::OSCSender::connect("127.0.0.1", serverPort)) {
             juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
 			msg.addInt32(port);
@@ -132,13 +132,18 @@ bool PannerOSC::IsConnected()
 
 bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain)
 {
-    // Each call will transmit an OSC message with the relevant current panner settings
-    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
-    m.addInt32(port);        // used for id
-    m.addInt32(input_mode);  // int of enum `Mach1EncodeInputModeType`
-    m.addFloat32(azimuth);   // expected degrees -180->180
-    m.addFloat32(elevation); // expected normalized -90->90
-    m.addFloat32(diverge);   // expected normalized -100->100
-    m.addFloat32(gain);      // expected as dB value -90->24
-    isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
+	if (port > 0) {
+		// Each call will transmit an OSC message with the relevant current panner settings
+		juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
+		m.addInt32(port);        // used for id
+		m.addInt32(input_mode);  // int of enum `Mach1EncodeInputModeType`
+		m.addFloat32(azimuth);   // expected degrees -180->180
+		m.addFloat32(elevation); // expected normalized -90->90
+		m.addFloat32(diverge);   // expected normalized -100->100
+		m.addFloat32(gain);      // expected as dB value -90->24
+		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
+		return true;
+	}
+
+	return false;
 }
