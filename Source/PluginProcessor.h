@@ -156,6 +156,9 @@ public:
     juce::PluginHostType hostType;
     bool layoutCreated = false;
     
+    // update m1encode obj points
+    void updateM1EncodePoints();
+    
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
     void timerCallback() override;
     PannerOSC pannerOSC;

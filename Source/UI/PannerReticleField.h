@@ -15,6 +15,8 @@ public:
     
     void internalDraw(Murka & m) {
         results = false;
+        
+        m1encodeUpdate();
 
         XYRD *xyrd = (XYRD*)dataToControl;
 
@@ -138,24 +140,24 @@ public:
         if (monitorState->monitor_mode != 1){
             m.enableFill();
             m.setColor(M1_ACTION_YELLOW);
-            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (elevation/90))));
+            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (pannerState->elevation/90))));
             m.setColor(BACKGROUND_GREY); // background color for internal circle
-            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (elevation/90))));
+            m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (8 + 3 * A(reticleHovered) + (2 * (pannerState->elevation/90))));
             
             m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
             
             // Reticles
-            std::vector<Mach1Point3D> points = m1Encode->getPoints();
-            std::vector<std::string> pointsNames = m1Encode->getPointsNames();
-            if (m1Encode->getInputChannelsCount() > 1) {
-                for (int i = 0; i < m1Encode->getPointsCount(); i++) {
+            std::vector<Mach1Point3D> points = pannerState->m1Encode.getPoints();
+            std::vector<std::string> pointsNames = pannerState->m1Encode.getPointsNames();
+            if (pannerState->m1Encode.getInputChannelsCount() > 1) {
+                for (int i = 0; i < pannerState->m1Encode.getPointsCount(); i++) {
                     MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0)* shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
                     clamp(point.y, 0, shape.size.y);
-                    if (m1Encode->getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeStereo) {
+                    if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeStereo) {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
-                    } else if (m1Encode->getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) {
+                    } else if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat) {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
                     } else {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
@@ -224,13 +226,13 @@ public:
     }
 
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, Murka& m) {
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered) + (2 * (elevation/90))));
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered) + (2 * (pannerState->elevation/90))));
         m.setColor(M1_ACTION_YELLOW);
         m.disableFill();
         
-        m.drawCircle(x, y, (10*reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (elevation/90)));
+        m.drawCircle(x, y, (10*reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (pannerState->elevation/90)));
         // re-adjust label x offset for size of string
-        m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (elevation/90)), 50, 50)).text(label.c_str()).draw();
+        m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (pannerState->elevation/90)), y - 8 - 2 * A(reticleHovered) - (2 * (pannerState->elevation/90)), 50, 50)).text(label.c_str()).draw();
     }
     
     void drawMonitorYaw(float yawAngle, Murka& m){
@@ -264,6 +266,8 @@ public:
         return *this;
     }
     
+    std::function<void()> m1encodeUpdate = [](){};
+    
     XYRD *dataToControl;
     
     bool draggingNow = false;
@@ -276,12 +280,8 @@ public:
     std::function<void(int, int)> teleportCursor;
     bool shouldDrawDivergeGuideLine = false;
     bool shouldDrawRotateGuideLine = false;
-    // TODO: cleanup these vars to inheret from pannerstate
-    Mach1Encode* m1Encode = nullptr;
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
-    bool autoOrbit = false;
-    float azimuth = 0, elevation = 0, diverge = 0, sRotate = 0, sSpread = 50;
     bool isConnected = false;
     
     // The results type, you also need to define it even if it's nothing.

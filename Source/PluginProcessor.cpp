@@ -551,6 +551,41 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     }
 }
 
+void M1PannerAudioProcessor::updateM1EncodePoints() {
+    float _diverge = pannerSettings.diverge;
+    float _gain = pannerSettings.gain;
+    
+    if (monitorSettings.monitor_mode == 1) { // StereoSafe mode is on
+        //store diverge for gain
+        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
+        //Setup for stereoSafe diverge range to gain
+        _gain = _gain - (abs_diverge * 6.0);
+        //Set Diverge to 0 after using Diverge for Gain
+        _diverge = 0;
+    }
+    
+    // parameters that can be automated will get their values updated from PannerSettings->Parameter
+    pannerSettings.m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
+    pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
+    pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
+    
+    pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
+    pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
+    pannerSettings.m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
+    
+    if (pannerSettings.isotropicMode) {
+        if (pannerSettings.equalpowerMode) {
+            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
+        } else {
+            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicLinear);
+        }
+    } else {
+        pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
+    }
+    
+    pannerSettings.m1Encode.generatePointResults();
+}
+
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -581,38 +616,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // Set temp values for processing
-    float _diverge = pannerSettings.diverge;
-    float _gain = pannerSettings.gain;
-
-    if (monitorSettings.monitor_mode == 1) { // StereoSafe mode is on
-        //store diverge for gain
-        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
-        //Setup for stereoSafe diverge range to gain
-        _gain = _gain - (abs_diverge * 6.0);
-        //Set Diverge to 0 after using Diverge for Gain
-        _diverge = 0;
-    }
-    
-    // parameters that can be automated will get their values updated from PannerSettings->Parameter
-    pannerSettings.m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
-    pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
-    pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
-
-    pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
-    pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
-    pannerSettings.m1Encode.setStereoSpread(pannerSettings.stereoSpread/100.0); // Mach1Encode expects an unsigned normalized input
-    
-    if (pannerSettings.isotropicMode) {
-        if (pannerSettings.equalpowerMode) {
-            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicEqualPower);
-        } else {
-            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModeIsotropicLinear);
-        }
-    } else {
-         pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::Mach1EncodePannerModePeriphonicLinear);
-    }
-
-    pannerSettings.m1Encode.generatePointResults();
+    updateM1EncodePoints();
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
     // vector of input channel buffers
