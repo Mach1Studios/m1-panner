@@ -460,7 +460,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
              || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()
              || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3)
              || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5)
-             //|| layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)
+             || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)
             ) ) {
                 return true;
         } else {
