@@ -376,15 +376,15 @@ void PannerUIBaseComponent::draw()
     // Single channel layout
     yOffset += 140;
 #else
-    if (processor->hostType.isProTools()) { // remove I/O bar for PT
-        if (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) { // unless we need space for the input dropdown menu
-            yOffset += 140 - 10;
-        } else {
-            yOffset += 140;
-        }
-    } else { // show dropdown menus for i/o for all other hosts
+    if (!processor->hostType.isProTools() || // not pro tools
+        (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
+         (processor->getMainBusNumOutputChannels() > 8))) {
         yOffset += 140 - 10;
+    } else {
+        yOffset += 140;
     }
+
 #endif
     
 	// S Rotation
@@ -531,8 +531,7 @@ void PannerUIBaseComponent::draw()
         processor->parameterChanged(processor->paramAutoOrbit, pannerState->autoOrbit);
     }
     
-	//TODO: why are pitch ranges inversed?
-    
+    // Note: pitchwheel range in inverted to draw top down
     auto& pitchWheel = m.prepare<M1PitchWheel>({ 445, 30 - 10,
                                             80, 400 + 20 });
     pitchWheel.cursorHide = cursorHide;
@@ -588,9 +587,10 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     // Remove bottom bar for CUSTOM_CHANNEL_LAYOUT macro
 #else
-    if (!processor->hostType.isProTools() || // not protools
-        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
-         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
+    if (!processor->hostType.isProTools() || // not pro tools
+        (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
+         (processor->getMainBusNumOutputChannels() > 8))) {
 
         // Show bottom bar
         m.setLineWidth(1);
@@ -602,14 +602,18 @@ void PannerUIBaseComponent::draw()
         m.setColor(APP_LABEL_TEXT_COLOR);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         
-        // Input Channel Mode Selector
-        m.setColor(200, 255);
-        auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
-        inputLabel.label = "INPUT";
-        inputLabel.alignment = TEXT_CENTER;
-        inputLabel.enabled = false;
-        inputLabel.highlighted = false;
-        inputLabel.draw();
+        // skip drawing the input label if we only have the output dropdown available in PT
+        if (processor->hostType.isProTools() && // is pro tools and is not input 4 or 6
+            (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)) {
+            // Input Channel Mode Selector
+            m.setColor(200, 255);
+            auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
+            inputLabel.label = "INPUT";
+            inputLabel.alignment = TEXT_CENTER;
+            inputLabel.enabled = false;
+            inputLabel.highlighted = false;
+            inputLabel.draw();
+        }
         
         std::string inputLabelText = "";
         // we do not protect from PT host here because it is expected to be checked before the GUI
@@ -631,6 +635,8 @@ void PannerUIBaseComponent::draw()
         
         if (processor->hostType.isProTools()) {
             // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
+            
+            /// INPUTS
             if (processor->getMainBusNumInputChannels() == 4) {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
@@ -778,7 +784,7 @@ void PannerUIBaseComponent::draw()
             (processor->hostType.isProTools() && // or has an input dropdown in PT
              (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)) ||
             (processor->hostType.isProTools() && // or has an output dropdown in PT
-             (processor->getMainBusNumOutputChannels() == 16 || processor->getMainBusNumOutputChannels() == 36 || processor->getMainBusNumOutputChannels() == 64))) {
+             processor->getMainBusNumOutputChannels() > 8)) {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
@@ -792,7 +798,7 @@ void PannerUIBaseComponent::draw()
             
         if (!processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an output dropdown in PT
-             (processor->getMainBusNumOutputChannels() == 16 || processor->getMainBusNumOutputChannels() == 36 || processor->getMainBusNumOutputChannels() == 64))) {
+             processor->getMainBusNumOutputChannels() > 8)) {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
@@ -808,33 +814,13 @@ void PannerUIBaseComponent::draw()
                                                         80, 30 })
                                                         .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
-            if (processor->hostType.isProTools()) {
-                // more selective assignment in PT only
-                if (processor->getMainBusNumOutputChannels() == 16) {
-                    output_options.push_back("M1Spatial-12");
-                    output_options.push_back("M1Spatial-14");
-                } else if (processor->getMainBusNumOutputChannels() == 36) {
-                    output_options.push_back("M1Spatial-12");
-                    output_options.push_back("M1Spatial-14");
-                    output_options.push_back("M1Spatial-32");
-                    output_options.push_back("M1Spatial-36");
-                } else if (processor->getMainBusNumOutputChannels() == 64) {
-                    output_options.push_back("M1Spatial-12");
-                    output_options.push_back("M1Spatial-14");
-                    output_options.push_back("M1Spatial-32");
-                    output_options.push_back("M1Spatial-36");
-                    output_options.push_back("M1Spatial-48");
-                    output_options.push_back("M1Spatial-60");
-                }
-            } else {
-                // add the outputs based on discovered number of channels from host
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
-                if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
-            }
+            // add the outputs based on discovered number of channels from host
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
             
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                                                                 m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
@@ -882,9 +868,10 @@ void PannerUIBaseComponent::draw()
     auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
     int labelYOffset;
-    if (!processor->hostType.isProTools() || // not protools
-        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
-         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
+    if (!processor->hostType.isProTools() || // not pro tools
+        (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
+         (processor->getMainBusNumOutputChannels() > 8))) {
         labelYOffset = 26;
     } else {
         labelYOffset = 30;
@@ -901,9 +888,10 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else
-    if (!processor->hostType.isProTools() || // not protools
-        (processor->hostType.isProTools() && // or is protools and is input 4 or 6
-         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
+    if (!processor->hostType.isProTools() || // not pro tools
+        (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
+         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
+         (processor->getMainBusNumOutputChannels() > 8))) {
         m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
     } else {
         m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
