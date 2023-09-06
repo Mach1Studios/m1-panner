@@ -1,6 +1,8 @@
 # m1-panner
 GUI and plugin concept for Mach1Encode API
 
+#### AAX requires AAX SDK 2.5.1 or higher
+
 ## Modes
 The M1-Panner can be compiled into two "modes"
  1. *Multichannel Internal Spatial Audio Processing*: The spatial audio is processed within the M1-Panner instance internally but is only supported in plugin hosts that support multichannel input/output
