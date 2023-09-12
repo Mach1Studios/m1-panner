@@ -55,7 +55,7 @@ public:
 
 private:
 	MurkaPoint cachedMousePositionWhenMouseWasHidden = { 0, 0 };
-	MurkaPoint currentMousePosition = { 0, 0 };
+	MurkaPoint currentMousePositionJuceScaled = { 0, 0 };
 
 	MurImage m1logo;
 
@@ -66,7 +66,7 @@ private:
 
 	std::function<void()> cursorHide = [&]() {
 		setMouseCursor(juce::MouseCursor::NoCursor);
-		cachedMousePositionWhenMouseWasHidden = currentMousePosition;
+		cachedMousePositionWhenMouseWasHidden = currentMousePositionJuceScaled;
 	};
 	std::function<void()> cursorShow = [&]() {
 		setMouseCursor(juce::MouseCursor::NormalCursor);

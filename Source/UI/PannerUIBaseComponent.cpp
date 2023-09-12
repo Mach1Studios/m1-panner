@@ -130,7 +130,8 @@ void PannerUIBaseComponent::draw()
         m.clearFontsTextures();
     }
 
-    currentMousePosition = m.mousePosition();
+    currentMousePositionJuceScaled = m.mousePosition() / m.getScreenScale();
+
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
     m.setColor(BACKGROUND_GREY);
 	m.clear();
