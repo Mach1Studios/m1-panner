@@ -661,8 +661,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
                 // Output channel reordering from fillChannelOrder()
                 int output_channel_reordered = output_channel_indices[output_channel];
-                // TODO: in AAX the processBlock can be called before prepareToPlay()!!!!!!!!
-                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel]);
+                smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel_reordered]);
             }
         }
     }
@@ -710,7 +709,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     int output_channel_reordered = output_channel_indices[output_channel];
                     
                     // process via temp buffer that will also be used for meters
-                    buf.addSample(output_channel, sample, inValue * spatialGainCoeff);
+                    buf.addSample(output_channel_reordered, sample, inValue * spatialGainCoeff);
 
                     if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2) { // TODO: check if this doesnt catch too many false cases of hosts not utilizing multichannel output
                         /// ANYTHING REQUIRED ONLY FOR EXTERNAL MIXER GOES HERE
@@ -722,7 +721,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                             break;
                         } else {
                             // apply processed output samples to become the output buffers
-                            outBuffer[output_channel][sample] += buf.getSample(output_channel, sample);
+                            outBuffer[output_channel_reordered][sample] += buf.getSample(output_channel_reordered, sample);
                             
                             #ifdef ITD_PARAMETERS
                             //SIMPLE DELAY
