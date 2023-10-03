@@ -1,5 +1,4 @@
-#ifndef __JUCE_HEADER_B57065F632DEFA52__
-#define __JUCE_HEADER_B57065F632DEFA52__
+#pragma once
 
 #include <JuceHeader.h>
 
@@ -65,5 +64,3 @@ public:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Overlay)
 };
-
-#endif  
