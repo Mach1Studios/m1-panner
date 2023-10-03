@@ -1,5 +1,4 @@
-#ifndef TYPESFORDATAEXCHANGE_H
-#define TYPESFORDATAEXCHANGE_H
+#pragma once
 
 #include "Mach1Encode.h"
 
@@ -53,5 +52,3 @@ struct HostTimelineData {
     // double loopEndPositionInSeconds; // for more detailed indication on timeline indicator
     // double editOriginPositionInSeconds;
 };
-
-#endif
