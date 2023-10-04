@@ -22,8 +22,6 @@ juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
 juce::String M1PannerAudioProcessor::paramElevation("elevation"); // also Z
 juce::String M1PannerAudioProcessor::paramDiverge("diverge");
 juce::String M1PannerAudioProcessor::paramGain("gain");
-juce::String M1PannerAudioProcessor::paramX("x");
-juce::String M1PannerAudioProcessor::paramY("y");
 juce::String M1PannerAudioProcessor::paramStereoOrbitAzimuth("orbitAzimuth");
 juce::String M1PannerAudioProcessor::paramStereoSpread("orbitSpread");
 juce::String M1PannerAudioProcessor::paramStereoInputBalance("stereoInputBalance");
@@ -58,16 +56,6 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDiverge, 1),
                                                             TRANS("Diverge"),
                                                             juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.diverge, "", juce::AudioProcessorParameter::genericParameter,
-                                                            [](float v, int) { return juce::String (v, 1); },
-                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-                    std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramX, 1),
-                                                            TRANS("X"),
-                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.x, "", juce::AudioProcessorParameter::genericParameter,
-                                                            [](float v, int) { return juce::String (v, 1); },
-                                                            [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-                    std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramY, 1),
-                                                            TRANS("Y"),
-                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.y, "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1); },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramGain, 1),
@@ -117,8 +105,6 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramAzimuth, this);
     parameters.addParameterListener(paramElevation, this);
     parameters.addParameterListener(paramDiverge, this);
-    parameters.addParameterListener(paramX, this);
-    parameters.addParameterListener(paramY, this);
     parameters.addParameterListener(paramGain, this);
     parameters.addParameterListener(paramAutoOrbit, this);
     parameters.addParameterListener(paramStereoOrbitAzimuth, this);
@@ -390,10 +376,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         parameters.getParameter(paramDiverge)->setValue(newValue);
     } else if (parameterID == paramGain) {
         parameters.getParameter(paramGain)->setValue(newValue);
-    } else if (parameterID == paramX) {
-        parameters.getParameter(paramX)->setValue(newValue);
-    } else if (parameterID == paramY) {
-        parameters.getParameter(paramY)->setValue(newValue);
     } else if (parameterID == paramAutoOrbit) {
         parameters.getParameter(paramAutoOrbit)->setValue(newValue);
     } else if (parameterID == paramStereoOrbitAzimuth) {
@@ -855,8 +837,6 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation));
     addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge));
     addXmlElement(root, paramGain, juce::String(pannerSettings.gain));
-    addXmlElement(root, paramX, juce::String(pannerSettings.x));
-    addXmlElement(root, paramY, juce::String(pannerSettings.y));
     addXmlElement(root, paramStereoOrbitAzimuth, juce::String(pannerSettings.stereoOrbitAzimuth));
     addXmlElement(root, paramStereoSpread, juce::String(pannerSettings.stereoSpread));
     addXmlElement(root, paramStereoInputBalance, juce::String(pannerSettings.stereoInputBalance));
@@ -898,8 +878,6 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.elevation = getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation);
         pannerSettings.diverge = getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge);
         pannerSettings.gain = getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain);
-        pannerSettings.x = getParameterDoubleFromXmlElement(root.get(), paramX, pannerSettings.x);
-        pannerSettings.y = getParameterDoubleFromXmlElement(root.get(), paramY, pannerSettings.y);
         pannerSettings.stereoOrbitAzimuth = getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth);
         pannerSettings.stereoSpread = getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread);
         pannerSettings.stereoInputBalance = getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance);
