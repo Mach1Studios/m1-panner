@@ -124,8 +124,6 @@ public:
     static juce::String paramElevation; // also Z
     static juce::String paramDiverge;
     static juce::String paramGain;
-    static juce::String paramX;
-    static juce::String paramY;
     static juce::String paramStereoOrbitAzimuth;
     static juce::String paramStereoSpread;
     static juce::String paramStereoInputBalance;

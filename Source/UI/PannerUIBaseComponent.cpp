@@ -164,8 +164,6 @@ void PannerUIBaseComponent::draw()
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-        processor->parameterChanged(processor->paramX, pannerState->x);
-        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -202,8 +200,6 @@ void PannerUIBaseComponent::draw()
 		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-        processor->parameterChanged(processor->paramX, pannerState->x);
-        processor->parameterChanged(processor->paramY, pannerState->y);
 	}
     
 	m.setColor(ENABLED_PARAM);
@@ -233,8 +229,6 @@ void PannerUIBaseComponent::draw()
         convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-        processor->parameterChanged(processor->paramX, pannerState->x);
-        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	m.setColor(ENABLED_PARAM);
@@ -265,8 +259,6 @@ void PannerUIBaseComponent::draw()
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-        processor->parameterChanged(processor->paramX, pannerState->x);
-        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	rotateKnobDraggingNow = azKnob.draggingNow;
@@ -297,8 +289,6 @@ void PannerUIBaseComponent::draw()
         convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-        processor->parameterChanged(processor->paramX, pannerState->x);
-        processor->parameterChanged(processor->paramY, pannerState->y);
     }
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
