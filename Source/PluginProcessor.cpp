@@ -476,21 +476,29 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
     orderOfChans.resize(numOutputChannels);
     output_channel_indices.resize(numOutputChannels);
     
+    // get output layout
     juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
     
-    // TODO: fix this for PT
     if(!chanset.isDiscreteLayout() && numOutputChannels == 8) {
         // Layout for Pro Tools
-        // TODO: expand this for not just 7.1
         if (hostType.isProTools()){
-            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
-            orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
-            orderOfChans[2] = juce::AudioChannelSet::ChannelType::right;
-            orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
-            orderOfChans[4] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
-            orderOfChans[5] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
-            orderOfChans[6] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
-            orderOfChans[7] = juce::AudioChannelSet::ChannelType::LFE;
+            // TODO: expand this for other surround configs on PT
+            if (chanset.getDescription().contains(String("7.1 Surround"))) {
+                // In PT ensure we are on a 7.1 bus
+                orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+                orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
+                orderOfChans[2] = juce::AudioChannelSet::ChannelType::right;
+                orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
+                orderOfChans[4] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
+                orderOfChans[5] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
+                orderOfChans[6] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
+                orderOfChans[7] = juce::AudioChannelSet::ChannelType::LFE;
+            } else {
+                // set the order index for plugins instantiated on buses that are higher channel counts than the encode is currently set to
+                for (int i = 0; i < numOutputChannels; i ++) {
+                    orderOfChans[i] = chanset.getTypeOfChannel(i);
+                }
+            }
         } else {
             orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
             orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
