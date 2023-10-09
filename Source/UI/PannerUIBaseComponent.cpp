@@ -626,7 +626,7 @@ void PannerUIBaseComponent::draw()
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1OA FuMa";
         
         // INPUT DROPDOWN
-        int dropdownItemHeight = 25;
+        int dropdownItemHeight = 20;
         
         if (processor->hostType.isProTools()) {
             // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
@@ -636,12 +636,12 @@ void PannerUIBaseComponent::draw()
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 33,
-                    80, 30 })
+                    m.getSize().height() - 28,
+                    80, 20 })
                 .withLabel(inputLabelText).draw();
                 std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                    m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
                     80, input_options.size() * dropdownItemHeight })
                 .withOptions(input_options);
                 
@@ -672,12 +672,12 @@ void PannerUIBaseComponent::draw()
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 33,
-                    80, 30 })
+                    m.getSize().height() - 28,
+                    80, 20 })
                 .withLabel(inputLabelText).draw();
                 std::vector<std::string> input_options = {"5.1 Film", "5.1 DTS", "5.1 SMPTE"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                    m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
                     80, input_options.size() * dropdownItemHeight })
                 .withOptions(input_options);
                 
@@ -705,8 +705,8 @@ void PannerUIBaseComponent::draw()
         } else if (processor->hostType.isReaper() || processor->getMainBusNumInputChannels() > 2) {
             // Multichannel DAWs will scale the available inputs based on what the host offers
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                                                                    m.getSize().height() - 33,
-                                                                    80, 30 })
+                                                                    m.getSize().height() - 28,
+                                                                    80, 20 })
                                                         .withLabel(inputLabelText).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             if (processor->getMainBusNumInputChannels() >= 3) input_options.push_back("LCR");
@@ -725,7 +725,7 @@ void PannerUIBaseComponent::draw()
             }
 
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                                m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                                m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
                                                                 .withOptions(input_options);
 
@@ -745,12 +745,12 @@ void PannerUIBaseComponent::draw()
         } else {
             // STEREO hosts here (by default)
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                                                                    m.getSize().height() - 33,
-                                                                    80, 30 })
+                                                                    m.getSize().height() - 28,
+                                                                    80, 20 })
                                                         .withLabel(inputLabelText).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
-                                                                m.getSize().height() - 33 - input_options.size() * dropdownItemHeight,
+                                                                m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
                                                                 80, input_options.size() * dropdownItemHeight })
                                                         .withOptions(input_options);
 
@@ -805,8 +805,8 @@ void PannerUIBaseComponent::draw()
             outputLabel.draw();
             
             auto outputType = pannerState->m1Encode.getOutputMode();            
-            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height()-33,
-                                                        80, 30 })
+            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height() - 28,
+                                                        80, 20 })
                                                         .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
             // add the outputs based on discovered number of channels from host
@@ -818,7 +818,7 @@ void PannerUIBaseComponent::draw()
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
             
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
-                                                                m.getSize().height() - 33 - output_options.size() * dropdownItemHeight,
+                                                                m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
                                                                 120, output_options.size() * dropdownItemHeight })
                                                         .withOptions(output_options);
             if (outputDropdownButton.pressed) {
