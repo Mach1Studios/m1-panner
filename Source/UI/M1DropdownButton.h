@@ -24,9 +24,9 @@ public:
         }
 
         m.setColor(LABEL_TEXT_COLOR);
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (int)fontSize);
         // centered interior text
-        m.prepare<murka::Label>({0, 8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
+        m.prepare<murka::Label>({0, shape.size.y/8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
 
         pressed = false;
         if ((inside()) && (mouseDownPressed(0))) {
@@ -34,11 +34,11 @@ public:
         }
 
 //        m.popStyle(); // TODO: THIS THING MAKES EVERYTHING HANG, issue with Murka - have to show assert!
-    };
+    }
     
     std::string label = "";    
     bool pressed = false;
-    double fontSize = 10;
+    float fontSize = 10;
     bool outlineEnabled = true;
 
     operator bool() {
