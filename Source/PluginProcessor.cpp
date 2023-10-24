@@ -838,9 +838,9 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::MemoryOutputStream stream(destData, false);
     // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version tag threshold for supporting
     // backwards compatible automation data in PT
-    stream.writeString("2.0.0"); // write current prefix
+    stream.writeString("2.0.0"); // write the last major prefix
+    
     juce::XmlElement root("Root");
-
     addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
     addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation));
     addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge));

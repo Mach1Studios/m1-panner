@@ -6,6 +6,7 @@ M1notifier/dist
 *.ttf
 *.otf
 !AileronBlack.ttf
+!Inter*.ttf
 # remove cmake build folder
 /[Bb]uild*/
 
