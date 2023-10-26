@@ -11,7 +11,7 @@ class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private ju
 	bool isConnected = false;
 	std::function<void(juce::OSCMessage msg)> messageReceived;
 	void oscMessageReceived(const juce::OSCMessage& msg) override;
-    uint32 lastMessageTime = 0; 
+    juce::uint32 lastMessageTime = 0; 
 
 public:
 	PannerOSC();

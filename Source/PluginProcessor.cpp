@@ -122,7 +122,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
     
-    pannerOSC.AddListener([&](OSCMessage msg) {
+    pannerOSC.AddListener([&](juce::OSCMessage msg) {
         DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32())+", P: "+std::to_string(msg[2].getFloat32()));
         // Capturing monitor mode
         int mode = msg[0].getInt32();
@@ -483,7 +483,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
         // Layout for Pro Tools
         if (hostType.isProTools()){
             // TODO: expand this for other surround configs on PT
-            if (chanset.getDescription().contains(String("7.1 Surround"))) {
+            if (chanset.getDescription().contains(juce::String("7.1 Surround"))) {
                 // In PT ensure we are on a 7.1 bus
                 orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
                 orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;

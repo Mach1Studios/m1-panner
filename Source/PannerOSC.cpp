@@ -102,7 +102,7 @@ void PannerOSC::update()
 	}
     
     if (isConnected) {
-        uint32 currentTime = juce::Time::getMillisecondCounter();
+        juce::uint32 currentTime = juce::Time::getMillisecondCounter();
         if ((currentTime - lastMessageTime) > 10000) { // 10000 milliseconds = 10 seconds
             isConnected = false;
         }
