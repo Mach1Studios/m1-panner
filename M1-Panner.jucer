@@ -10,14 +10,14 @@
               pluginFormats="buildStandalone,buildVST,buildVST3" version="2.0.0"
               cppLanguageStandard="17">
   <MAINGROUP id="LHeY1A" name="M1-Panner">
-    <FILE id="oAX6j9" name="AileronSemiBold.ttf" compile="0" resource="1"
-          file="Resources/AileronSemiBold.ttf"/>
     <FILE id="ocgVtQ" name="mach1logo.png" compile="0" resource="1" file="Resources/mach1logo.png"/>
     <FILE id="qM1czu" name="bluetooth_icon.png" compile="0" resource="1"
           file="Resources/bluetooth_icon.png"/>
     <FILE id="hUQhuN" name="tech_support_icon.png" compile="0" resource="1"
           file="Resources/tech_support_icon.png"/>
     <FILE id="Zy9gmZ" name="wi-fi_icon.png" compile="0" resource="1" file="Resources/wi-fi_icon.png"/>
+    <FILE id="tro64V" name="InterRegular.ttf" compile="0" resource="1"
+          file="Resources/InterRegular.ttf"/>
     <GROUP id="{7A7A81D7-A723-FE81-2AAD-D694F318368D}" name="Source">
       <FILE id="JNusfG" name="Config.h" compile="0" resource="0" file="Source/Config.h"/>
       <FILE id="hQY4yG" name="TypesForDataExchange.h" compile="0" resource="0"
@@ -76,10 +76,10 @@
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="M1-Panner" headerPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/include/"
                        libraryPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/lib/"
-                       macOSDeploymentTarget="10.7" osxCompatibility="10.7 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="M1-Panner" libraryPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/lib/"
                        headerPath="../../Modules/m1-sdk/mach1spatial-libs/xcode/include/"
-                       macOSDeploymentTarget="10.7" osxCompatibility="10.7 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
+                       macOSDeploymentTarget="10.9" osxCompatibility="10.9 SDK" customXcodeFlags="MY_SPECIAL_LINKER_FLAG=-Xlinker -headerpad -Xlinker 800"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="JUCE/modules"/>
