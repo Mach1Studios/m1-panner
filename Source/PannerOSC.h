@@ -5,9 +5,9 @@
 
 class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
 {
-    bool init(int serverPort);
+    bool init(int helperPort);
     bool initFromSettings(std::string jsonSettingsFilePath);
-	int serverPort = 0, port = 0;
+	int helperPort = 0, port = 0;
 	bool isConnected = false;
 	std::function<void(juce::OSCMessage msg)> messageReceived;
 	void oscMessageReceived(const juce::OSCMessage& msg) override;
