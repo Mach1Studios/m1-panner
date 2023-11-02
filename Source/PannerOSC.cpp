@@ -1,10 +1,10 @@
 #include "PannerOSC.h"
 
-bool PannerOSC::init(int serverPort) {
+bool PannerOSC::init(int helperPort) {
     // check port
     juce::DatagramSocket socket(false);
     socket.setEnablePortReuse(false);
-    this->serverPort = serverPort;
+    this->helperPort = helperPort;
     
     // find available port
     for (port = 10001; port < 10200; port++) {
@@ -32,15 +32,15 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
             nullptr,
             juce::ModalCallbackFunction::create(([&](int result) {
                 //juce::JUCEApplicationBase::quit();
-                }))
+            }))
         );
         return false;
     }
     else {
         juce::var mainVar = juce::JSON::parse(juce::File(jsonSettingsFilePath));
-        int serverPort = mainVar["serverPort"];
+        int helperPort = mainVar["watcherPort"];
 
-        if (!init(serverPort)) {
+        if (!init(helperPort)) {
             juce::AlertWindow::showMessageBoxAsync(
                 juce::AlertWindow::WarningIcon,
                 "Warning",
@@ -49,7 +49,7 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
                 nullptr,
                 juce::ModalCallbackFunction::create(([&](int result) {
                    // juce::JUCEApplicationBase::quit();
-                    }))
+                }))
             );
             return false;
         }
@@ -92,8 +92,8 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 
 void PannerOSC::update()
 {
-	if (!isConnected && serverPort > 0) {
-		if (juce::OSCSender::connect("127.0.0.1", serverPort)) {
+	if (!isConnected && helperPort > 0) {
+		if (juce::OSCSender::connect("127.0.0.1", helperPort)) {
             juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
 			msg.addInt32(port);
 			isConnected = juce::OSCSender::send(msg);
