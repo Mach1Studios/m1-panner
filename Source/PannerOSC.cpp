@@ -138,7 +138,7 @@ bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevatio
 		m.addInt32(port);        // used for id
 		m.addInt32(input_mode);  // int of enum `Mach1EncodeInputModeType`
 		m.addFloat32(azimuth);   // expected degrees -180->180
-		m.addFloat32(elevation); // expected normalized -90->90
+		m.addFloat32(elevation); // expected degrees -90->90
 		m.addFloat32(diverge);   // expected normalized -100->100
 		m.addFloat32(gain);      // expected as dB value -90->24
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
