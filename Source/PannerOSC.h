@@ -1,5 +1,4 @@
-#ifndef PANNEROSC_H_INCLUDED
-#define PANNEROSC_H_INCLUDED
+#pragma once
 
 #include <JuceHeader.h>
 
@@ -23,6 +22,3 @@ public:
 	bool IsConnected();
     bool sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain);
 };
-
-
-#endif  
