@@ -38,7 +38,7 @@ bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath) {
     }
     else {
         juce::var mainVar = juce::JSON::parse(juce::File(jsonSettingsFilePath));
-        int helperPort = mainVar["watcherPort"];
+        int helperPort = mainVar["helperPort"];
 
         if (!init(helperPort)) {
             juce::AlertWindow::showMessageBoxAsync(
