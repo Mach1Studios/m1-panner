@@ -598,8 +598,9 @@ void PannerUIBaseComponent::draw()
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         
         // skip drawing the input label if we only have the output dropdown available in PT
-        if (processor->hostType.isProTools() && // is pro tools and is not input 4 or 6
-            (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)) {
+        if (!processor->hostType.isProTools() || // is not PT
+            (processor->hostType.isProTools() && // or has an input dropdown in PT
+             (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
             // Input Channel Mode Selector
             m.setColor(200, 255);
             auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
@@ -818,9 +819,9 @@ void PannerUIBaseComponent::draw()
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
             
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
-                                                                m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
-                                                                120, output_options.size() * dropdownItemHeight })
-                                                        .withOptions(output_options);
+                m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
+                120, output_options.size() * dropdownItemHeight })
+            .withOptions(output_options);
             if (outputDropdownButton.pressed) {
                 outputDropdownMenu.open();
             }
@@ -887,9 +888,9 @@ void PannerUIBaseComponent::draw()
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
          (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
          (processor->getMainBusNumOutputChannels() > 8))) {
-        m.drawImage(m1logo, 20, m.getSize().height() - 26, 161 / 3, 39 / 3);
+        m.drawImage(m1logo, 25, m.getSize().height() - labelYOffset, 161 / 3, 39 / 3);
     } else {
-        m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
+        m.drawImage(m1logo, 25, m.getSize().height() - 30, 161 / 3, 39 / 3);
     }
 #endif
 

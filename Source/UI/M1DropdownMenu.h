@@ -16,9 +16,6 @@ enum closingModeTypes {modeUnknown, modeMouseUp, modeMouseDown};
 closingModeTypes closingMode = closingModeTypes::modeUnknown;
 
 int mouseKeptDownFrames = 0;
-bool mouseUpClosingMode = false;
-
-double openedPhase = 0;
     
 public:
     void internalDraw(Murka & m) {
@@ -48,26 +45,31 @@ public:
                     m.drawRectangle(1, i * optionHeight, shape.size.x - 2, optionHeight);
                     m.setColor(BACKGROUND_GREY);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.prepare<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).draw();
+                    m.prepare<murka::Label>({0, optionHeight * i + 3,
+                        shape.size.x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
                     
                     if (closingMode == modeMouseDown) {
                         if (mouseDownPressed(0)) {
                             opened = false; // Closing the menu
-                            changed = true;
+                            if (selectedOption != i) {
+                                changed = true;
+                            }
                             selectedOption = i;
                         }
                     }
                     if (closingMode == modeMouseUp) {
                         if (mouseReleased(0)) {
                             opened = false; // Closing the menu
-                            changed = true;
+                            if (selectedOption != i) {
+                                changed = true;
+                            }
                             selectedOption = i;
                         }
                     }
                 } else {
                     m.setColor(LABEL_TEXT_COLOR);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.prepare<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(TEXT_CENTER).draw();
+                    m.prepare<murka::Label>({0, optionHeight * i + 3, shape.size.x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
                 }
                 
                 // Closing if pressed/released outside of the menu
@@ -88,6 +90,13 @@ public:
         }
     }
     
+    void close() {
+        opened = false;
+        mouseKeptDownFrames = 0;
+        closingMode = closingModeTypes::modeUnknown;
+        changed = false;
+    }
+    
     void open() {
         opened = true;
         mouseKeptDownFrames = 0;
@@ -105,7 +114,8 @@ public:
     bool enabled = true;
     std::string label;
     MurkaShape triggerButtonShape;
-    
+    TextAlignment textAlignment = TEXT_CENTER;
+
     M1DropdownMenu & controlling(Mach1EncodeInputModeType* dataPointer) {
         dataToControl = dataPointer;
         return *this;
