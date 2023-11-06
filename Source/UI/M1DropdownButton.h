@@ -40,6 +40,8 @@ public:
     bool pressed = false;
     float fontSize = 10;
     bool outlineEnabled = true;
+    TextAlignment textAlignment = TEXT_CENTER;
+    int heightDivisor = 8;
 
     operator bool() {
         return pressed;
