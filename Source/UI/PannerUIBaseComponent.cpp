@@ -604,7 +604,7 @@ void PannerUIBaseComponent::draw()
             // Input Channel Mode Selector
             m.setColor(200, 255);
             auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
-            inputLabel.label = "INPUT";
+            inputLabel.label = "IN";
             inputLabel.alignment = TEXT_CENTER;
             inputLabel.enabled = false;
             inputLabel.highlighted = false;
@@ -799,7 +799,7 @@ void PannerUIBaseComponent::draw()
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
             auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
-            outputLabel.label = "OUTPUT";
+            outputLabel.label = "OUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
             outputLabel.highlighted = false;
