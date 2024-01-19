@@ -558,7 +558,8 @@ void PannerUIBaseComponent::draw()
             
             auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 }).withVolume(processor->outputMeterValuedB[output_channel_reordered]).draw();
             m.setColor(LABEL_TEXT_COLOR);
-            m.prepare<M1Label>({ 553 + 15 * cursorX, (cursorY + 1) * lineHeight, 60, 50 }).text(std::to_string(channelIndex + 1)).draw();
+            auto font = m.getCurrentFont();
+            font->drawString(std::to_string(channelIndex + 1), 553 + 15 * cursorX, (cursorY + 1) * lineHeight);
             
             cursorX ++;
             if (cursorX > 7) {

@@ -759,7 +759,9 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 void M1PannerAudioProcessor::timerCallback() {
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC.update(); // test for connection
-    pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain);
+    if (pannerOSC.IsConnected()) {
+        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain);
+    }
 }
 
 //==============================================================================
