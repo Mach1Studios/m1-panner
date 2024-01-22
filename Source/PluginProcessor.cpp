@@ -85,7 +85,8 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                     std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramEqualPowerEncodeMode, 1), TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
 #ifndef CUSTOM_CHANNEL_LAYOUT
                     std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputModeBFOAFUMA, Mach1EncodeInputModeMono),
-                    std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_60, Mach1EncodeOutputModeM1Spatial_8),
+                    // Note: Change init output to max bus size when new formats are introduced
+                    std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputModeM1Spatial_14, Mach1EncodeOutputModeM1Spatial_8),
 #endif
 #ifdef ITD_PARAMETERS
                     std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramITDActive, 1), TRANS("ITD"), pannerSettings.itdActive),
@@ -297,21 +298,25 @@ void M1PannerAudioProcessor::createLayout(){
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) &&
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)/* &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)) {
-                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)*/) {
+                            pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
+                            // Note: Change init output to max bus size when new formats are introduced
+                            //pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
                     }
                 } else if (getBus(false, 0)->getCurrentLayout().size() == 64) {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) &&
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32)/* &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)) {
-                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)*/) {
+                            pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
+                            // Note: Change init output to max bus size when new formats are introduced
+                            //pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
                     }
                 }
             }
@@ -458,7 +463,8 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
             configTester.setInputMode(static_cast<Mach1EncodeInputModeType>(inputEnum));
             // test each input, if the input has the number of channels as the input testing layout has move on to output testing
             if (layouts.getMainInputChannelSet().size() == configTester.getInputChannelsCount()) {
-                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_60; outputEnum++ ) {
+                // Note: Change the max for loop output to max bus size when new formats are introduced
+                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputModeM1Spatial_14; outputEnum++ ) {
                     // test each output
                    configTester.setOutputMode(static_cast<Mach1EncodeOutputModeType>(outputEnum));
                     if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount()){
