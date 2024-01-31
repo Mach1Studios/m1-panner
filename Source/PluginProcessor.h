@@ -74,7 +74,7 @@ public:
     void parameterChanged(const juce::String &parameterID, float newValue) override;
     std::vector<juce::AudioChannelSet::ChannelType> orderOfChans; // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
     std::vector<int> output_channel_indices;
-    void fillChannelOrderArray(int numOutputChannels);
+    void fillChannelOrderArray(int numM1OutputChannels);
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;

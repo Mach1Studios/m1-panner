@@ -478,19 +478,27 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
 }
 #endif
 
-void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
-    orderOfChans.resize(numOutputChannels);
-    output_channel_indices.resize(numOutputChannels);
-    
-    // get output layout
+void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels) {
+    // sets the maximum channels of the current host layout
     juce::AudioChannelSet chanset = getBus(false, 0)->getCurrentLayout();
+    int numHostOutputChannels = getBus(false, 0)->getNumberOfChannels();
     
-    if(!chanset.isDiscreteLayout() && numOutputChannels == 8) {
+    // sets the maximum channels of the current selected m1 output format
+    orderOfChans.resize(numM1OutputChannels);
+    output_channel_indices.resize(numM1OutputChannels);
+        
+    if(!chanset.isDiscreteLayout()) { // Check for DAW specific instructions
         // Layout for Pro Tools
         if (hostType.isProTools()){
             // TODO: expand this for other surround configs on PT
-            if (chanset.getDescription().contains(juce::String("7.1 Surround"))) {
-                // In PT ensure we are on a 7.1 bus
+            if (numHostOutputChannels == 4 && chanset.getDescription().contains(juce::String("Quad"))) {
+                // In PT reorder channels for quad bus
+                orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+                orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+                orderOfChans[2] = juce::AudioChannelSet::ChannelType::rightSurround;
+                orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurround;
+            } else if (numHostOutputChannels == 8 && chanset.getDescription().contains(juce::String("7.1 Surround"))) {
+                // In PT reorder channels for 7.1 bus
                 orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
                 orderOfChans[1] = juce::AudioChannelSet::ChannelType::centre;
                 orderOfChans[2] = juce::AudioChannelSet::ChannelType::right;
@@ -499,47 +507,44 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numOutputChannels) {
                 orderOfChans[5] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
                 orderOfChans[6] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
                 orderOfChans[7] = juce::AudioChannelSet::ChannelType::LFE;
+            } else if (chanset.getAmbisonicOrder() > 1) {
+                // 2nd order ambisonic or higher, sets channel index for host
+                int start_index = getChannelIndexInProcessBlockBuffer(true, 0, 0);
+                for (int i = 0; i < numHostOutputChannels; i ++) {
+                    orderOfChans[i] = chanset.getTypeOfChannel(start_index+i);
+                }
             } else {
                 // set the order index for plugins instantiated on buses that are higher channel counts than the encode is currently set to
-                for (int i = 0; i < numOutputChannels; i ++) {
+                for (int i = 0; i < numHostOutputChannels; i ++) {
                     orderOfChans[i] = chanset.getTypeOfChannel(i);
                 }
             }
         } else {
-            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
-            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
-            orderOfChans[2] = juce::AudioChannelSet::ChannelType::centre;
-            orderOfChans[3] = juce::AudioChannelSet::ChannelType::LFE;
-            orderOfChans[4] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
-            orderOfChans[5] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
-            orderOfChans[6] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
-            orderOfChans[7] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
-        }
-        if (chanset.size() >= 8) {
-            for (int i = 0; i < numOutputChannels; i ++) {
-                output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
+            if (numHostOutputChannels == 4 && chanset.getDescription().contains(juce::String("Quad"))) {
+                orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+                orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+                orderOfChans[2] = juce::AudioChannelSet::ChannelType::leftSurround;
+                orderOfChans[3] = juce::AudioChannelSet::ChannelType::rightSurround;
+            } else if (numHostOutputChannels == 8 && chanset.getDescription().contains(juce::String("7.1 Surround"))) {
+                orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
+                orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
+                orderOfChans[2] = juce::AudioChannelSet::ChannelType::centre;
+                orderOfChans[3] = juce::AudioChannelSet::ChannelType::LFE;
+                orderOfChans[4] = juce::AudioChannelSet::ChannelType::leftSurroundSide;
+                orderOfChans[5] = juce::AudioChannelSet::ChannelType::rightSurroundSide;
+                orderOfChans[6] = juce::AudioChannelSet::ChannelType::leftSurroundRear;
+                orderOfChans[7] = juce::AudioChannelSet::ChannelType::rightSurroundRear;
             }
         }
-    } else if (!chanset.isDiscreteLayout() && numOutputChannels == 4){
-        // Layout for Pro Tools
-        if (hostType.isProTools()) {
-            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
-            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
-            orderOfChans[2] = juce::AudioChannelSet::ChannelType::rightSurround;
-            orderOfChans[3] = juce::AudioChannelSet::ChannelType::leftSurround;
-        } else {
-            orderOfChans[0] = juce::AudioChannelSet::ChannelType::left;
-            orderOfChans[1] = juce::AudioChannelSet::ChannelType::right;
-            orderOfChans[2] = juce::AudioChannelSet::ChannelType::leftSurround;
-            orderOfChans[3] = juce::AudioChannelSet::ChannelType::rightSurround;
+        
+        // Apply orderOfChans
+        for (int i = 0; i < numHostOutputChannels; i ++) {
+            output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
         }
-        if (chanset.size() >= 4) {
-            for (int i = 0; i < numOutputChannels; i ++) {
-                output_channel_indices[i] = chanset.getChannelIndexForType(orderOfChans[i]);
-            }
-        }
+            
+    // is a discrete channel layout
     } else {
-        for (int i = 0; i < numOutputChannels; ++i){
+        for (int i = 0; i < numHostOutputChannels; ++i){
             orderOfChans[i] = juce::AudioChannelSet::ChannelType::discreteChannel0;
             output_channel_indices[i] = i;
         }
