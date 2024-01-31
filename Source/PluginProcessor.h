@@ -72,8 +72,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void parameterChanged(const juce::String &parameterID, float newValue) override;
-    std::vector<juce::AudioChannelSet::ChannelType> orderOfChans; // For Mach1Spatial 8 only (to deal with ProTools 7.1 channel order)
-    std::vector<int> output_channel_indices;
+    std::vector<int> output_channel_indices; // For reordering channel indices based on specific DAW hosts (example: reordering for ProTools 7.1 channel order)
     void fillChannelOrderArray(int numM1OutputChannels);
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
