@@ -414,6 +414,10 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
             createLayout();
         }
     }
+    // send a pannersettings update to helper since a parameter changed
+    if (pannerOSC.IsConnected()) {
+        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain);
+    }
 }
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
@@ -735,9 +739,6 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 void M1PannerAudioProcessor::timerCallback() {
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC.update(); // test for connection
-    if (pannerOSC.IsConnected()) {
-        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain);
-    }
 }
 
 //==============================================================================
