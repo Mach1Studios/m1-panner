@@ -116,6 +116,14 @@ void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageRec
 
 PannerOSC::~PannerOSC()
 {
+    if (port > 0) {
+        // send a "remove panner" message to helper
+        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
+        m.addInt32(port); // used for id
+        m.addInt32(-1);   // sending a -1 to indicate a disconnect command
+        juce::OSCSender::send(m);
+    }
+    
     juce::OSCSender::disconnect();
     juce::OSCReceiver::disconnect();
 }
@@ -144,6 +152,5 @@ bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevatio
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;
 	}
-
 	return false;
 }
