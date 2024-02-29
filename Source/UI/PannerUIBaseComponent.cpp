@@ -104,16 +104,6 @@ PannerUIBaseComponent::~PannerUIBaseComponent()
 void PannerUIBaseComponent::initialise()
 {
 	JuceMurkaBaseComponent::initialise();
-
-    std::string resourcesPath;
-    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
-    } else {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
-    }
-    printf("Resources Loaded From: %s \n" , resourcesPath.c_str());
-    m.setResourcesPath(resourcesPath);
-    
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
@@ -166,9 +156,6 @@ void PannerUIBaseComponent::draw()
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
-
-//    m.end();
-//    return;
 
 	// Changes the default knob reaction speed to mouse. The higher the slower.
 	float knobSpeed = 250;
