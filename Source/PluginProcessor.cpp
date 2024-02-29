@@ -376,25 +376,65 @@ void M1PannerAudioProcessor::releaseResources()
 void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
+        if (pannerSettings.azimuth != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.azimuth = newValue;
+        }
         parameters.getParameter(paramAzimuth)->setValue(newValue);
     } else if (parameterID == paramElevation) {
+        if (pannerSettings.elevation != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.elevation = newValue;
+        }
         parameters.getParameter(paramElevation)->setValue(newValue);
     } else if (parameterID == paramDiverge) {
+        if (pannerSettings.diverge != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.diverge = newValue;
+        }
         parameters.getParameter(paramDiverge)->setValue(newValue);
     } else if (parameterID == paramGain) {
+        if (pannerSettings.gain != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.gain = newValue;
+        }
         parameters.getParameter(paramGain)->setValue(newValue);
     } else if (parameterID == paramAutoOrbit) {
+        if (pannerSettings.autoOrbit != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.autoOrbit = newValue;
+        }
         parameters.getParameter(paramAutoOrbit)->setValue(newValue);
     } else if (parameterID == paramStereoOrbitAzimuth) {
+        if (pannerSettings.stereoOrbitAzimuth != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.stereoOrbitAzimuth = newValue;
+        }
         parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
     } else if (parameterID == paramStereoSpread) {
+        if (pannerSettings.stereoSpread != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.stereoSpread = newValue;
+        }
         parameters.getParameter(paramStereoSpread)->setValue(newValue);
     } else if (parameterID == paramStereoInputBalance) {
+        if (pannerSettings.stereoInputBalance != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.stereoInputBalance = newValue;
+        }
         parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
     } else if (parameterID == paramIsotropicEncodeMode) {
+        if (pannerSettings.isotropicMode != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.isotropicMode = newValue;
+        }
         parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
         // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
+        if (pannerSettings.equalpowerMode != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.equalpowerMode = newValue;
+        }
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
         // set in UI
     } else if (parameterID == paramInputMode) {
@@ -403,6 +443,10 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
             juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
             parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
+            if (pannerSettings.m1Encode.getInputMode() != inputType) {
+                // update pannerSettings value from host
+                pannerSettings.m1Encode.setInputMode(inputType);
+            }
             layoutCreated = false;
             createLayout();
         }
@@ -412,6 +456,10 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
             juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramOutputMode);
             parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
+            if (pannerSettings.m1Encode.getOutputMode() != outputType) {
+                // update pannerSettings value from host
+                pannerSettings.m1Encode.setOutputMode(outputType);
+            }
             layoutCreated = false;
             createLayout();
         }
