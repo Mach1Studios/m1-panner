@@ -85,7 +85,6 @@ void PannerUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &
 }
 
 void PannerUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float &d) {
-	// TODO: issue with automating X Y and R C
     if (x == 0 && y == 0) {
 		r = 0;
 		d = 0;
@@ -803,13 +802,6 @@ void PannerUIBaseComponent::draw()
             // add the outputs based on discovered number of channels from host
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
-            // Note: Uncomment dropdown size when new formats are introduced
-            /*
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
-            */
             
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                 m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
@@ -832,14 +824,6 @@ void PannerUIBaseComponent::draw()
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12);
                 } else if (outputDropdownMenu.selectedOption == 3) {
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
-                } else if (outputDropdownMenu.selectedOption == 4) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32);
-                } else if (outputDropdownMenu.selectedOption == 5) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
-                } else if (outputDropdownMenu.selectedOption == 6) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48);
-                } else if (outputDropdownMenu.selectedOption == 7) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
                 }
                 processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
             }
