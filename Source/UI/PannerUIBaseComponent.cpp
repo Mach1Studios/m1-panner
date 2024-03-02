@@ -14,87 +14,6 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     monitorState = &processor->monitorSettings;
 }
 
-struct Line2D {
-	Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {};
-
-	MurkaPoint p() const {
-		return { x, y };
-	}
-
-	MurkaPoint v() const {
-		return { x2 - x, y2 - y };
-	}
-
-	double x, y, x2, y2;
-};
-
-/// A factor suitable to be passed to line \arg a as argument to calculate
-/// the intersection point.
-/// \NOTE A value in the range [0, 1] indicates a point between
-/// a.p() and a.p() + a.v().
-/// \NOTE The result is std::numeric_limits<double>::quiet_NaN() if the
-/// lines do not intersect.
-/// \SEE  intersection_point
-inline double intersection(const Line2D& a, const Line2D& b) {
-	const double Precision = std::sqrt(std::numeric_limits<double>::epsilon());
-	double d = a.v().x * b.v().y - a.v().y * b.v().x;
-	if (std::abs(d) < Precision) return std::numeric_limits<double>::quiet_NaN();
-	else {
-		double n = (b.p().x - a.p().x) * b.v().y
-			- (b.p().y - a.p().y) * b.v().x;
-		return n / d;
-	}
-}
-
-/// The intersection of two lines.
-/// \NOTE The result is a Point2D having the coordinates
-///       std::numeric_limits<double>::quiet_NaN() if the lines do not
-///       intersect.
-inline MurkaPoint intersection_point(const Line2D& a, const Line2D& b) {
-	// Line2D has an operator () (double r) returning p() + r * v()
-	return a.p() + a.v() * (intersection(a, b));
-}
-
-void PannerUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &y) {
-	x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
-	y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
-	if (x > 100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ 100, -100, 100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (y > 100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, 100, 100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (x < -100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, -100, -100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (y < -100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, -100, 100, -100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-}
-
-void PannerUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float &d) {
-    if (x == 0 && y == 0) {
-		r = 0;
-		d = 0;
-	} else {
-		d = sqrtf(x*x + y * y) / sqrt(2.0);
-		float rotation_radian = atan2(x, y);//acos(x/d);
-		r = juce::radiansToDegrees(rotation_radian);
-	}
-}
-
 PannerUIBaseComponent::~PannerUIBaseComponent()
 {
 }
@@ -150,7 +69,7 @@ void PannerUIBaseComponent::draw()
     reticleField.draw();
     
     if (reticleField.results) {
-		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -183,7 +102,7 @@ void PannerUIBaseComponent::draw()
     
     if (xKnob.changed) {
 		// update this parameter here, notifying host
-		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
 	}
@@ -212,7 +131,7 @@ void PannerUIBaseComponent::draw()
     yKnob.draw();
     
     if (yKnob.changed) {
-        convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -242,7 +161,7 @@ void PannerUIBaseComponent::draw()
     azKnob.draw();
 
     if (azKnob.changed) {
-        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -272,7 +191,7 @@ void PannerUIBaseComponent::draw()
     dKnob.draw();
     
     if (dKnob.changed) {
-        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
