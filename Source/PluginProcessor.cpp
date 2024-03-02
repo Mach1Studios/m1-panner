@@ -368,64 +368,84 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (pannerSettings.azimuth != newValue) {
             // update pannerSettings value from host
             pannerSettings.azimuth = newValue;
+            parameters.getParameter(paramAzimuth)->setValue(newValue);
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        } else {
+            parameters.getParameter(paramAzimuth)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramAzimuth)->setValue(newValue);
     } else if (parameterID == paramElevation) {
         if (pannerSettings.elevation != newValue) {
             // update pannerSettings value from host
             pannerSettings.elevation = newValue;
+            parameters.getParameter(paramElevation)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramElevation)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramElevation)->setValue(newValue);
     } else if (parameterID == paramDiverge) {
         if (pannerSettings.diverge != newValue) {
             // update pannerSettings value from host
             pannerSettings.diverge = newValue;
+            parameters.getParameter(paramDiverge)->setValue(newValue);
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        } else {
+            parameters.getParameter(paramDiverge)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramDiverge)->setValue(newValue);
     } else if (parameterID == paramGain) {
         if (pannerSettings.gain != newValue) {
             // update pannerSettings value from host
             pannerSettings.gain = newValue;
+            parameters.getParameter(paramGain)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramGain)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramGain)->setValue(newValue);
     } else if (parameterID == paramAutoOrbit) {
         if (pannerSettings.autoOrbit != newValue) {
             // update pannerSettings value from host
             pannerSettings.autoOrbit = newValue;
+            parameters.getParameter(paramAutoOrbit)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramAutoOrbit)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramAutoOrbit)->setValue(newValue);
     } else if (parameterID == paramStereoOrbitAzimuth) {
         if (pannerSettings.stereoOrbitAzimuth != newValue) {
             // update pannerSettings value from host
             pannerSettings.stereoOrbitAzimuth = newValue;
+            parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
     } else if (parameterID == paramStereoSpread) {
         if (pannerSettings.stereoSpread != newValue) {
             // update pannerSettings value from host
             pannerSettings.stereoSpread = newValue;
+            parameters.getParameter(paramStereoSpread)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramStereoSpread)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramStereoSpread)->setValue(newValue);
     } else if (parameterID == paramStereoInputBalance) {
         if (pannerSettings.stereoInputBalance != newValue) {
             // update pannerSettings value from host
             pannerSettings.stereoInputBalance = newValue;
+            parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramStereoInputBalance)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
     } else if (parameterID == paramIsotropicEncodeMode) {
         if (pannerSettings.isotropicMode != newValue) {
             // update pannerSettings value from host
             pannerSettings.isotropicMode = newValue;
+            parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
-        // set in UI
     } else if (parameterID == paramEqualPowerEncodeMode) {
         if (pannerSettings.equalpowerMode != newValue) {
             // update pannerSettings value from host
             pannerSettings.equalpowerMode = newValue;
+            parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(newValue);
         }
-        parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
-        // set in UI
     } else if (parameterID == paramInputMode) {
         // stop pro tools from using plugin data to change input after creation
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
@@ -794,6 +814,46 @@ bool M1PannerAudioProcessor::hasEditor() const
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
     return new M1PannerAudioProcessorEditor (*this);
+}
+
+void M1PannerAudioProcessor::convertRCtoXYRaw(float r, float d, float &x, float &y) {
+    x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
+    y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
+    if (x > 100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { 100, -100, 100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (y > 100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, 100, 100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (x < -100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, -100, -100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (y < -100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, -100, 100, -100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+}
+
+void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float &r, float &d) {
+    if (x == 0 && y == 0) {
+        r = 0;
+        d = 0;
+    } else {
+        d = sqrtf(x*x + y * y) / sqrt(2.0);
+        float rotation_radian = atan2(x, y);//acos(x/d);
+        r = juce::radiansToDegrees(rotation_radian);
+    }
 }
 
 //==============================================================================
