@@ -163,18 +163,15 @@ public:
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
     
-    // UI related functions
+    // UI related utility functions
     struct Line2D {
         Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {};
-        
         MurkaPoint p() const {
             return { x, y };
         }
-        
         MurkaPoint v() const {
             return { x2 - x, y2 - y };
         }
-        
         double x, y, x2, y2;
     };
 

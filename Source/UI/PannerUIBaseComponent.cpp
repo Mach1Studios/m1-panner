@@ -57,6 +57,7 @@ void PannerUIBaseComponent::draw()
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
+    // TODO: look into this update; make the update related to the processor->parameterChanged() call to capture host side calls
     reticleField.m1encodeUpdate = [&]() {
         juce::AudioPlayHead::CurrentPositionInfo currentPosition;
         if (processor->getPlayHead() != nullptr) {
