@@ -442,43 +442,35 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (pannerSettings.isotropicMode != (bool)newValue) {
             // update pannerSettings value from host
             pannerSettings.isotropicMode = (bool)newValue;
-            parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
-        } else {
-            parameters.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost((bool)newValue);
         }
+        parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramEqualPowerEncodeMode) {
-        if (pannerSettings.isotropicMode == true) {
-            if (pannerSettings.equalpowerMode != (bool)newValue) {
-                // update pannerSettings value from host
-                pannerSettings.equalpowerMode = (bool)newValue;
-                parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
-            } else {
-                parameters.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost((bool)newValue);
-            }
+        if (pannerSettings.equalpowerMode != (bool)newValue) {
+            // update pannerSettings value from host
+            pannerSettings.equalpowerMode = (bool)newValue;
         }
+        parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramInputMode) {
         // stop pro tools from using plugin data to change input after creation
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
-            juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
-            parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
             if (pannerSettings.m1Encode.getInputMode() != inputType) {
                 // update pannerSettings value from host
                 pannerSettings.m1Encode.setInputMode(inputType);
             }
+            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
     } else if (parameterID == paramOutputMode) {
         // stop pro tools from using plugin data to change output after creation
         if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8)) {
-            juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramOutputMode);
-            parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
             if (pannerSettings.m1Encode.getOutputMode() != outputType) {
                 // update pannerSettings value from host
                 pannerSettings.m1Encode.setOutputMode(outputType);
             }
+            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
