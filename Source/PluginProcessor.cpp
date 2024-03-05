@@ -477,7 +477,11 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
     }
     // send a pannersettings update to helper since a parameter changed
     if (pannerOSC.IsConnected()) {
-        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain);
+        juce::OSCColour osc_colour;
+        if (track_properties.colour.getAlpha() != 0) {
+            osc_colour.fromInt32(track_properties.colour.getARGB());
+        }
+        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, track_properties.name.toStdString(), osc_colour);
     }
 }
 

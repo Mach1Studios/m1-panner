@@ -3,23 +3,26 @@
 #include "Mach1Encode.h"
 
 struct PannerSettings {
+    int port = 0;
+    std::string displayName = "";
+    
     /// This object contains:
     /// - `Mach1EncodeInputModeType`
     /// - `Mach1EncodeOutputModeType`
     /// - `Mach1EncodePannerMode`
     Mach1Encode m1Encode;
-
+    
     float x = 0.;
-	float y = 70.7;
-	float azimuth = 0.;
+    float y = 70.7;
+    float azimuth = 0.;
     float elevation = 0.; // also known as `z`
     float diverge = 50.;
-	float gain = 6.;
-	float stereoOrbitAzimuth = 0.;
-	float stereoSpread = 50.;
-	float stereoInputBalance = 0.;
+    float gain = 6.;
+    float stereoOrbitAzimuth = 0.;
+    float stereoSpread = 50.;
+    float stereoInputBalance = 0.;
     bool autoOrbit = true;
-	bool overlay = false;
+    bool overlay = false;
     bool isotropicMode = false;
     bool equalpowerMode = false;
     
@@ -31,11 +34,11 @@ struct PannerSettings {
 };
 
 struct MixerSettings {
-	int monitor_input_channel_count;
-	int monitor_output_channel_count;
-	float yaw;
-	float pitch;
-	float roll;
+    int monitor_input_channel_count;
+    int monitor_output_channel_count;
+    float yaw;
+    float pitch;
+    float roll;
     int monitor_mode;
 
     bool yawActive, pitchActive, rollActive = true;
@@ -51,4 +54,14 @@ struct HostTimelineData {
     // double loopStartPositionInSeconds; // for more detailed indication on timeline indicator
     // double loopEndPositionInSeconds; // for more detailed indication on timeline indicator
     // double editOriginPositionInSeconds;
+};
+
+struct find_panner {
+    int port;
+
+    find_panner(int port) : port(port) {}
+
+    bool operator()(const PannerSettings& p) const {
+        return p.port == port;
+    }
 };

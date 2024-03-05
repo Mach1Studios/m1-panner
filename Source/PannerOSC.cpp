@@ -138,7 +138,7 @@ bool PannerOSC::IsConnected()
 	return isConnected;
 }
 
-bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain)
+bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain, std::string displayName, juce::OSCColour colour)
 {
 	if (port > 0) {
 		// Each call will transmit an OSC message with the relevant current panner settings
@@ -149,6 +149,12 @@ bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevatio
 		m.addFloat32(elevation); // expected degrees -90->90
 		m.addFloat32(diverge);   // expected normalized -100->100
 		m.addFloat32(gain);      // expected as dB value -90->24
+        if (displayName != "") {
+            m.addString(displayName);
+        }
+        if (colour.alpha != 0 ) {
+            m.addColour(colour);
+        }
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;
 	}

@@ -151,6 +151,8 @@ public:
     MixerSettings monitorSettings;
     HostTimelineData hostTimelineData;
     juce::PluginHostType hostType;
+    void updateTrackProperties(const TrackProperties& properties) override { track_properties = properties; }
+    TrackProperties getTrackProperties() { return track_properties; }
     bool layoutCreated = false;
 
     // update m1encode obj points
@@ -195,6 +197,7 @@ public:
     void convertXYtoRCRaw(float x, float y, float &r, float &d);
    
 private:
+    TrackProperties track_properties;
     void createLayout();
     
     juce::UndoManager mUndoManager;
