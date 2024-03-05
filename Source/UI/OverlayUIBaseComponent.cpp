@@ -164,7 +164,6 @@ void OverlayUIBaseComponent::draw()
 			convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
             processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
             processor->parameterChanged(processor->paramElevation, pannerState->elevation);
-			//?
 		}
 		reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
 	}
@@ -198,7 +197,6 @@ void OverlayUIBaseComponent::draw()
             // update this parameter here, notifying host
             convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
             processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
-            //?
         }
         
 		labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);
