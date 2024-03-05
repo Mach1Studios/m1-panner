@@ -20,5 +20,5 @@ public:
 	void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
 	bool Send(const juce::OSCMessage& msg);
 	bool IsConnected();
-    bool sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain);
+    bool sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain, std::string displayName, juce::OSCColour colour);
 };
