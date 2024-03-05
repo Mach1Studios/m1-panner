@@ -152,7 +152,7 @@ public:
     HostTimelineData hostTimelineData;
     juce::PluginHostType hostType;
     bool layoutCreated = false;
-    
+
     // update m1encode obj points
     void updateM1EncodePoints();
     
@@ -162,6 +162,37 @@ public:
     
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer
+    
+    // UI related utility functions
+    struct Line2D {
+        Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {};
+        MurkaPoint p() const {
+            return { x, y };
+        }
+        MurkaPoint v() const {
+            return { x2 - x, y2 - y };
+        }
+        double x, y, x2, y2;
+    };
+
+    inline double intersection(const Line2D& a, const Line2D& b) {
+        const double Precision = std::sqrt(std::numeric_limits<double>::epsilon());
+        double d = a.v().x * b.v().y - a.v().y * b.v().x;
+        if (std::abs(d) < Precision) return std::numeric_limits<double>::quiet_NaN();
+        else {
+            double n = (b.p().x - a.p().x) * b.v().y
+                - (b.p().y - a.p().y) * b.v().x;
+            return n / d;
+        }
+    }
+
+    inline MurkaPoint intersection_point(const Line2D& a, const Line2D& b) {
+        // Line2D has an operator () (double r) returning p() + r * v()
+        return a.p() + a.v() * (intersection(a, b));
+    }
+    
+    void convertRCtoXYRaw(float r, float d, float &x, float &y);
+    void convertXYtoRCRaw(float x, float y, float &r, float &d);
    
 private:
     void createLayout();

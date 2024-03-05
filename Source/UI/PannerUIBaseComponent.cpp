@@ -14,88 +14,6 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     monitorState = &processor->monitorSettings;
 }
 
-struct Line2D {
-	Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {};
-
-	MurkaPoint p() const {
-		return { x, y };
-	}
-
-	MurkaPoint v() const {
-		return { x2 - x, y2 - y };
-	}
-
-	double x, y, x2, y2;
-};
-
-/// A factor suitable to be passed to line \arg a as argument to calculate
-/// the intersection point.
-/// \NOTE A value in the range [0, 1] indicates a point between
-/// a.p() and a.p() + a.v().
-/// \NOTE The result is std::numeric_limits<double>::quiet_NaN() if the
-/// lines do not intersect.
-/// \SEE  intersection_point
-inline double intersection(const Line2D& a, const Line2D& b) {
-	const double Precision = std::sqrt(std::numeric_limits<double>::epsilon());
-	double d = a.v().x * b.v().y - a.v().y * b.v().x;
-	if (std::abs(d) < Precision) return std::numeric_limits<double>::quiet_NaN();
-	else {
-		double n = (b.p().x - a.p().x) * b.v().y
-			- (b.p().y - a.p().y) * b.v().x;
-		return n / d;
-	}
-}
-
-/// The intersection of two lines.
-/// \NOTE The result is a Point2D having the coordinates
-///       std::numeric_limits<double>::quiet_NaN() if the lines do not
-///       intersect.
-inline MurkaPoint intersection_point(const Line2D& a, const Line2D& b) {
-	// Line2D has an operator () (double r) returning p() + r * v()
-	return a.p() + a.v() * (intersection(a, b));
-}
-
-void PannerUIBaseComponent::convertRCtoXYRaw(float r, float d, float &x, float &y) {
-	x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
-	y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
-	if (x > 100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ 100, -100, 100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (y > 100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, 100, 100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (x < -100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, -100, -100, 100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-	if (y < -100) {
-		auto intersection = intersection_point({ 0, 0, x, y },
-			{ -100, -100, 100, -100 });
-		x = intersection.x;
-		y = intersection.y;
-	}
-}
-
-void PannerUIBaseComponent::convertXYtoRCRaw(float x, float y, float &r, float &d) {
-	// TODO: issue with automating X Y and R C
-    if (x == 0 && y == 0) {
-		r = 0;
-		d = 0;
-	} else {
-		d = sqrtf(x*x + y * y) / sqrt(2.0);
-		float rotation_radian = atan2(x, y);//acos(x/d);
-		r = juce::radiansToDegrees(rotation_radian);
-	}
-}
-
 PannerUIBaseComponent::~PannerUIBaseComponent()
 {
 }
@@ -104,16 +22,6 @@ PannerUIBaseComponent::~PannerUIBaseComponent()
 void PannerUIBaseComponent::initialise()
 {
 	JuceMurkaBaseComponent::initialise();
-
-    std::string resourcesPath;
-    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0) {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
-    } else {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
-    }
-    printf("Resources Loaded From: %s \n" , resourcesPath.c_str());
-    m.setResourcesPath(resourcesPath);
-    
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
@@ -149,6 +57,7 @@ void PannerUIBaseComponent::draw()
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
+    // TODO: look into this update; make the update related to the processor->parameterChanged() call to capture host side calls
     reticleField.m1encodeUpdate = [&]() {
         juce::AudioPlayHead::CurrentPositionInfo currentPosition;
         if (processor->getPlayHead() != nullptr) {
@@ -161,14 +70,11 @@ void PannerUIBaseComponent::draw()
     reticleField.draw();
     
     if (reticleField.results) {
-		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
-
-//    m.end();
-//    return;
 
 	// Changes the default knob reaction speed to mouse. The higher the slower.
 	float knobSpeed = 250;
@@ -197,7 +103,7 @@ void PannerUIBaseComponent::draw()
     
     if (xKnob.changed) {
 		// update this parameter here, notifying host
-		convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
 	}
@@ -226,7 +132,7 @@ void PannerUIBaseComponent::draw()
     yKnob.draw();
     
     if (yKnob.changed) {
-        convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -256,7 +162,7 @@ void PannerUIBaseComponent::draw()
     azKnob.draw();
 
     if (azKnob.changed) {
-        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -286,7 +192,7 @@ void PannerUIBaseComponent::draw()
     dKnob.draw();
     
     if (dKnob.changed) {
-        convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
         processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
     }
@@ -816,13 +722,6 @@ void PannerUIBaseComponent::draw()
             // add the outputs based on discovered number of channels from host
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14) output_options.push_back("M1Spatial-14");
-            // Note: Uncomment dropdown size when new formats are introduced
-            /*
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 32) output_options.push_back("M1Spatial-32");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 36) output_options.push_back("M1Spatial-36");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 48) output_options.push_back("M1Spatial-48");
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 60) output_options.push_back("M1Spatial-60");
-            */
             
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 + 20,
                 m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
@@ -845,14 +744,6 @@ void PannerUIBaseComponent::draw()
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12);
                 } else if (outputDropdownMenu.selectedOption == 3) {
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
-                } else if (outputDropdownMenu.selectedOption == 4) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32);
-                } else if (outputDropdownMenu.selectedOption == 5) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
-                } else if (outputDropdownMenu.selectedOption == 6) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48);
-                } else if (outputDropdownMenu.selectedOption == 7) {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
                 }
                 processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
             }

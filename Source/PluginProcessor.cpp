@@ -11,11 +11,10 @@
 
 /*
  Architecture:
-    - all changes to I/O should be made to pannerSettings first
-    - use parameterChanged() with the pannerSettings values
+    - the parameterChanged() updates the pannerSettings values
     - parameterChanged() updates the i/o layout
     - parameterChanged() checks if matched with pannerSettings and otherwise updates this too
-    parameters expect normalized 0->1 where all the rest of the i/o expects int
+    - parameters expect normalized 0->1 except the i/o which expects int
  */
 
 juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
@@ -55,7 +54,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDiverge, 1),
                                                             TRANS("Diverge"),
-                                                            juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.diverge, "", juce::AudioProcessorParameter::genericParameter,
+                                                            juce::NormalisableRange<float>(-100.0f, 100.0f, 0.01f), pannerSettings.diverge, "", juce::AudioProcessorParameter::genericParameter,
                                                             [](float v, int) { return juce::String (v, 1); },
                                                             [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
                     std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramGain, 1),
@@ -243,8 +242,8 @@ void M1PannerAudioProcessor::createLayout(){
             // update the pannerSettings if there is a mismatch
             
             // I/O Concept
-            // Inputs: for this plugin we are more literal about inputs, only allowing the number of channels available by host to dictate the input mode
-            // Outputs: for this plugin we allow the m1Encode object to have a higher channel count output mode than what the host allows to support more configurations on channel specific hosts
+            // Inputs: The inputs for this plugin are more literal, only allowing the number of channels available by host to dictate the input mode
+            // Outputs: The outputs for this plugin allows the m1Encode object to have a higher channel count output mode than what the host allows to support more configurations on channel specific hosts
 
             /// INPUTS
             if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode()) {
@@ -300,25 +299,15 @@ void M1PannerAudioProcessor::createLayout(){
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)/* &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36)*/) {
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)) {
                             pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
-                            // Note: Change init output to max bus size when new formats are introduced
-                            //pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36);
                     }
                 } else if (getBus(false, 0)->getCurrentLayout().size() == 64) {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8) &&
                         (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_32)/* &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_36) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_48) &&
-                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60)*/) {
+                        (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14)) {
                             pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
-                            // Note: Change init output to max bus size when new formats are introduced
-                            //pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_60);
                     }
                 }
             }
@@ -376,42 +365,112 @@ void M1PannerAudioProcessor::releaseResources()
 void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
-        parameters.getParameter(paramAzimuth)->setValue(newValue);
+        if (pannerSettings.azimuth != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.azimuth = newValue;
+            parameters.getParameter(paramAzimuth)->setValue(newValue);
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        } else {
+            parameters.getParameter(paramAzimuth)->setValueNotifyingHost(newValue);
+        }
     } else if (parameterID == paramElevation) {
-        parameters.getParameter(paramElevation)->setValue(newValue);
+        if (pannerSettings.elevation != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.elevation = newValue;
+            parameters.getParameter(paramElevation)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramElevation)->setValueNotifyingHost(newValue);
+        }
     } else if (parameterID == paramDiverge) {
-        parameters.getParameter(paramDiverge)->setValue(newValue);
+        if (pannerSettings.diverge != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.diverge = newValue;
+            parameters.getParameter(paramDiverge)->setValue(newValue);
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        } else {
+            parameters.getParameter(paramDiverge)->setValueNotifyingHost(newValue);
+        }
     } else if (parameterID == paramGain) {
-        parameters.getParameter(paramGain)->setValue(newValue);
+        if (pannerSettings.gain != newValue) {
+            // update pannerSettings value from host
+            pannerSettings.gain = newValue;
+            parameters.getParameter(paramGain)->setValue(newValue);
+        } else {
+            parameters.getParameter(paramGain)->setValueNotifyingHost(newValue);
+        }
     } else if (parameterID == paramAutoOrbit) {
-        parameters.getParameter(paramAutoOrbit)->setValue(newValue);
+        if (pannerSettings.m1Encode.getInputMode() == 1) { // if stereo mode
+            if (pannerSettings.autoOrbit != (bool)newValue) {
+                // update pannerSettings value from host
+                pannerSettings.autoOrbit = (bool)newValue;
+                parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
+            } else {
+                parameters.getParameter(paramAutoOrbit)->setValueNotifyingHost((bool)newValue);
+            }
+        }
     } else if (parameterID == paramStereoOrbitAzimuth) {
-        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
+        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
+            if (pannerSettings.stereoOrbitAzimuth != newValue) {
+                // update pannerSettings value from host
+                pannerSettings.stereoOrbitAzimuth = newValue;
+                parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
+            } else {
+                parameters.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(newValue);
+            }
+        }
     } else if (parameterID == paramStereoSpread) {
-        parameters.getParameter(paramStereoSpread)->setValue(newValue);
+        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
+            if (pannerSettings.stereoSpread != newValue) {
+                // update pannerSettings value from host
+                pannerSettings.stereoSpread = newValue;
+                parameters.getParameter(paramStereoSpread)->setValue(newValue);
+            } else {
+                parameters.getParameter(paramStereoSpread)->setValueNotifyingHost(newValue);
+            }
+        }
     } else if (parameterID == paramStereoInputBalance) {
-        parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
+        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
+            if (pannerSettings.stereoInputBalance != newValue) {
+                // update pannerSettings value from host
+                pannerSettings.stereoInputBalance = newValue;
+                parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
+            } else {
+                parameters.getParameter(paramStereoInputBalance)->setValueNotifyingHost(newValue);
+            }
+        }
     } else if (parameterID == paramIsotropicEncodeMode) {
-        parameters.getParameter(paramIsotropicEncodeMode)->setValue(newValue);
-        // set in UI
+        if (pannerSettings.isotropicMode != (bool)newValue) {
+            // update pannerSettings value from host
+            pannerSettings.isotropicMode = (bool)newValue;
+        }
+        parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramEqualPowerEncodeMode) {
-        parameters.getParameter(paramEqualPowerEncodeMode)->setValue(newValue);
-        // set in UI
+        if (pannerSettings.equalpowerMode != (bool)newValue) {
+            // update pannerSettings value from host
+            pannerSettings.equalpowerMode = (bool)newValue;
+        }
+        parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramInputMode) {
         // stop pro tools from using plugin data to change input after creation
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
-            juce::RangedAudioParameter* parameterInputMode = parameters.getParameter(paramInputMode);
-            parameterInputMode->setValue(parameterInputMode->convertTo0to1(newValue));
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
+            if (pannerSettings.m1Encode.getInputMode() != inputType) {
+                // update pannerSettings value from host
+                pannerSettings.m1Encode.setInputMode(inputType);
+            }
+            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
     } else if (parameterID == paramOutputMode) {
         // stop pro tools from using plugin data to change output after creation
         if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8)) {
-            juce::RangedAudioParameter* parameterOutputMode = parameters.getParameter(paramOutputMode);
-            parameterOutputMode->setValue(parameterOutputMode->convertTo0to1(newValue));
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
+            if (pannerSettings.m1Encode.getOutputMode() != outputType) {
+                // update pannerSettings value from host
+                pannerSettings.m1Encode.setOutputMode(outputType);
+            }
+            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
@@ -757,6 +816,46 @@ bool M1PannerAudioProcessor::hasEditor() const
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
     return new M1PannerAudioProcessorEditor (*this);
+}
+
+void M1PannerAudioProcessor::convertRCtoXYRaw(float r, float d, float &x, float &y) {
+    x = cos(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
+    y = sin(juce::degreesToRadians(-r + 90)) * d * sqrt(2);
+    if (x > 100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { 100, -100, 100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (y > 100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, 100, 100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (x < -100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, -100, -100, 100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+    if (y < -100) {
+        auto intersection = intersection_point({ 0, 0, x, y },
+            { -100, -100, 100, -100 });
+        x = intersection.x;
+        y = intersection.y;
+    }
+}
+
+void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float &r, float &d) {
+    if (x == 0 && y == 0) {
+        r = 0;
+        d = 0;
+    } else {
+        d = sqrtf(x*x + y * y) / sqrt(2.0);
+        float rotation_radian = atan2(x, y);//acos(x/d);
+        r = juce::radiansToDegrees(rotation_radian);
+    }
 }
 
 //==============================================================================
