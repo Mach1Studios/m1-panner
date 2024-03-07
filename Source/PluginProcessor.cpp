@@ -365,90 +365,44 @@ void M1PannerAudioProcessor::releaseResources()
 void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
     if (parameterID == paramAzimuth) {
-        if (pannerSettings.azimuth != newValue) {
-            // update pannerSettings value from host
-            pannerSettings.azimuth = newValue;
-            parameters.getParameter(paramAzimuth)->setValue(newValue);
-            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
-        } else {
-            parameters.getParameter(paramAzimuth)->setValueNotifyingHost(newValue);
-        }
+        pannerSettings.azimuth = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramAzimuth)->setValue(newValue);
+        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
     } else if (parameterID == paramElevation) {
-        if (pannerSettings.elevation != newValue) {
-            // update pannerSettings value from host
-            pannerSettings.elevation = newValue;
-            parameters.getParameter(paramElevation)->setValue(newValue);
-        } else {
-            parameters.getParameter(paramElevation)->setValueNotifyingHost(newValue);
-        }
+        pannerSettings.elevation = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramElevation)->setValue(newValue);
     } else if (parameterID == paramDiverge) {
-        if (pannerSettings.diverge != newValue) {
-            // update pannerSettings value from host
-            pannerSettings.diverge = newValue;
-            parameters.getParameter(paramDiverge)->setValue(newValue);
-            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
-        } else {
-            parameters.getParameter(paramDiverge)->setValueNotifyingHost(newValue);
-        }
+        pannerSettings.diverge = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramDiverge)->setValue(newValue);
+        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
     } else if (parameterID == paramGain) {
-        if (pannerSettings.gain != newValue) {
-            // update pannerSettings value from host
-            pannerSettings.gain = newValue;
-            parameters.getParameter(paramGain)->setValue(newValue);
-        } else {
-            parameters.getParameter(paramGain)->setValueNotifyingHost(newValue);
-        }
+        pannerSettings.gain = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramGain)->setValue(newValue);
     } else if (parameterID == paramAutoOrbit) {
         if (pannerSettings.m1Encode.getInputMode() == 1) { // if stereo mode
-            if (pannerSettings.autoOrbit != (bool)newValue) {
-                // update pannerSettings value from host
-                pannerSettings.autoOrbit = (bool)newValue;
-                parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
-            } else {
-                parameters.getParameter(paramAutoOrbit)->setValueNotifyingHost((bool)newValue);
-            }
+            pannerSettings.autoOrbit = (bool)newValue; // update pannerSettings value from host
+            parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
         }
     } else if (parameterID == paramStereoOrbitAzimuth) {
         if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
-            if (pannerSettings.stereoOrbitAzimuth != newValue) {
-                // update pannerSettings value from host
-                pannerSettings.stereoOrbitAzimuth = newValue;
-                parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
-            } else {
-                parameters.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(newValue);
-            }
+            pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
+            parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
         }
     } else if (parameterID == paramStereoSpread) {
         if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
-            if (pannerSettings.stereoSpread != newValue) {
-                // update pannerSettings value from host
-                pannerSettings.stereoSpread = newValue;
-                parameters.getParameter(paramStereoSpread)->setValue(newValue);
-            } else {
-                parameters.getParameter(paramStereoSpread)->setValueNotifyingHost(newValue);
-            }
+            pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
+            parameters.getParameter(paramStereoSpread)->setValue(newValue);
         }
     } else if (parameterID == paramStereoInputBalance) {
         if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false) { // if stereo mode and auto orbit is off
-            if (pannerSettings.stereoInputBalance != newValue) {
-                // update pannerSettings value from host
-                pannerSettings.stereoInputBalance = newValue;
-                parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
-            } else {
-                parameters.getParameter(paramStereoInputBalance)->setValueNotifyingHost(newValue);
-            }
+            pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
+            parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
         }
     } else if (parameterID == paramIsotropicEncodeMode) {
-        if (pannerSettings.isotropicMode != (bool)newValue) {
-            // update pannerSettings value from host
-            pannerSettings.isotropicMode = (bool)newValue;
-        }
+        pannerSettings.isotropicMode = (bool)newValue; // update pannerSettings value from host
         parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramEqualPowerEncodeMode) {
-        if (pannerSettings.equalpowerMode != (bool)newValue) {
-            // update pannerSettings value from host
-            pannerSettings.equalpowerMode = (bool)newValue;
-        }
+        pannerSettings.equalpowerMode = (bool)newValue; // update pannerSettings value from host
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
     } else if (parameterID == paramInputMode) {
         // stop pro tools from using plugin data to change input after creation
@@ -650,7 +604,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // Set m1Encode obj values for processing
-    updateM1EncodePoints();
+    updateM1EncodePoints(); // TODO: maybe needs some thread safety?
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
     // vector of input channel buffers
