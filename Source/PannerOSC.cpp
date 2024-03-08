@@ -120,7 +120,7 @@ PannerOSC::~PannerOSC()
         // send a "remove panner" message to helper
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
         m.addInt32(port); // used for id
-        m.addInt32(-1);   // sending a -1 to indicate a disconnect command
+        m.addInt32(-1);   // sending a -1 to indicate a disconnect command via the state
         juce::OSCSender::send(m);
     }
     
@@ -138,22 +138,37 @@ bool PannerOSC::IsConnected()
 	return isConnected;
 }
 
-bool PannerOSC::sendPannerSettings(int input_mode, float azimuth, float elevation, float diverge, float gain, std::string displayName, juce::OSCColour colour)
+bool PannerOSC::sendPannerSettings(int state)
+{
+    if (port > 0) {
+        // Each call will transmit an OSC message with the relevant current panner settings
+        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
+        m.addInt32(port);        // used for id
+        m.addInt32(state);       // used for panner interactive state
+        isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
+        return true;
+    }
+    return false;
+}
+
+bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread)
 {
 	if (port > 0) {
 		// Each call will transmit an OSC message with the relevant current panner settings
 		juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
 		m.addInt32(port);        // used for id
+        m.addInt32(state);       // used for panner interactive state
+        m.addString(displayName);
+        m.addColour(colour);
 		m.addInt32(input_mode);  // int of enum `Mach1EncodeInputModeType`
 		m.addFloat32(azimuth);   // expected degrees -180->180
 		m.addFloat32(elevation); // expected degrees -90->90
 		m.addFloat32(diverge);   // expected normalized -100->100
 		m.addFloat32(gain);      // expected as dB value -90->24
-        if (displayName != "") {
-            m.addString(displayName);
-        }
-        if (colour.alpha != 0 ) {
-            m.addColour(colour);
+        if (input_mode == 1) {
+            // send stereo parameters
+            m.addFloat32(st_azimuth); // expected degrees -180->180
+            m.addFloat32(st_spread);  // expected normalized -100->100
         }
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;
