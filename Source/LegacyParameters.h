@@ -129,7 +129,7 @@ const juce::String paramIsotropicEncode = "IsotropicEncode";
 const juce::String paramPannerMode = "PannerMode";
 const juce::String paramQuadMode = "QuadMode";
 const juce::String paramSurroundMode = "SurroundMode";
-//    const String paramAmbiMode = "AmbiMode";
+//const String paramAmbiMode = "AmbiMode";
 //const String paramOverlay = "Overlay";
 const juce::String paramGhost = "Ghost";
 const juce::String paramEqualPowerEncode = "EqualPowerEncode";
@@ -214,7 +214,7 @@ void legacyParametersRecall(const void* data, int sizeInBytes, juce::AudioProces
         *stereoAutoOrbitParameter = getParameterFromValueTreeState(mState, paramAutoOrbit);
         *isotropicEncodeParameter = getParameterFromValueTreeState(mState, paramIsotropicEncode);
         //*pannerModeParameter = getParameterFromValueTreeState(mState, paramPannerMode);
-// TODO: Get QUAD mode and apply to new panner
+        // TODO: Get QUAD mode and apply to new panner
         *quadModeParameter = getParameterFromValueTreeState(mState, paramQuadMode);
         //*surroundModeParameter = getParameterFromValueTreeState(mState, paramSurroundMode);
         *divergeParameter = getParameterFromValueTreeState(mState, paramDiverge);
