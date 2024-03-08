@@ -6,6 +6,20 @@ struct PannerSettings {
     int port = 0;
     std::string displayName = "";
     
+    /// State Definitions:
+    ///  - -1 = mark for deletion
+    ///  -  0 = off / inactive
+    ///  -  1 = on / active
+    ///  -  2 = focused
+    int state = 0;
+    
+    struct Color {
+        uint8 r = 0;
+        uint8 g = 0;
+        uint8 b = 0;
+        uint8 a = 0;
+    } color;
+    
     /// This object contains:
     /// - `Mach1EncodeInputModeType`
     /// - `Mach1EncodeOutputModeType`

@@ -152,6 +152,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
+    pannerSettings.state = -1;
     stopTimer();
 }
 
@@ -408,11 +409,9 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         // stop pro tools from using plugin data to change input after creation
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
-            if (pannerSettings.m1Encode.getInputMode() != inputType) {
-                // update pannerSettings value from host
-                pannerSettings.m1Encode.setInputMode(inputType);
-            }
-            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
+            pannerSettings.m1Encode.setInputMode(inputType);
+            updateM1EncodePoints(); // call to update the m1encode obj for new point counts
+            parameters.getParameter(paramInputMode)->setValue(newValue);
             layoutCreated = false;
             createLayout();
         }
@@ -420,11 +419,9 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         // stop pro tools from using plugin data to change output after creation
         if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8)) {
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
-            if (pannerSettings.m1Encode.getOutputMode() != outputType) {
-                // update pannerSettings value from host
-                pannerSettings.m1Encode.setOutputMode(outputType);
-            }
-            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
+            pannerSettings.m1Encode.setOutputMode(outputType);
+            updateM1EncodePoints(); // call to update the m1encode obj for new point counts
+            parameters.getParameter(paramOutputMode)->setValue(newValue);
             layoutCreated = false;
             createLayout();
         }
@@ -435,7 +432,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (track_properties.colour.getAlpha() != 0) {
             osc_colour.fromInt32(track_properties.colour.getARGB());
         }
-        pannerOSC.sendPannerSettings((int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, track_properties.name.toStdString(), osc_colour);
+        pannerOSC.sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
     }
 }
 
@@ -851,7 +848,12 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
 
-    smoothedChannelCoeffs.resize(inputChannelsCount);
+    smoothedChannelCoeffs.resize(inputChannelsCount, std::vector<juce::LinearSmoothedValue<float>>(outputChannelsCount));
+    for (int in = 0; in < inputChannelsCount; ++in){
+        for (int out = 0; out < outputChannelsCount; ++out) {
+            smoothedChannelCoeffs[in][out].setCurrentAndTargetValue(smoothedChannelCoeffs[in][out].getTargetValue());
+        }
+    }
     output_channel_indices.resize(outputChannelsCount);
 
     // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
