@@ -583,9 +583,12 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
-	if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()) || (int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
-        DBG("Unexpected Input/Output mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) + ", Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
+    if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->getValue()) {
+        DBG("Unexpected Input mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->getValue()));
         parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
+    }
+    if ((int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->getValue()) {
+        DBG("Unexpected Output mismatch! Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->getValue()));
         parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
 	}
     
@@ -844,6 +847,7 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode) {
     pannerSettings.m1Encode.setInputMode(inputMode);
     pannerSettings.m1Encode.setOutputMode(outputMode);
+    updateM1EncodePoints();
 
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
@@ -938,7 +942,7 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
         pannerSettings.delayDistance = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
 #endif
     
-// Parsing old plugin QUADMODE and applying to new inputType structure
+        // Parsing old plugin QUADMODE and applying to new inputType structure
         if (prefix == "1.5.1") {
             // Get QUAD input type
             int quadStoredInput = (int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode());
@@ -965,9 +969,9 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
                 parameterChanged(paramInputMode, Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
             }
             // if the parsed output from xml is not the default value
-            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode()) != (int)pannerSettings.m1Encode.getOutputMode()) {
-                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
-                parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getInputMode())));
+            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode()) != (int)pannerSettings.m1Encode.getOutputMode()) {
+                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
+                parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
             }
         }
     } else {
