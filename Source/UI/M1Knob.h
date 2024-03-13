@@ -21,9 +21,12 @@ public:
             hoveredLocal = false;
         }
         
-        m.setColor(100 + 110 * enabled,
-                    100 + 110 * enabled,
-                    100 + 110 * enabled, 200);
+        if (enabled) {
+            m.setColor(ENABLED_PARAM);
+        } else {
+            m.setColor(DISABLED_PARAM);
+        }
+
         m.pushStyle();
         m.setLineWidth(4);
         m.enableFill();
@@ -59,14 +62,14 @@ public:
         m.drawRectangle(-width * (4 + A(1 * isInside)), 0, width * (8 + A(2 * isInside)), shape.size.x * (0.25 + A(0.02 * isInside)));
         
         // A white rectangle inside a grey colored one
-        m.setColor(100 + 110 * enabled + A(30 * hoveredLocal) * enabled, 255);
+        m.setColor(100 + 90 * enabled + A(30 * hoveredLocal) * enabled, 255);
         float w = A(width * (1 + 1 * hoveredLocal));
         m.drawRectangle(-w, 0, w * 2, shape.size.x * 0.26);
         
         m.popMatrix();
         m.popStyle();
         
-        m.setColor(100 + 110 * enabled + A(30 * hoveredLocal), 255);
+        m.setColor(100 + 90 * enabled + A(30 * hoveredLocal), 255);
         auto labelPositionY = shape.size.x * 0.8 / width + 10;
         std::string displayString = float_to_string(*data, floatingPointPrecision);
 
