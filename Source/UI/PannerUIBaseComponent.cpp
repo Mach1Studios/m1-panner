@@ -246,7 +246,7 @@ void PannerUIBaseComponent::draw()
     zKnob.speed = knobSpeed;
     zKnob.defaultValue = 0;
     zKnob.isEndlessRotary = false;
-    zKnob.enabled = true;
+    zKnob.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
     zKnob.externalHover = pitchWheelHoveredAtLastFrame;
     zKnob.cursorHide = cursorHide;
     zKnob.cursorShow = cursorShowAndTeleportBack;
@@ -263,7 +263,7 @@ void PannerUIBaseComponent::draw()
                                               knobWidth, knobHeight));
     zLabel.label = "Z";
     zLabel.alignment = TEXT_CENTER;
-    zLabel.enabled = true;
+    zLabel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
     zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
     zLabel.draw();
 
@@ -436,6 +436,7 @@ void PannerUIBaseComponent::draw()
     pitchWheel.offset = 10.;
     pitchWheel.rangeFrom = 90.;
     pitchWheel.rangeTo = -90.;
+    pitchWheel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
     pitchWheel.externalHovered = zHovered;
     pitchWheel.isConnected = processor->pannerOSC.IsConnected();
     pitchWheel.monitorState = monitorState;
@@ -534,7 +535,7 @@ void PannerUIBaseComponent::draw()
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1SMTPE) inputLabelText = "5.1 SMPTE";
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN) inputLabelText = "1OA ACN";
         if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA) inputLabelText = "1OA FuMa";
-        
+
         // INPUT DROPDOWN
         int dropdownItemHeight = 20;
         
@@ -611,7 +612,6 @@ void PannerUIBaseComponent::draw()
                     processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 }
             }
-            // TODO: add other dropdown modes for 5, 6, 7, etc input channels on PT
         } else if (processor->hostType.isReaper() || processor->getMainBusNumInputChannels() > 2) {
             // Multichannel DAWs will scale the available inputs based on what the host offers
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
@@ -624,14 +624,16 @@ void PannerUIBaseComponent::draw()
                 input_options.push_back("QUAD");
                 input_options.push_back("LCRS");
                 input_options.push_back("AFORMAT");
-                input_options.push_back("1OA-ACN");
-                input_options.push_back("1OA-FuMa");
             }
             if (processor->getMainBusNumInputChannels() >= 5) input_options.push_back("5.0 Film");
             if (processor->getMainBusNumInputChannels() >= 6) {
                 input_options.push_back("5.1 Film");
                 input_options.push_back("5.1 DTS");
                 input_options.push_back("5.1 SMPTE");
+            }
+            if (processor->getMainBusNumInputChannels() >= 4) {
+                input_options.push_back("1OA-ACN");
+                input_options.push_back("1OA-FuMa");
             }
 
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
