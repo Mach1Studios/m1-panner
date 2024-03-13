@@ -8,11 +8,11 @@ using namespace murka;
 class M1PitchWheel : public murka::View<M1PitchWheel> {
 public:
     void internalDraw(Murka & m) {
-        bool isInside = inside();
 
+        bool isInside = inside();
+        changed = false; // false unless the user changed a value using this knob
         hovered = isInside + draggingNow;
         bool hoveredLocal = hovered + externalHovered; // this variable is not used outside the widget to avoid feedback loop
-        changed = false; // false unless the user changed a value using this knob
 		
 		// Reticle calculation
 		float reticlePositionNorm = (*((float*)dataToControl) - rangeFrom) / (rangeTo - rangeFrom);
@@ -21,10 +21,18 @@ public:
 									  offset + (shape.size.y - offset * 2) * reticlePositionNorm - 6,
 									  12,
 									  12 };
-		bool reticleHover = false + draggingNow;
-		if (reticlePosition.inside(mousePosition())) {
-			reticleHover = true;
-		}
+        
+
+        bool reticleHover = false + draggingNow;
+
+        if (!enabled) {
+            hoveredLocal = false;
+            reticleHover = false;
+        } else {
+            if (reticlePosition.inside(mousePosition())) {
+                reticleHover = true;
+            }
+        }
 
 		m.pushStyle();
         m.setLineWidth(1);
@@ -51,11 +59,15 @@ public:
             labelValue -= 45;
         }
         
-		m.setColor(133 + 20 * A(reticleHover + externalHovered));
+		m.setColor(100 + 90 * A(reticleHover + externalHovered) * enabled);
         m.drawLine(getSize().x / 2, offset, shape.size.x / 2, shape.size.y - offset);
 
         // Reticle
-        m.setColor(M1_ACTION_YELLOW);
+        if (enabled) {
+            m.setColor(M1_ACTION_YELLOW);
+        } else {
+            m.setColor(DISABLED_PARAM);
+        }
         m.drawCircle(shape.size.x / 2, offset + (shape.size.y - offset * 2) * reticlePositionNorm, (6 + 3 * A(reticleHover + externalHovered)));
         
         // MIXER - MONITOR DISPLAY
@@ -125,6 +137,7 @@ public:
     std::function<void()> cursorHide, cursorShow;
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;
+    bool enabled = true;
     bool hovered = false;
     bool changed = false;
 

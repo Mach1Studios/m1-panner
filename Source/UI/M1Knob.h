@@ -12,13 +12,8 @@ public:
     void internalDraw(Murka & m) {
         float* data = dataToControl;
 
-        bool isInside = isHovered() *
-//        Had to temporary remove the areInteractiveChildrenHovered because of the bug in Murka with the non-deleting children widgets. TODO: fix this
-//        !areInteractiveChildrenHovered(ctx) *
-//            hasMouseFocus(m) *
-             (!editingTextNow);
-        
-        changed = false;
+        bool isInside = isHovered() * (!editingTextNow);
+        changed = false; // false unless the user changed a value using this knob
         hovered = isInside + draggingNow; // for external views to be highlighted too if needed
         bool hoveredLocal = hovered + externalHover; // shouldn't propel hoveredLocal outside so it doesn't feedback
 
