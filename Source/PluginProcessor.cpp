@@ -411,7 +411,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
             pannerSettings.m1Encode.setInputMode(inputType);
             updateM1EncodePoints(); // call to update the m1encode obj for new point counts
-            parameters.getParameter(paramInputMode)->setValue(newValue);
+            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
@@ -421,7 +421,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
             pannerSettings.m1Encode.setOutputMode(outputType);
             updateM1EncodePoints(); // call to update the m1encode obj for new point counts
-            parameters.getParameter(paramOutputMode)->setValue(newValue);
+            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
         }
@@ -583,12 +583,12 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
-    if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->getValue()) {
-        DBG("Unexpected Input mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->getValue()));
+    if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())) {
+        DBG("Unexpected Input mismatch! Inputs="+std::to_string((int)pannerSettings.m1Encode.getInputMode())+"|"+std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())));
         parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
     }
-    if ((int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->getValue()) {
-        DBG("Unexpected Output mismatch! Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->getValue()));
+    if ((int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())) {
+        DBG("Unexpected Output mismatch! Outputs="+std::to_string((int)pannerSettings.m1Encode.getOutputMode())+"|"+std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
         parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
 	}
     
