@@ -93,7 +93,9 @@ public:
 
         // MIXER - MONITOR DISPLAY
         if (isConnected && monitorState->monitor_mode != 1) {
-            drawMonitorYaw(monitorState->yaw-180, m);
+            if (monitorState->yaw >= -360. && monitorState->yaw <= 360.) { // block values that are outside range
+                drawMonitorYaw(monitorState->yaw-180, m);
+            }
         }
 
         if (monitorState->monitor_mode == 1) {
