@@ -123,25 +123,26 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #endif
     
     pannerOSC.AddListener([&](juce::OSCMessage msg) {
-        if (msg.size() > 0) {
-            DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32())+", P: "+std::to_string(msg[2].getFloat32()));
-            // Capturing monitor mode
-            int mode = msg[0].getInt32();
-            monitorSettings.monitor_mode = mode;
-        }
-        
-        if (msg.size() >= 2) {
-            // Capturing Monitor's Yaw
-            if (msg[1].isFloat32()){
-                float yaw = msg[1].getFloat32();
-                monitorSettings.yaw = yaw; // un-normalised
+        if (msg.getAddressPattern() == "/monitor-settings") {
+            if (msg.size() > 0) {
+                // Capturing monitor mode
+                int mode = msg[0].getInt32();
+                monitorSettings.monitor_mode = mode;
             }
-        }
-        if (msg.size() >= 3) {
-            // Capturing Monitor's Pitch
-            if (msg[2].isFloat32()){
-                float pitch = msg[2].getFloat32();
-                monitorSettings.pitch = pitch; // un-normalized
+            if (msg.size() >= 2) {
+                // Capturing Monitor's Yaw
+                if (msg[1].isFloat32()){
+                    float yaw = msg[1].getFloat32();
+                    monitorSettings.yaw = yaw; // un-normalised
+                }
+            }
+            if (msg.size() >= 3) {
+                // Capturing Monitor's Pitch
+                if (msg[2].isFloat32()){
+                    float pitch = msg[2].getFloat32();
+                    monitorSettings.pitch = pitch; // un-normalized
+                    DBG("[OSC] Recieved msg | Mode: "+std::to_string(msg[0].getInt32())+", Y: "+std::to_string(msg[1].getFloat32())+", P: "+std::to_string(msg[2].getFloat32()));
+                }
             }
         }
     });
