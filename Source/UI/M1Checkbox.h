@@ -13,8 +13,6 @@ using namespace murka;
 class M1Checkbox : public murka::View<M1Checkbox> {
 public:
     void internalDraw(Murka & m) {
-        bool* data = dataToControl;
-                
         if (didntInitialiseYet) {
             animatedData = *((bool*)dataToControl) ? 1.0 : 0.0;
             didntInitialiseYet = false;
@@ -47,8 +45,10 @@ public:
             changed = true;
 		}
 		else {
-            changed = false;
+			changed = false;
 		}
+
+		checked = *((bool*)dataToControl);
 	}
     
     float animatedData = 0;
