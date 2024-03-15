@@ -28,7 +28,7 @@ public:
         m.setColor(GRID_LINES_1_RGBA);
         auto linestep = getSize().x / (96);
         for (int i = 0; i < (96); i++) {
-            if (monitorState->monitor_mode != 1){
+            if ((monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1){
                 m.drawLine(linestep * i, 0, linestep * i, shape.size.y);
                 m.drawLine(0, linestep * i, shape.size.x, linestep * i);
             }
@@ -48,7 +48,7 @@ public:
         m.setLineWidth(2);
         
         // GUIDE CIRCLES
-        if (monitorState->monitor_mode != 1){
+        if ((monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1){
             //inside circle
             m.disableFill();
             m.drawCircle(getSize().x / 2, getSize().y / 2, getSize().y / 4);
@@ -62,7 +62,7 @@ public:
         m.setLineWidth(1);
 
         // GRID FILLS
-        if (monitorState->monitor_mode != 1){
+        if ((monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1){
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 10);
             m.drawRectangle((getSize().x/2) - 10, getSize().y - 10, 20, 10);
@@ -79,7 +79,7 @@ public:
         }
             
         // GRID LABELS
-        if (monitorState->monitor_mode != 1){
+        if ((monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1){
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 12);
             m.drawRectangle((getSize().x/2) - 12, getSize().y - 15, 25, 20);
@@ -92,7 +92,7 @@ public:
         }
 
         // MIXER - MONITOR DISPLAY
-        if (isConnected && monitorState->monitor_mode != 1) {
+        if (isConnected && (monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1) {
             if (monitorState->yaw >= -360. && monitorState->yaw <= 360.) { // block values that are outside range
                 drawMonitorYaw(monitorState->yaw-180, m);
             }
@@ -139,7 +139,7 @@ public:
                                          20).inside(mousePosition()) + draggingNow;
     
         // Drawing central reticle
-        if (monitorState->monitor_mode != 1){
+        if ((monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1){
             m.enableFill();
             m.setColor(M1_ACTION_YELLOW);
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, (10 + 3 * A(reticleHovered) + (2 * (pannerState->elevation/90))));
