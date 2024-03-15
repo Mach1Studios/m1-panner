@@ -165,13 +165,13 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
 		m.addFloat32(elevation); // expected degrees -90->90
 		m.addFloat32(diverge);   // expected normalized -100->100
 		m.addFloat32(gain);      // expected as dB value -90->24
-        if (input_mode == 1) {
+		m.addInt32(panner_mode);  // int of enum `Mach1EncodePannerModeType`
+		m.addInt32(auto_orbit);
+		if (input_mode == 1) {
             // send stereo parameters
             m.addFloat32(st_azimuth); // expected degrees -180->180
             m.addFloat32(st_spread);  // expected normalized -100->100
         }
-		m.addInt32(panner_mode);  // int of enum `Mach1EncodePannerModeType`
-		m.addInt32(auto_orbit);
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;
 	}
