@@ -21,5 +21,5 @@ public:
 	bool Send(const juce::OSCMessage& msg);
 	bool IsConnected();
     bool sendPannerSettings(int state);
-    bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread);
+    bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread, int panner_mode, bool auto_orbit);
 };

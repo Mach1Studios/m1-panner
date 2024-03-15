@@ -151,7 +151,7 @@ bool PannerOSC::sendPannerSettings(int state)
     return false;
 }
 
-bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread)
+bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread, int panner_mode, bool auto_orbit)
 {
 	if (port > 0) {
 		// Each call will transmit an OSC message with the relevant current panner settings
@@ -170,6 +170,8 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
             m.addFloat32(st_azimuth); // expected degrees -180->180
             m.addFloat32(st_spread);  // expected normalized -100->100
         }
+		m.addInt32(panner_mode);  // int of enum `Mach1EncodePannerModeType`
+		m.addInt32(auto_orbit);
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;
 	}
