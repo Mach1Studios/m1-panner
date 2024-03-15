@@ -23,7 +23,7 @@ struct PannerSettings {
     /// This object contains:
     /// - `Mach1EncodeInputModeType`
     /// - `Mach1EncodeOutputModeType`
-    /// - `Mach1EncodePannerMode`
+    /// - `Mach1EncodePannerModeType`
     Mach1Encode m1Encode;
     
     float x = 0.;
