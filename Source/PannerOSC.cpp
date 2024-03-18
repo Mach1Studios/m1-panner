@@ -151,26 +151,26 @@ bool PannerOSC::sendPannerSettings(int state)
     return false;
 }
 
-bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, float st_azimuth, float st_spread, int panner_mode, bool auto_orbit)
+bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
 	if (port > 0) {
 		// Each call will transmit an OSC message with the relevant current panner settings
 		juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
-		m.addInt32(port);        // used for id
-        m.addInt32(state);       // used for panner interactive state
-        m.addString(displayName);
-        m.addColour(colour);
-		m.addInt32(input_mode);  // int of enum `Mach1EncodeInputModeType`
-		m.addFloat32(azimuth);   // expected degrees -180->180
-		m.addFloat32(elevation); // expected degrees -90->90
-		m.addFloat32(diverge);   // expected normalized -100->100
-		m.addFloat32(gain);      // expected as dB value -90->24
-		m.addInt32(panner_mode);  // int of enum `Mach1EncodePannerModeType`
-		m.addInt32(auto_orbit);
+		m.addInt32(port);        // [msg[0]]: used for id
+        m.addInt32(state);       // [msg[1]]: used for panner interactive state
+        m.addString(displayName);// [msg[2]]: string for track name (when available)
+        m.addColour(colour);     // [msg[3]]: hex for track color (when available)
+		m.addInt32(input_mode);  // [msg[4]]: int of enum `Mach1EncodeInputModeType`
+		m.addFloat32(azimuth);   // [msg[5]]: expected degrees -180->180
+		m.addFloat32(elevation); // [msg[6]]: expected degrees -90->90
+		m.addFloat32(diverge);   // [msg[7]]: expected normalized -100->100
+		m.addFloat32(gain);      // [msg[8]]: expected as dB value -90->24
+		m.addInt32(panner_mode); // [msg[9]]: int of enum `Mach1EncodePannerModeType`
 		if (input_mode == 1) {
             // send stereo parameters
-            m.addFloat32(st_azimuth); // expected degrees -180->180
-            m.addFloat32(st_spread);  // expected normalized -100->100
+            m.addInt32(st_auto_orbit); // [msg[10]]: bool
+            m.addFloat32(st_azimuth);  // [msg[11]]: expected degrees -180->180
+            m.addFloat32(st_spread);   // [msg[12]]: expected normalized -100->100
         }
 		isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
 		return true;

@@ -433,7 +433,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (track_properties.colour.getAlpha() != 0) {
             osc_colour.fromInt32(track_properties.colour.getARGB());
         }
-        pannerOSC.sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.m1Encode.getAutoOrbit());
+        pannerOSC.sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
     }
 }
 
