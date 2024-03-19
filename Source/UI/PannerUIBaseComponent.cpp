@@ -730,6 +730,24 @@ void PannerUIBaseComponent::draw()
                 120, output_options.size() * dropdownItemHeight })
             .withOptions(output_options);
             if (outputDropdownButton.pressed) {
+				switch (pannerState->m1Encode.getOutputChannelsCount()) {
+					case 4:
+						outputDropdownMenu.selectedOption = 0;
+						break;
+					case 8:
+						outputDropdownMenu.selectedOption = 1;
+						break;
+					case 12:
+						outputDropdownMenu.selectedOption = 2;
+						break;
+					case 14:
+						outputDropdownMenu.selectedOption = 3;
+						break;
+					default:
+						outputDropdownMenu.selectedOption = -1;
+						break;
+				}
+
                 outputDropdownMenu.open();
             }
             
