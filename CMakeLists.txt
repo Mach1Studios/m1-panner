@@ -177,7 +177,14 @@ set(JucePlugin_Name ${PLUGIN_NAME})
 set(JucePlugin_Desc ${PLUGIN_NAME})
 
 # add M1-SDK
-set(MACH1SPATIAL_LIBS_PATH "Modules/m1-sdk/mach1spatial-libs")
+if(EXTERNAL_M1SDK_PATH) 
+    message(STATUS "Using an external M1SDK Path: ${EXTERNAL_M1SDK_PATH}")
+    set(MACH1SPATIAL_LIBS_PATH ${EXTERNAL_M1SDK_PATH}/mach1spatial-libs)
+else()
+    message(STATUS "Linking to packaged M1-SDK via Modules/ directory")
+    set(MACH1SPATIAL_LIBS_PATH "Modules/m1-sdk/mach1spatial-libs")
+endif()
+
 if(APPLE)
     set(MACH1SPATIAL_LIBS_UNIX_PATH ${MACH1SPATIAL_LIBS_PATH}/xcode)
 else()
