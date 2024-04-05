@@ -104,7 +104,7 @@ public:
             dataCache = *((float*)dataToControl);
             hintPosition = {getAbsoluteViewPosition().x - 1,
                 getAbsoluteViewPosition().y + (reticlePositionNorm * (getSize().y - offset * 2) + 4)};
-            addOverlay([&]() {
+            m.addOverlay([&]() {
                 m.setColor(LABEL_TEXT_COLOR);
                 m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
                 m.prepare<murka::Label>({hintPosition.x,
