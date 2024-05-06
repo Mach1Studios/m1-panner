@@ -140,7 +140,7 @@ bool PannerOSC::IsConnected()
 
 bool PannerOSC::sendPannerSettings(int state)
 {
-    if (port > 0) {
+    if (isConnected && port > 0) {
         // Each call will transmit an OSC message with the relevant current panner settings
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
         m.addInt32(port);        // used for id
@@ -153,7 +153,7 @@ bool PannerOSC::sendPannerSettings(int state)
 
 bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
-	if (port > 0) {
+	if (isConnected && port > 0) {
 		// Each call will transmit an OSC message with the relevant current panner settings
 		juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
 		m.addInt32(port);        // [msg[0]]: used for id
