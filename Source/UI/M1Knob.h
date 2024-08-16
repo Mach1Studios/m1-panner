@@ -118,7 +118,7 @@ public:
             
             if (!textFieldEditingFinished) {
                 textFieldObject.activated = true;
-                claimKeyboardFocus(&textFieldObject);
+                claimKeyboardFocus();
             }
             
             if (textFieldEditingFinished) {
