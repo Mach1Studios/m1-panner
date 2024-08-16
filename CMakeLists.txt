@@ -176,10 +176,50 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE Resources PUBLIC juce::juce_recomme
 set(JucePlugin_Name ${PLUGIN_NAME})
 set(JucePlugin_Desc ${PLUGIN_NAME})
 
-# check for local or otherwise download and link m1-sdk
-include(cmake/fetchM1SDK.cmake)
+# add M1-SDK
+if(EXTERNAL_M1SDK_PATH) 
+    message(STATUS "Using an external M1SDK Path: ${EXTERNAL_M1SDK_PATH}")
+    set(MACH1SPATIAL_LIBS_PATH ${EXTERNAL_M1SDK_PATH}/mach1spatial-libs)
+else()
+    message(STATUS "Linking to packaged M1-SDK via Modules/ directory")
+    set(MACH1SPATIAL_LIBS_PATH "Modules/m1-sdk/mach1spatial-libs")
+endif()
+
+if(APPLE)
+    set(MACH1SPATIAL_LIBS_UNIX_PATH ${MACH1SPATIAL_LIBS_PATH}/xcode)
+else()
+    set(MACH1SPATIAL_LIBS_UNIX_PATH ${MACH1SPATIAL_LIBS_PATH}/linux)
+endif()
+
+# link libraries
+if(WIN32 OR MSVC OR MINGW)
+    find_library(MACH1ENCODE_LIBRARY_RELEASE
+        NAMES Mach1EncodeCAPI
+        PATHS ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/Release
+    )
+    find_library(MACH1ENCODE_LIBRARY_DEBUG
+        NAMES Mach1EncodeCAPId
+        PATHS ${MACH1SPATIAL_LIBS_PATH}/vs-15-2017-x86_64/lib/Static/MD/Debug
+    )
+    SET(MACH1ENCODE_LIBRARY
+        debug ${MACH1ENCODE_LIBRARY_DEBUG}
+        optimized ${MACH1ENCODE_LIBRARY_RELEASE}
+    )
+else()
+    find_library(MACH1ENCODE_LIBRARY 
+        NAMES Mach1EncodeCAPI
+        PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib
+    )
+endif()
+
+set(MACH1SPATIAL_INCLUDES ${MACH1SPATIAL_LIBS_PATH}/linux/include ${MACH1SPATIAL_LIBS_PATH}/linux/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/xcode/include ${MACH1SPATIAL_LIBS_PATH}/xcode/include/M1DSP ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include ${MACH1SPATIAL_LIBS_PATH}/windows-x86_64/include/M1DSP)
+include_directories(${MACH1SPATIAL_INCLUDES})
 target_link_libraries(${PLUGIN_NAME} PRIVATE ${MACH1ENCODE_LIBRARY})
-target_sources(${PLUGIN_NAME} PRIVATE ${MACH1SPATIAL_LIBS_PATH}/xcode/include/Mach1Encode.cpp) # cpp file is the same for all targets, disregard the xcode path
+if(WIN32)
+    add_compile_definitions(M1_STATIC)
+    message(STATUS "Adding windows OS flags")
+endif()
+target_sources(${PLUGIN_NAME} PRIVATE ${MACH1SPATIAL_LIBS_PATH}/xcode/include/Mach1Encode.cpp)
 
 ### IDE Generator post-config ###
 # IDEs:  Move the "shared code" source group (main target) out of the "Targets" folder
