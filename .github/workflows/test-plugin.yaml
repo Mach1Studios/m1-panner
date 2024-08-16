@@ -89,10 +89,12 @@ jobs:
         if: ${{ matrix.name == 'macOS' }}
         run: brew install ninja osxutils
 
-      - name: Checkout code
+      - name: Checkout entire project
         uses: actions/checkout@v4
         with:
-          submodules: true # Get JUCE populated and other submodules
+          submodules: 'recursive'
+          lfs: true
+          fetch-depth: 1
 
       - name: Cache the build
         uses: mozilla-actions/sccache-action@v0.0.4
