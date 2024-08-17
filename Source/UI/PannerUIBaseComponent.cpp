@@ -450,7 +450,7 @@ void PannerUIBaseComponent::draw()
 	pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
 	// Drawing volume meters
-    if (processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
+    if (processor->layoutCreated && processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
         auto outputChannelsCount = processor->pannerSettings.m1Encode.getOutputChannelsCount();
         

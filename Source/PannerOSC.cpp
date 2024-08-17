@@ -116,7 +116,7 @@ void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageRec
 
 PannerOSC::~PannerOSC()
 {
-    if (port > 0) {
+    if (isConnected && port > 0) {
         // send a "remove panner" message to helper
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
         m.addInt32(port); // used for id
