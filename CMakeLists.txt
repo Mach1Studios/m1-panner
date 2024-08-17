@@ -13,7 +13,7 @@ if(APPLE)
     set(CMAKE_XCODE_ATTRIBUTE_MACOSX_DEPLOYMENT_TARGET[arch=arm64] "11.0" CACHE STRING "arm 64 minimum deployment target" FORCE)
 endif()# IDEs:  Enable grouping of source files into folders in IDEs.
 if(WIN32 OR MSVC OR MINGW OR CMAKE_COMPILER_IS_MSVC)
-    if(CMAKE_GENERATOR EQUALS "Ninja")
+    if(CMAKE_GENERATOR STREQUAL "Ninja")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
     endif()
