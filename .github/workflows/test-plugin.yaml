@@ -15,7 +15,6 @@ env:
   DISPLAY: :0 # linux pluginval needs this
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   SCCACHE_GHA_ENABLED: true
-  IPP_DIR: C:\Program Files (x86)\Intel\oneAPI\ipp\latest\lib\cmake\ipp
 
 defaults:
   run:
@@ -23,8 +22,6 @@ defaults:
 
 jobs:
   build_and_test:
-    # don't double run on PRs
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -45,9 +42,6 @@ jobs:
             pluginval-binary: ./pluginval.exe
 
     steps:
-      # Setup MSVC toolchain and developer command prompt (Windows)
-      - uses: ilammy/msvc-dev-cmd@v1
-
       # Use clang on Linux so we don't introduce a 3rd compiler (Windows and macOS use MSVC and Clang)
       - name: Set up Clang
         if: runner.os == 'Linux'
@@ -61,32 +55,6 @@ jobs:
           sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxinerama-dev libxext-dev libfreetype6-dev libwebkit2gtk-4.0-dev libglu1-mesa-dev xvfb ninja-build freeglut3-dev
           sudo /usr/bin/Xvfb $DISPLAY &
 
-      - name: Cache IPP (Windows)
-        if: runner.os == 'Windows'
-        id: cache-ipp
-        uses: actions/cache@v4
-        with:
-          key: ipp-v5
-          path: C:\Program Files (x86)\Intel
-
-      - name: Install IPP (Windows)
-        if: (runner.os == 'Windows') && (steps.cache-ipp.outputs.cache-hit != 'true')
-        run: |
-          curl --output oneapi.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b4adec02-353b-4144-aa21-f2087040f316/w_ipp_oneapi_p_2021.11.0.533_offline.exe
-          ./oneapi.exe -s -x -f oneapi
-          ./oneapi/bootstrapper.exe -s -c --action install --components=intel.oneapi.win.ipp.devel --eula=accept -p=NEED_VS2022_INTEGRATION=1 --log-dir=.
-
-      - name: Save IPP cache (even on CI fail)
-        if: runner.os == 'Windows' && (steps.cache-ipp.outputs.cache-hit != 'true')
-        uses: actions/cache/save@v4
-        with:
-          path: C:\Program Files (x86)\Intel
-          key: ipp-v5
-
-      - name: Install Ninja (Windows)
-        if: runner.os == 'Windows'
-        run: choco install ninja
-
       - name: Install macOS Deps
         if: ${{ matrix.name == 'macOS' }}
         run: brew install ninja osxutils
@@ -99,6 +67,7 @@ jobs:
           fetch-depth: 1
 
       - name: Cache the build
+        if: ${{ matrix.name != 'Windows' }}
         uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Configure
