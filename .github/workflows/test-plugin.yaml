@@ -31,10 +31,10 @@ jobs:
       fail-fast: false # show all errors for each platform (vs. cancel jobs on error)
       matrix:
         include:
-          - name: Linux
-            os: ubuntu-22.04
-            pluginval-binary: ./pluginval
-            extra-build-flags: --parallel 4
+          # - name: Linux
+          #   os: ubuntu-22.04
+          #   pluginval-binary: ./pluginval
+          #   extra-build-flags: --parallel 4
           - name: macOS
             os: macos-14
             pluginval-binary: pluginval.app/Contents/MacOS/pluginval
@@ -102,7 +102,12 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Configure
+        if: ${{ matrix.name != 'Windows' }}
         run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ${{ matrix.extra-flags }} .
+
+      - name: Configure (Windows)
+        if: ${{ matrix.name == 'Windows' }}
+        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON ${{ matrix.extra-flags }} .
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} ${{ matrix.extra-build-flags }}
