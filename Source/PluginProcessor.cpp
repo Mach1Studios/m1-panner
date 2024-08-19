@@ -428,8 +428,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         }
     }
     // send a pannersettings update to helper since a parameter changed
+    juce::OSCColour osc_colour;
     if (pannerOSC.IsConnected()) {
-        juce::OSCColour osc_colour;
         if (track_properties.colour.getAlpha() != 0) {
             osc_colour.fromInt32(track_properties.colour.getARGB());
         }
