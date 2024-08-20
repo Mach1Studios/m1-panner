@@ -20,7 +20,7 @@ public:
 
 		MurkaColor bgColor = backgroundColor;
 		m.enableFill();
-		if (bgColor.a != 0.0) {
+		if (bgColor.getAlpha() != 0.0) {
 			m.setColor(bgColor);
 			if (alignment == TEXT_LEFT) {
 				m.drawRectangle(0, 0, font->getStringBoundingBox(label, 0, 0).width + 10, shape.size.y);
@@ -30,9 +30,9 @@ public:
 		// color 
 		MurkaColor fgColor = customColor ? color : m.getColor();
 		float anim = enabled ? 1.0 * 40 / 255 * A(highlighted) : 0.0;
-		fgColor.r += anim - fgColor.r * 0.5 * !enabled;
-		fgColor.g += anim - fgColor.g * 0.5 * !enabled;
-		fgColor.b += anim - fgColor.b * 0.5 * !enabled;
+		fgColor.setRed(fgColor.getRed() + anim - fgColor.getRed() * 0.5 * !enabled);
+		fgColor.setGreen(fgColor.getGreen() + anim - fgColor.getGreen() * 0.5 * !enabled);
+		fgColor.setBlue(fgColor.getBlue() + anim - fgColor.getBlue() * 0.5 * !enabled);
 
 		m.setColor(fgColor);
 		if (alignment == TEXT_LEFT) {
