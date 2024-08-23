@@ -681,6 +681,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // processing loop
+    // TODO: check for input number of channels matches the pannerSettings input number
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++){
         for (int sample = 0; sample < buffer.getNumSamples(); sample++){
             // break if expected input channel num size does not match current input channel num size from host

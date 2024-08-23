@@ -2,7 +2,7 @@ option(PLUGIN_FONT "Set the plugin's primary text font" "InterRegular.ttf")
 
 set(FOUND_FONT InterRegular)
 set(FOUND_FONT_TYPE ttf)
-set(DEFAULT_FONT_SIZE 11)
+set(DEFAULT_FONT_SIZE 18) # 11 * 1.6
 juce_add_binary_data(Resources NAMESPACE BinaryData SOURCES mach1logo.png bluetooth_icon.png tech_support_icon.png wi-fi_icon.png InterRegular.ttf)
 
 set(PLUGIN_FONT "${FOUND_FONT}.${FOUND_FONT_TYPE}")

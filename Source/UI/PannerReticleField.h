@@ -83,7 +83,7 @@ public:
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 12);
             m.drawRectangle((getSize().x/2) - 12, getSize().y - 15, 25, 20);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-1.5);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
             m.setColor(REF_LABEL_TEXT_COLOR);
             MurkaShape zeroLabelShape = {(getSize().x/2) - 7.5, -2, 25, 15};
             m.prepare<murka::Label>(zeroLabelShape).text({"0"}).draw();

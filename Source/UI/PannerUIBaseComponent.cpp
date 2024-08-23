@@ -451,7 +451,7 @@ void PannerUIBaseComponent::draw()
 
 	// Drawing volume meters
     if (processor->layoutCreated && processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0) {
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-5);
         auto outputChannelsCount = processor->pannerSettings.m1Encode.getOutputChannelsCount();
         
         int lines = int((outputChannelsCount - 1) / 8) + 1; // rounded int value of rows
@@ -505,7 +505,7 @@ void PannerUIBaseComponent::draw()
         m.drawRectangle(0, m.getSize().height(), m.getSize().width(), 35); // bottom bar
         
         m.setColor(APP_LABEL_TEXT_COLOR);
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
         
         // skip drawing the input label if we only have the output dropdown available in PT
         if (!processor->hostType.isProTools() || // is not PT
@@ -549,7 +549,10 @@ void PannerUIBaseComponent::draw()
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                     m.getSize().height() - 28,
                     80, 20 })
-                .withLabel(inputLabelText).draw();
+                .withLabel(inputLabelText)
+                .withFontSize(DEFAULT_FONT_SIZE-5)
+                .draw();
+                
                 std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                     m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
@@ -562,7 +565,7 @@ void PannerUIBaseComponent::draw()
                 }
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
-                inputDropdownMenu.fontSize = 9;
+                inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -585,7 +588,10 @@ void PannerUIBaseComponent::draw()
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                     m.getSize().height() - 28,
                     80, 20 })
-                .withLabel(inputLabelText).draw();
+                .withLabel(inputLabelText)
+                .withFontSize(DEFAULT_FONT_SIZE-5)
+                .draw();
+                
                 std::vector<std::string> input_options = {"5.1 Film", "5.1 DTS", "5.1 SMPTE"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                     m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
@@ -598,7 +604,7 @@ void PannerUIBaseComponent::draw()
                 }
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
-                inputDropdownMenu.fontSize = 9;
+                inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -617,7 +623,7 @@ void PannerUIBaseComponent::draw()
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 28,
                                                                     80, 20 })
-                                                        .withLabel(inputLabelText).draw();
+                                                        .withLabel(inputLabelText).withFontSize(DEFAULT_FONT_SIZE-5).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             if (processor->getMainBusNumInputChannels() >= 3) input_options.push_back("LCR");
             if (processor->getMainBusNumInputChannels() >= 4) {
@@ -647,7 +653,7 @@ void PannerUIBaseComponent::draw()
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
-            inputDropdownMenu.fontSize = 9;
+            inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -659,7 +665,7 @@ void PannerUIBaseComponent::draw()
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
                                                                     m.getSize().height() - 28,
                                                                     80, 20 })
-                                                        .withLabel(inputLabelText).draw();
+                                                        .withLabel(inputLabelText).withFontSize(DEFAULT_FONT_SIZE-5).draw();
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
                                                                 m.getSize().height() - 28 - input_options.size() * dropdownItemHeight,
@@ -672,7 +678,7 @@ void PannerUIBaseComponent::draw()
             }
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
-            inputDropdownMenu.fontSize = 9;
+            inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -694,7 +700,7 @@ void PannerUIBaseComponent::draw()
              processor->getMainBusNumOutputChannels() > 8)) {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
             auto& arrowLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
             arrowLabel.label = "-->";
             arrowLabel.alignment = TEXT_CENTER;
@@ -708,7 +714,7 @@ void PannerUIBaseComponent::draw()
              processor->getMainBusNumOutputChannels() > 8)) {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
             auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUT";
             outputLabel.alignment = TEXT_CENTER;
@@ -719,7 +725,7 @@ void PannerUIBaseComponent::draw()
             auto outputType = pannerState->m1Encode.getOutputMode();            
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height() - 28,
                                                         80, 20 })
-                                                        .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).draw();
+                                                        .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).withFontSize(DEFAULT_FONT_SIZE-5).draw();
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
             // add the outputs based on discovered number of channels from host
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
@@ -752,7 +758,7 @@ void PannerUIBaseComponent::draw()
             }
             
             outputDropdownMenu.optionHeight = dropdownItemHeight;
-            outputDropdownMenu.fontSize = 9;
+            outputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
             outputDropdownMenu.draw();
 
             if (outputDropdownMenu.changed) {
@@ -776,7 +782,7 @@ void PannerUIBaseComponent::draw()
     
     /// Panner label
     m.setColor(200, 255);
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
 #ifdef CUSTOM_CHANNEL_LAYOUT
     auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
@@ -802,8 +808,8 @@ void PannerUIBaseComponent::draw()
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else
     if (!processor->hostType.isProTools() || // not pro tools
-        (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
-         (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6) || // or is pro tools and has a higher order output configuration
+        ((processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
+          (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)) || // or is pro tools and has a higher order output configuration
          (processor->getMainBusNumOutputChannels() > 8))) {
         m.drawImage(m1logo, 25, m.getSize().height() - labelYOffset, 161 / 3, 39 / 3);
     } else {

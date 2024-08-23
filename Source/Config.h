@@ -107,7 +107,7 @@
     #define PLUGIN_FONT "InterRegular.ttf"
     #define BINARYDATA_FONT BinaryData::InterRegular_ttf
     #define BINARYDATA_FONT_SIZE BinaryData::InterRegular_ttfSize
-    #define DEFAULT_FONT_SIZE 11
+    #define DEFAULT_FONT_SIZE 18 // 11 * 1.6
 #endif
 #pragma message XSTR(PLUGIN_FONT)
 #pragma message XSTR(BINARYDATA_FONT)
