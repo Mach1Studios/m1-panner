@@ -57,7 +57,7 @@ public:
         return *this;
     }
     
-    M1DropdownButton & withFontSize(double fontSize_) {
+    M1DropdownButton & withFontSize(float fontSize_) {
         fontSize = fontSize_;
         return *this;
     }
