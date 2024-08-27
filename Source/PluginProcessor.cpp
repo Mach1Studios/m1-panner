@@ -411,7 +411,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6))) {
             Mach1EncodeInputModeType inputType = Mach1EncodeInputModeType((int)newValue);
             pannerSettings.m1Encode.setInputMode(inputType);
-            updateM1EncodePoints(); // call to update the m1encode obj for new point counts
+            needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
@@ -421,7 +421,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
         if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8)) {
             Mach1EncodeOutputModeType outputType = Mach1EncodeOutputModeType((int)newValue);
             pannerSettings.m1Encode.setOutputMode(outputType);
-            updateM1EncodePoints(); // call to update the m1encode obj for new point counts
+            needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
             createLayout();
@@ -574,6 +574,11 @@ void M1PannerAudioProcessor::updateM1EncodePoints() {
 
 void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    if (needToUpdateM1EncodePoints) {
+        updateM1EncodePoints();
+        needToUpdateM1EncodePoints = false;
+    }
+
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -605,7 +610,7 @@ void M1PannerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
     
     // Set m1Encode obj values for processing
-    updateM1EncodePoints(); // TODO: maybe needs some thread safety?
+    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
     // vector of input channel buffers
@@ -854,7 +859,8 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeType inputMode, Mach1EncodeOutputModeType outputMode) {
     pannerSettings.m1Encode.setInputMode(inputMode);
     pannerSettings.m1Encode.setOutputMode(outputMode);
-    updateM1EncodePoints();
+   
+    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
 
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
