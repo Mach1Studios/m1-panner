@@ -62,7 +62,7 @@ void PannerUIBaseComponent::draw()
         juce::AudioPlayHead::CurrentPositionInfo currentPosition;
         if (processor->getPlayHead() != nullptr) {
             if (!currentPosition.isPlaying) {
-                processor->updateM1EncodePoints();
+                processor->needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             }
         }
     };

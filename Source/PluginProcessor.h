@@ -156,6 +156,7 @@ public:
     bool layoutCreated = false;
 
     // update m1encode obj points
+    bool needToUpdateM1EncodePoints = false;
     void updateM1EncodePoints();
     
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
