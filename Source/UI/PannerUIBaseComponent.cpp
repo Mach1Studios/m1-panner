@@ -516,7 +516,7 @@ void PannerUIBaseComponent::draw()
              (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))) {
             // Input Channel Mode Selector
             m.setColor(200, 255);
-            auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 40, m.getSize().height() - 26, 60, 20));
+            auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 120 - 25, m.getSize().height() - 26, 60, 20));
             inputLabel.label = "IN";
             inputLabel.alignment = TEXT_CENTER;
             inputLabel.enabled = false;
@@ -549,12 +549,10 @@ void PannerUIBaseComponent::draw()
             if (processor->getMainBusNumInputChannels() == 4) {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
-                auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 28,
-                    80, 20 })
-                .withLabel(inputLabelText)
-                .withFontSize(DEFAULT_FONT_SIZE-5)
-                .draw();
+                auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+                inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
+                inputDropdownButton.labelPadding_x = 10;
+                inputDropdownButton.draw();
                 
                 std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
@@ -569,6 +567,7 @@ void PannerUIBaseComponent::draw()
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
                 inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
+                inputDropdownMenu.labelPadding_x = 10;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -588,12 +587,10 @@ void PannerUIBaseComponent::draw()
             } else if (processor->getMainBusNumInputChannels() == 6) {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
-                auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                    m.getSize().height() - 28,
-                    80, 20 })
-                .withLabel(inputLabelText)
-                .withFontSize(DEFAULT_FONT_SIZE-5)
-                .draw();
+                auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+                inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
+                inputDropdownButton.labelPadding_x = 10;
+                inputDropdownButton.draw();
                 
                 std::vector<std::string> input_options = {"5.1 Film", "5.1 DTS", "5.1 SMPTE"};
                 auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({  m.getSize().width()/2 - 60 - 40,
@@ -608,6 +605,7 @@ void PannerUIBaseComponent::draw()
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
                 inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
+                inputDropdownMenu.labelPadding_x = 10;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -623,10 +621,11 @@ void PannerUIBaseComponent::draw()
             }
         } else if (processor->hostType.isReaper() || processor->getMainBusNumInputChannels() > 2) {
             // Multichannel DAWs will scale the available inputs based on what the host offers
-            auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40,
-                                                                    m.getSize().height() - 28,
-                                                                    80, 20 })
-                                                        .withLabel(inputLabelText).withFontSize(DEFAULT_FONT_SIZE-5).draw();
+            auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+            inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
+            inputDropdownButton.labelPadding_x = 10;
+            inputDropdownButton.draw();
+            
             std::vector<std::string> input_options = {"MONO", "STEREO"};
             if (processor->getMainBusNumInputChannels() >= 3) input_options.push_back("LCR");
             if (processor->getMainBusNumInputChannels() >= 4) {
@@ -657,6 +656,7 @@ void PannerUIBaseComponent::draw()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
+            inputDropdownMenu.labelPadding_x = 10;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -682,6 +682,7 @@ void PannerUIBaseComponent::draw()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
+            inputDropdownMenu.labelPadding_x = 10;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -703,7 +704,7 @@ void PannerUIBaseComponent::draw()
              processor->getMainBusNumOutputChannels() > 8)) {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
             auto& arrowLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 - 20, m.getSize().height() - 26, 40, 20));
             arrowLabel.label = "-->";
             arrowLabel.alignment = TEXT_CENTER;
@@ -717,8 +718,8 @@ void PannerUIBaseComponent::draw()
              processor->getMainBusNumOutputChannels() > 8)) {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-2);
-            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 110, m.getSize().height() - 26, 60, 20));
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
+            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 105, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
@@ -726,9 +727,11 @@ void PannerUIBaseComponent::draw()
             outputLabel.draw();
             
             auto outputType = pannerState->m1Encode.getOutputMode();            
-            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height() - 28,
-                                                        80, 20 })
-                                                        .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount())).withFontSize(DEFAULT_FONT_SIZE-5).draw();
+            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height() - 28, 80, 20 }).withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount()));
+            outputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
+            outputDropdownButton.labelPadding_x = 15;
+            outputDropdownButton.draw();
+            
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
             // add the outputs based on discovered number of channels from host
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12) output_options.push_back("M1Spatial-12");
@@ -756,12 +759,12 @@ void PannerUIBaseComponent::draw()
 						outputDropdownMenu.selectedOption = -1;
 						break;
 				}
-
                 outputDropdownMenu.open();
             }
             
             outputDropdownMenu.optionHeight = dropdownItemHeight;
             outputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
+            outputDropdownMenu.labelPadding_x = 15;
             outputDropdownMenu.draw();
 
             if (outputDropdownMenu.changed) {

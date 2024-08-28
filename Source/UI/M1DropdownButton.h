@@ -26,22 +26,23 @@ public:
         m.setColor(LABEL_TEXT_COLOR);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (int)fontSize);
         // centered interior text
-        m.prepare<murka::Label>({0, shape.size.y/8, shape.size.x, shape.size.y}).withAlignment(TEXT_CENTER).text(label).draw();
+        juceFontStash::Rectangle label_box = m.getCurrentFont()->getStringBoundingBox(label, 0, 0); // used to find size of text
+        m.prepare<murka::Label>({labelPadding_x, labelPadding_y + shape.size.y/2 - label_box.height/2, shape.size.x - labelPadding_x, shape.size.y}).withAlignment(textAlignment).text(label).draw();
 
         pressed = false;
         if ((inside()) && (mouseDownPressed(0))) {
             pressed = true; // Only sets to true the frame the "pressed" happened
         }
-
-//        m.popStyle(); // TODO: THIS THING MAKES EVERYTHING HANG, issue with Murka - have to show assert!
     }
     
     std::string label = "";    
     bool pressed = false;
     float fontSize = 10;
     bool outlineEnabled = true;
+    int labelPadding_x = 0;
+    int labelPadding_y = 0;
+    
     TextAlignment textAlignment = TEXT_CENTER;
-    int heightDivisor = 8;
 
     operator bool() {
         return pressed;

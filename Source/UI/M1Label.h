@@ -36,29 +36,23 @@ public:
 
 		m.setColor(fgColor);
 		if (alignment == TEXT_LEFT) {
-			font->drawString(label, 5, 0);
+			font->drawString(label, labelPadding_x, labelPadding_y);
 		}
 		if (alignment == TEXT_CENTER) {
-			float textX = 5 + (shape.size.x - 10) / 2 - font->getStringBoundingBox(label, 0, 0).width / 2;
-			font->drawString(label, textX, 0);
+			float textX = labelPadding_x + (shape.size.x / 2) - (font->getStringBoundingBox(label, 0, 0).width / 2);
+			font->drawString(label, textX, labelPadding_y);
 		}
 		if (alignment == TEXT_RIGHT) {
-			float textX = (shape.size.x - 10) - font->getStringBoundingBox(label, 0, 0).width;
-			font->drawString(label, textX, 0);
+			float textX = labelPadding_x + (shape.size.x - 10) - font->getStringBoundingBox(label, 0, 0).width;
+			font->drawString(label, textX, labelPadding_y);
 		}
-
-		// Testing vertical centering
-			//context.renderer->setColor(255);
-			//ofDrawLine(0, 0, context.getSize().x, 0);
-			//context.renderer->setColor(255, 0, 0);
-			//ofDrawLine(0, context.getSize().y / 2, context.getSize().x, context.getSize().y / 2);
-			//context.renderer->setColor(255);
-			//ofDrawLine(0, context.getSize().y, context.getSize().x, context.getSize().y);
 	};
 
 	// Here go parameters and any parameter convenience constructors. You need to define something called Parameters, even if it's NULL.
 //    std::string label;
     TextAlignment alignment = TEXT_LEFT;
+    int labelPadding_x = 5;
+    int labelPadding_y = 0;
     
     M1Label& withTextAlignment(TextAlignment a) {
         alignment = a;

@@ -45,8 +45,8 @@ public:
                     m.drawRectangle(1, i * optionHeight, shape.size.x - 2, optionHeight);
                     m.setColor(BACKGROUND_GREY);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.prepare<murka::Label>({0, optionHeight * i + ((optionHeight/3 < fontSize) ? (optionHeight/3)/2 : optionHeight/3),
-                        shape.size.x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
+                    juceFontStash::Rectangle label_box = m.getCurrentFont()->getStringBoundingBox(options[i], 0, 0); // used to find size of text
+                    m.prepare<murka::Label>({labelPadding_x, (optionHeight * i) + optionHeight/2 - label_box.height/2, shape.size.x - labelPadding_x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
                     
                     if (closingMode == modeMouseDown) {
                         if (mouseDownPressed(0)) {
@@ -69,7 +69,8 @@ public:
                 } else {
                     m.setColor(LABEL_TEXT_COLOR);
                     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, fontSize);
-                    m.prepare<murka::Label>({0, optionHeight * i + ((optionHeight/3 < fontSize) ? (optionHeight/3)/2 : optionHeight/3), shape.size.x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
+                    juceFontStash::Rectangle label_box = m.getCurrentFont()->getStringBoundingBox(options[i], 0, 0); // used to find size of text
+                    m.prepare<murka::Label>({labelPadding_x, (optionHeight * i) + optionHeight/2 - label_box.height/2, shape.size.x - labelPadding_x, optionHeight}).text(options[i]).withAlignment(textAlignment).draw();
                 }
                 
                 // Closing if pressed/released outside of the menu
@@ -115,6 +116,8 @@ public:
     std::string label;
     MurkaShape triggerButtonShape;
     TextAlignment textAlignment = TEXT_CENTER;
+    int labelPadding_x = 0;
+    int labelPadding_y = 0;
 
     M1DropdownMenu & controlling(Mach1EncodeInputModeType* dataPointer) {
         dataToControl = dataPointer;
