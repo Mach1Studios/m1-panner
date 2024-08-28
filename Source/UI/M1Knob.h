@@ -91,12 +91,12 @@ public:
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
         std::string valueText = prefix + displayString + postfix;
         auto font = m.getCurrentFont();
-        auto valueTextBbox = font->getStringBoundingBox(valueText, 0, 0);
+        auto value_box = font->getStringBoundingBox(valueText, 0, 0);
 
-        MurkaShape valueTextShape = { shape.size.x / 2 - valueTextBbox.width / 2 - 5,
+        MurkaShape valueTextShape = { shape.size.x / 2 - value_box.width / 2,
                                      shape.size.x * 0.8 / width + 10,
-                                     valueTextBbox.width + 10,
-                                     valueTextBbox.height };
+                                     value_box.width + 10,
+                                     value_box.height };
         
         if (editingTextNow) {
             auto& textFieldObject =
