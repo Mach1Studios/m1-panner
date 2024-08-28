@@ -461,6 +461,9 @@ void PannerUIBaseComponent::draw()
         for (int channelIndex = 0; channelIndex < processor->pannerSettings.m1Encode.getOutputChannelsCount(); channelIndex++) {
             
             // get the index order from the host
+            processor->output_channel_indices.resize(processor->pannerSettings.m1Encode.getOutputChannelsCount());
+            // Checks if output bus is non DISCRETE layout and fixes host specific channel ordering issues
+            processor->fillChannelOrderArray(processor->pannerSettings.m1Encode.getOutputChannelsCount());
             int output_channel_reordered = processor->output_channel_indices[channelIndex];
             
             auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 }).withVolume(processor->outputMeterValuedB[output_channel_reordered]).draw();
