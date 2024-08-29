@@ -109,7 +109,7 @@ void PannerUIBaseComponent::draw()
 	}
     
 	m.setColor(ENABLED_PARAM);
-    auto& xLabel = m.prepare<M1Label>(MurkaShape(xOffset + 10 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& xLabel = m.prepare<M1Label>(MurkaShape(xOffset + 17 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     xLabel.label = "X";
     xLabel.alignment = TEXT_CENTER;
     xLabel.enabled = true;
@@ -138,7 +138,7 @@ void PannerUIBaseComponent::draw()
     }
     
 	m.setColor(ENABLED_PARAM);
-    auto& yLabel = m.prepare<M1Label>(MurkaShape(xOffset + 100 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& yLabel = m.prepare<M1Label>(MurkaShape(xOffset + 107 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     yLabel.label = "Y";
     yLabel.alignment = TEXT_CENTER;
     yLabel.enabled = true;
@@ -169,7 +169,7 @@ void PannerUIBaseComponent::draw()
     
 	rotateKnobDraggingNow = azKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& azLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& azLabel = m.prepare<M1Label>(MurkaShape(xOffset + 187 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     azLabel.label = "AZIMUTH";
     azLabel.alignment = TEXT_CENTER;
     azLabel.enabled = true;
@@ -199,7 +199,7 @@ void PannerUIBaseComponent::draw()
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& dLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+    auto& dLabel = m.prepare<M1Label>(MurkaShape(xOffset + 279 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     dLabel.label = "DIVERGE";
     dLabel.alignment = TEXT_CENTER;
     dLabel.enabled = true;
@@ -259,7 +259,7 @@ void PannerUIBaseComponent::draw()
     bool zHovered = zKnob.hovered;
 
     m.setColor(ENABLED_PARAM);
-    auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 450 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
+    auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 457 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
                                               knobWidth, knobHeight));
     zLabel.label = "Z";
     zLabel.alignment = TEXT_CENTER;
