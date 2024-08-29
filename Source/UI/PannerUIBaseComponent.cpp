@@ -40,7 +40,7 @@ void PannerUIBaseComponent::draw()
 
     currentMousePositionJuceScaled = m.mousePosition() / m.getScreenScale();
 
-    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-1);
     m.setColor(BACKGROUND_GREY);
 	m.clear();
     
