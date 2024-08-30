@@ -83,13 +83,16 @@ public:
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 10, 0, 20, 12);
             m.drawRectangle((getSize().x/2) - 12, getSize().y - 15, 25, 20);
-            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
+            m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-5);
             m.setColor(REF_LABEL_TEXT_COLOR);
             MurkaShape zeroLabelShape = {(getSize().x/2) - 7.5, -2, 25, 15};
             m.prepare<murka::Label>(zeroLabelShape).text({"0"}).draw();
-            MurkaShape oneEightyLabelShape = {(getSize().x/2) - 13, getSize().y - 12, 30, 15};
+            MurkaShape oneEightyLabelShape = {(getSize().x/2) - 13, getSize().y - 13, 30, 15};
             m.prepare<murka::Label>(oneEightyLabelShape).text("180").draw();
         }
+        
+        // reset font size
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
 
         // MIXER - MONITOR DISPLAY
         if (isConnected && (monitorState->monitor_mode >= 0 && monitorState->monitor_mode < 3) && monitorState->monitor_mode != 1) {
@@ -97,7 +100,7 @@ public:
                 drawMonitorYaw(monitorState->yaw-180, m);
             }
         }
-
+        
         if (monitorState->monitor_mode == 1) {
             m.setColor(BACKGROUND_GREY);
             m.drawRectangle((getSize().x/2) - 110, getSize().y - 20, 220, 20);
