@@ -37,20 +37,20 @@ public:
         
         if (labelVerticalCentering) {
             // add to the labelPadding_y the text height halved subtracted from the height halved
-            labelPadding_y += shape.size.y/2 - font->getStringBoundingBox(label, 0, 0).height/2;
+            label_y_center = shape.size.y/2 - font->getStringBoundingBox(label, 0, 0).height/2;
         }
         
-		if (alignment == TEXT_LEFT) {
-			font->drawString(label, labelPadding_x, labelPadding_y);
-		}
-		if (alignment == TEXT_CENTER) {
-			float textX = (shape.size.x / 2) - (font->getStringBoundingBox(label, 0, 0).width / 2);
-			font->drawString(label, textX, labelPadding_y);
-		}
-		if (alignment == TEXT_RIGHT) {
-			float textX = (shape.size.x - labelPadding_x) - font->getStringBoundingBox(label, 0, 0).width;
-			font->drawString(label, textX, labelPadding_y);
-		}
+        if (alignment == TEXT_LEFT) {
+            font->drawString(label, labelPadding_x, labelPadding_y + label_y_center);
+        }
+        if (alignment == TEXT_CENTER) {
+            float textX = (shape.size.x / 2) - (font->getStringBoundingBox(label, 0, 0).width / 2);
+            font->drawString(label, textX, labelPadding_y + label_y_center);
+        }
+        if (alignment == TEXT_RIGHT) {
+            float textX = (shape.size.x - labelPadding_x) - font->getStringBoundingBox(label, 0, 0).width;
+            font->drawString(label, textX, labelPadding_y + label_y_center);
+        }
 	}
 
 	// Here go parameters and any parameter convenience constructors.
@@ -58,6 +58,7 @@ public:
     TextAlignment alignment = TEXT_LEFT;
     int labelPadding_x = 5;
     int labelPadding_y = 0;
+    float label_y_center = 0;
     bool labelVerticalCentering = false;
     
     M1Label& withTextAlignment(TextAlignment a) {
