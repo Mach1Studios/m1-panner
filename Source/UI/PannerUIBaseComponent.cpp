@@ -83,8 +83,7 @@ void PannerUIBaseComponent::draw()
 	int yOffset = 499;
 	int knobWidth = 70;
 	int knobHeight = 87;
-	int M1LabelOffsetX = 0;
-    int M1LabelOffsetY = 25;
+	int M1LabelOffsetY = 25;
 
 	// X
     auto& xKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 10, yOffset, knobWidth, knobHeight))
@@ -109,12 +108,12 @@ void PannerUIBaseComponent::draw()
 	}
     
 	m.setColor(ENABLED_PARAM);
-    auto& xLabel = m.prepare<M1Label>(MurkaShape(xOffset + 17 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    xLabel.label = "X";
-    xLabel.alignment = TEXT_CENTER;
-    xLabel.enabled = true;
-    xLabel.highlighted = xKnob.hovered || reticleHoveredLastFrame;
-    xLabel.draw();
+	auto& xLabel = m.prepare<M1Label>(MurkaShape(xOffset + 10, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	xLabel.label = "X";
+	xLabel.alignment = TEXT_CENTER;
+	xLabel.enabled = true;
+	xLabel.highlighted = xKnob.hovered || reticleHoveredLastFrame;
+	xLabel.draw();
 
 	// Y
     auto& yKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
@@ -138,12 +137,12 @@ void PannerUIBaseComponent::draw()
     }
     
 	m.setColor(ENABLED_PARAM);
-    auto& yLabel = m.prepare<M1Label>(MurkaShape(xOffset + 107 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    yLabel.label = "Y";
-    yLabel.alignment = TEXT_CENTER;
-    yLabel.enabled = true;
-    yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
-    yLabel.draw();
+	auto& yLabel = m.prepare<M1Label>(MurkaShape(xOffset + 100, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	yLabel.label = "Y";
+	yLabel.alignment = TEXT_CENTER;
+	yLabel.enabled = true;
+	yLabel.highlighted = yKnob.hovered || reticleHoveredLastFrame;
+	yLabel.draw();
 
 	// Azimuth / Rotation
     auto& azKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
@@ -169,12 +168,12 @@ void PannerUIBaseComponent::draw()
     
 	rotateKnobDraggingNow = azKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& azLabel = m.prepare<M1Label>(MurkaShape(xOffset + 187 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    azLabel.label = "AZIMUTH";
-    azLabel.alignment = TEXT_CENTER;
-    azLabel.enabled = true;
-    azLabel.highlighted = azKnob.hovered || reticleHoveredLastFrame;
-    azLabel.draw();
+	auto& azLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	azLabel.label = "AZIMUTH";
+	azLabel.alignment = TEXT_CENTER;
+	azLabel.enabled = true;
+	azLabel.highlighted = azKnob.hovered || reticleHoveredLastFrame;
+	azLabel.draw();
 
 	// Diverge
     auto& dKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
@@ -199,12 +198,12 @@ void PannerUIBaseComponent::draw()
     
 	divergeKnobDraggingNow = dKnob.draggingNow;
 	m.setColor(ENABLED_PARAM);
-    auto& dLabel = m.prepare<M1Label>(MurkaShape(xOffset + 279 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    dLabel.label = "DIVERGE";
-    dLabel.alignment = TEXT_CENTER;
-    dLabel.enabled = true;
-    dLabel.highlighted = dKnob.hovered || reticleHoveredLastFrame;
-    dLabel.draw();
+	auto& dLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	dLabel.label = "DIVERGE";
+	dLabel.alignment = TEXT_CENTER;
+	dLabel.enabled = true;
+	dLabel.highlighted = dKnob.hovered || reticleHoveredLastFrame;
+	dLabel.draw();
 
 	// Gain
     auto& gKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
@@ -228,44 +227,44 @@ void PannerUIBaseComponent::draw()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& gLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    gLabel.label = "GAIN";
-    gLabel.alignment = TEXT_CENTER;
-    gLabel.enabled = true;
-    gLabel.highlighted = gKnob.hovered || reticleHoveredLastFrame;
-    gLabel.draw();
-    
-    // Z
-    auto& zKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
-                                            .controlling(&pannerState->elevation);
-    zKnob.rangeFrom = -90;
-    zKnob.rangeTo = 90;
-    zKnob.prefix = "";
-    zKnob.postfix = "º";
-    zKnob.floatingPointPrecision = 1;
-    zKnob.speed = knobSpeed;
-    zKnob.defaultValue = 0;
-    zKnob.isEndlessRotary = false;
-    zKnob.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
-    zKnob.externalHover = pitchWheelHoveredAtLastFrame;
-    zKnob.cursorHide = cursorHide;
-    zKnob.cursorShow = cursorShowAndTeleportBack;
-    zKnob.draw();
-    
-    if (zKnob.changed) {
-        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
-    }
+	auto& gLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	gLabel.label = "GAIN";
+	gLabel.alignment = TEXT_CENTER;
+	gLabel.enabled = true;
+	gLabel.highlighted = gKnob.hovered || reticleHoveredLastFrame;
+	gLabel.draw();
+
+	// Z
+	auto& zKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
+		.controlling(&pannerState->elevation);
+	zKnob.rangeFrom = -90;
+	zKnob.rangeTo = 90;
+	zKnob.prefix = "";
+	zKnob.postfix = "º";
+	zKnob.floatingPointPrecision = 1;
+	zKnob.speed = knobSpeed;
+	zKnob.defaultValue = 0;
+	zKnob.isEndlessRotary = false;
+	zKnob.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
+	zKnob.externalHover = pitchWheelHoveredAtLastFrame;
+	zKnob.cursorHide = cursorHide;
+	zKnob.cursorShow = cursorShowAndTeleportBack;
+	zKnob.draw();
+
+	if (zKnob.changed) {
+		processor->parameterChanged(processor->paramElevation, pannerState->elevation);
+	}
 
     bool zHovered = zKnob.hovered;
 
-    m.setColor(ENABLED_PARAM);
-    auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 457 + M1LabelOffsetX, yOffset - M1LabelOffsetY,
-                                              knobWidth, knobHeight));
-    zLabel.label = "Z";
-    zLabel.alignment = TEXT_CENTER;
-    zLabel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
-    zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
-    zLabel.draw();
+	m.setColor(ENABLED_PARAM);
+	auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 450, yOffset - M1LabelOffsetY,
+		knobWidth, knobHeight));
+	zLabel.label = "Z";
+	zLabel.alignment = TEXT_CENTER;
+	zLabel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
+	zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
+	zLabel.draw();
 
     /// Bottom Row of Parameters / Knobs
     
@@ -306,12 +305,12 @@ void PannerUIBaseComponent::draw()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    srLabel.label = "S ROTATE";
-    srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
-    srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
-    srLabel.draw();
+	auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	srLabel.label = "S ROTATE";
+	srLabel.alignment = TEXT_CENTER;
+	srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
+	srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
+	srLabel.draw();
 
 	// S Spread
 
@@ -337,12 +336,12 @@ void PannerUIBaseComponent::draw()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280 - 2 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
-    ssLabel.label = "S SPREAD";
-    ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
-    ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
-    ssLabel.draw();
+	auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
+	ssLabel.label = "S SPREAD";
+	ssLabel.alignment = TEXT_CENTER;
+	ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+	ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
+	ssLabel.draw();
 
 	// S Pan
 
@@ -367,12 +366,12 @@ void PannerUIBaseComponent::draw()
     }
 
 	m.setColor(ENABLED_PARAM);
-    auto& spLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370 + M1LabelOffsetX, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
-    spLabel.label = "S PAN";
-    spLabel.alignment = TEXT_CENTER;
-    spLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
-    spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
-    spLabel.draw();
+	auto& spLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
+	spLabel.label = "S PAN";
+	spLabel.alignment = TEXT_CENTER;
+	spLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+	spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
+	spLabel.draw();
 
 	/// CHECKBOXES
 	float checkboxSlotHeight = 28;
