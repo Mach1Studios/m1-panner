@@ -39,11 +39,11 @@ public:
 			font->drawString(label, labelPadding_x, labelPadding_y);
 		}
 		if (alignment == TEXT_CENTER) {
-			float textX = labelPadding_x + (shape.size.x / 2) - (font->getStringBoundingBox(label, 0, 0).width / 2);
+			float textX = (shape.size.x / 2) - (font->getStringBoundingBox(label, 0, 0).width / 2);
 			font->drawString(label, textX, labelPadding_y);
 		}
 		if (alignment == TEXT_RIGHT) {
-			float textX = labelPadding_x + (shape.size.x - 10) - font->getStringBoundingBox(label, 0, 0).width;
+			float textX = (shape.size.x - labelPadding_x) - font->getStringBoundingBox(label, 0, 0).width;
 			font->drawString(label, textX, labelPadding_y);
 		}
 	};
