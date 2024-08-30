@@ -711,7 +711,7 @@ void PannerUIBaseComponent::draw()
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE-3);
-            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 105, m.getSize().height() - 26, 60, 20));
+            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width()/2 + 95, m.getSize().height() - 26, 60, 20));
             outputLabel.label = "OUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
