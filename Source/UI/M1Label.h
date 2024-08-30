@@ -46,7 +46,7 @@ public:
 			float textX = (shape.size.x - labelPadding_x) - font->getStringBoundingBox(label, 0, 0).width;
 			font->drawString(label, textX, labelPadding_y);
 		}
-	};
+	}
 
 	// Here go parameters and any parameter convenience constructors. You need to define something called Parameters, even if it's NULL.
 //    std::string label;

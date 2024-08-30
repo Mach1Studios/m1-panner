@@ -550,7 +550,6 @@ void PannerUIBaseComponent::draw()
                 // Dropdown is used for QUADMODE indication only
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
                 inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
-                inputDropdownButton.labelPadding_x = 10;
                 inputDropdownButton.draw();
                 
                 std::vector<std::string> input_options = {"QUAD", "LCRS", "AFORMAT", "1OA-ACN", "1OA-FuMa"};
@@ -566,7 +565,6 @@ void PannerUIBaseComponent::draw()
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
                 inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
-                inputDropdownMenu.labelPadding_x = 10;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -588,7 +586,6 @@ void PannerUIBaseComponent::draw()
                 // Dropdown is used for QUADMODE indication only
                 auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
                 inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
-                inputDropdownButton.labelPadding_x = 10;
                 inputDropdownButton.draw();
                 
                 std::vector<std::string> input_options = {"5.1 Film", "5.1 DTS", "5.1 SMPTE"};
@@ -604,7 +601,6 @@ void PannerUIBaseComponent::draw()
                 
                 inputDropdownMenu.optionHeight = dropdownItemHeight;
                 inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
-                inputDropdownMenu.labelPadding_x = 10;
                 inputDropdownMenu.draw();
                 
                 if (inputDropdownMenu.changed) {
@@ -622,7 +618,6 @@ void PannerUIBaseComponent::draw()
             // Multichannel DAWs will scale the available inputs based on what the host offers
             auto& inputDropdownButton = m.prepare<M1DropdownButton>({  m.getSize().width()/2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
             inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
-            inputDropdownButton.labelPadding_x = 10;
             inputDropdownButton.draw();
             
             std::vector<std::string> input_options = {"MONO", "STEREO"};
@@ -655,7 +650,6 @@ void PannerUIBaseComponent::draw()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
-            inputDropdownMenu.labelPadding_x = 10;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -681,7 +675,6 @@ void PannerUIBaseComponent::draw()
 
             inputDropdownMenu.optionHeight = dropdownItemHeight;
             inputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
-            inputDropdownMenu.labelPadding_x = 10;
             inputDropdownMenu.draw();
 
             if (inputDropdownMenu.changed) {
@@ -728,7 +721,6 @@ void PannerUIBaseComponent::draw()
             auto outputType = pannerState->m1Encode.getOutputMode();            
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width()/2 + 20, m.getSize().height() - 28, 80, 20 }).withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount()));
             outputDropdownButton.withFontSize(DEFAULT_FONT_SIZE-5);
-            outputDropdownButton.labelPadding_x = 15;
             outputDropdownButton.draw();
             
             std::vector<std::string> output_options = {"M1Horizon-4", "M1Spatial-8"};
@@ -763,7 +755,6 @@ void PannerUIBaseComponent::draw()
             
             outputDropdownMenu.optionHeight = dropdownItemHeight;
             outputDropdownMenu.fontSize = DEFAULT_FONT_SIZE-5;
-            outputDropdownMenu.labelPadding_x = 15;
             outputDropdownMenu.draw();
 
             if (outputDropdownMenu.changed) {
