@@ -887,13 +887,8 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputModeT
 
 void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    // You should use this method to store your parameters in the memory block.
+    // Store the parameters in the memory block.
     juce::MemoryOutputStream stream(destData, false);
-    // DO NOT CHANGE THIS NUMBER, it is not a version tracker but a version tag threshold for supporting
-    // backwards compatible automation data in PT
     stream.writeString("2.0.0"); // write the last major prefix
     
     juce::XmlElement root("Root");
@@ -921,7 +916,7 @@ void M1PannerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
+    // Restore the parameters from the memory block,
     // whose contents will have been created by the getStateInformation() call.
     juce::MemoryInputStream input(data, sizeInBytes, false);
     auto prefix = input.readString();
@@ -929,30 +924,27 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
      This prefix string check is to define when we swap from mState parameters to newer AVPTS, using this to check if the plugin
      was made before this release version (1.5.1) since it would still be using mState, if it is a M1-Panner made before "1.5.1"
      then we use the mState tree to call the saved automation and values of all our parameters in those older sessions.
-
-     WARNING: Do not update this string value unless there is a specific reason, it is not designed to be updated with each
-     release version update.
     */
 
     if (!prefix.isEmpty() && (prefix == "1.5.1" || prefix == "2.0.0")) {
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
-    
-        pannerSettings.azimuth = getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth);
-        pannerSettings.elevation = getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation);
-        pannerSettings.diverge = getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge);
-        pannerSettings.gain = getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain);
-        pannerSettings.stereoOrbitAzimuth = getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth);
-        pannerSettings.stereoSpread = getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread);
-        pannerSettings.stereoInputBalance = getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance);
-        pannerSettings.autoOrbit = getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
-        pannerSettings.isotropicMode = getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
-        pannerSettings.equalpowerMode = getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
+        
+        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
+        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
+        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
+        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
+        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
+        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
+        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
+        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
+        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
+        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
 
 #ifdef ITD_PARAMETERS
-        pannerSettings.itdActive = getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
-        pannerSettings.delayTime = getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
-        pannerSettings.delayDistance = getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
+        parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
+        parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
+        parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
 #endif
     
         // Parsing old plugin QUADMODE and applying to new inputType structure
@@ -973,19 +965,11 @@ void M1PannerAudioProcessor::setStateInformation (const void* data, int sizeInBy
             } else {
                 // error
             }
-            pannerSettings.m1Encode.setInputMode(tempInputType);
             parameterChanged(paramInputMode, tempInputType);
         } else if (prefix == "2.0.0") {
             // if the parsed input from xml is not the default value
-            if (getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode()) != (int)pannerSettings.m1Encode.getInputMode()) {
-                pannerSettings.m1Encode.setInputMode(Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-                parameterChanged(paramInputMode, Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-            }
-            // if the parsed output from xml is not the default value
-            if (getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode()) != (int)pannerSettings.m1Encode.getOutputMode()) {
-                pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
-                parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
-            }
+            parameterChanged(paramInputMode, Mach1EncodeInputModeType(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+            parameterChanged(paramOutputMode, Mach1EncodeOutputModeType(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
         }
     } else {
         // Legacy recall
