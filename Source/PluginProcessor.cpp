@@ -221,9 +221,7 @@ void M1PannerAudioProcessor::changeProgramName (int index, const juce::String& n
 
 //==============================================================================
 void M1PannerAudioProcessor::createLayout(){
-    int numInputsFromPannerSettings = pannerSettings.m1Encode.getInputChannelsCount();
-    int numOutputsFromPannerSettings = pannerSettings.m1Encode.getOutputChannelsCount();
-    
+
     if (external_spatialmixer_active) {
         /// EXTERNAL MULTICHANNEL PROCESSING
         
@@ -440,7 +438,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String &parameterID, f
 #ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    juce::PluginHostType hostType;
     Mach1Encode configTester;
     
     // block plugin if input or output is disabled on construction
