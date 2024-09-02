@@ -168,7 +168,7 @@ public:
     
     // UI related utility functions
     struct Line2D {
-        Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {};
+        Line2D(double x, double y, double x2, double y2) : x{ x }, y{ y }, x2{ x2 }, y2{ y2 } {}
         MurkaPoint p() const {
             return { x, y };
         }
