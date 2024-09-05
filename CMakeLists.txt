@@ -105,7 +105,7 @@ juce_add_plugin(${PLUGIN_NAME}
                 IS_SYNTH FALSE)
 
 target_compile_definitions(${PLUGIN_NAME}
-    PUBLIC 
+    PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
@@ -140,7 +140,7 @@ foreach(target ${FORMATS} "All")
     if(TARGET ${PLUGIN_NAME}_${target})
         if(${target} STREQUAL "VST" OR ${target} STREQUAL "VST3")
                 set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
-                FOLDER "Targets"                
+                FOLDER "Targets"
                 XCODE_SCHEME_EXECUTABLE /Applications/REAPER.app
                 XCODE_GENERATE_SCHEME ON)
         elseif(${target} STREQUAL "AAX")
@@ -152,7 +152,7 @@ foreach(target ${FORMATS} "All")
             set_target_properties(${PLUGIN_NAME}_${target} PROPERTIES
                 # Tuck the actual plugin targets into a folder where they won't bother us
                 FOLDER "Targets"
-                
+
                 # MacOS only: Sets the default executable that Xcode will open on build
                 # For this exact path to to work, manually build the AudioPluginHost.xcodeproj in the JUCE subdir
                 #XCODE_SCHEME_EXECUTABLE ${PROJECT_SOURCE_DIR}/JUCE/extras/AudioPluginHost/Builds/MacOSX/build/Debug/AudioPluginHost.app
@@ -175,7 +175,7 @@ set(JucePlugin_Name ${PLUGIN_NAME})
 set(JucePlugin_Desc ${PLUGIN_NAME})
 
 # add M1-SDK
-if(EXTERNAL_M1SDK_PATH) 
+if(EXTERNAL_M1SDK_PATH)
     message(STATUS "Using an external M1SDK Path: ${EXTERNAL_M1SDK_PATH}")
     set(MACH1SPATIAL_LIBS_PATH ${EXTERNAL_M1SDK_PATH}/mach1spatial-libs)
 else()
@@ -204,7 +204,7 @@ if(WIN32 OR MSVC OR MINGW)
         optimized ${MACH1ENCODE_LIBRARY_RELEASE}
     )
 else()
-    find_library(MACH1ENCODE_LIBRARY 
+    find_library(MACH1ENCODE_LIBRARY
         NAMES Mach1EncodeCAPI
         PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib
     )

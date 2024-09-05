@@ -2,30 +2,32 @@
 
 #include "Mach1Encode.h"
 
-struct PannerSettings {
+struct PannerSettings
+{
     int port = 0;
     std::string displayName = "";
-    
+
     /// State Definitions:
     ///  - -1 = mark for deletion
     ///  -  0 = off / inactive
     ///  -  1 = on / active
     ///  -  2 = focused
     int state = 0;
-    
-    struct Color {
-		std::uint8_t r = 0;
-		std::uint8_t g = 0;
-		std::uint8_t b = 0;
-		std::uint8_t a = 0;
+
+    struct Color
+    {
+        std::uint8_t r = 0;
+        std::uint8_t g = 0;
+        std::uint8_t b = 0;
+        std::uint8_t a = 0;
     } color;
-    
+
     /// This object contains:
     /// - `Mach1EncodeInputModeType`
     /// - `Mach1EncodeOutputModeType`
     /// - `Mach1EncodePannerModeType`
     Mach1Encode m1Encode;
-    
+
     float x = 0.;
     float y = 70.7;
     float azimuth = 0.;
@@ -39,7 +41,7 @@ struct PannerSettings {
     bool overlay = false;
     bool isotropicMode = false;
     bool equalpowerMode = false;
-    
+
 #ifdef ITD_PARAMETERS
     bool itdActive = false;
     int delayTime = 600;
@@ -47,7 +49,8 @@ struct PannerSettings {
 #endif
 };
 
-struct MixerSettings {
+struct MixerSettings
+{
     int monitor_input_channel_count;
     int monitor_output_channel_count;
     float yaw;
@@ -58,11 +61,12 @@ struct MixerSettings {
     bool yawActive, pitchActive, rollActive = true;
 };
 
-struct HostTimelineData {
+struct HostTimelineData
+{
     // Currently implmenting via JUCE 6, however JUCE 7 will change require a change to this struct design
     bool isPlaying;
     double playheadPositionInSeconds;
-    
+
     // TODO: Implement the following after upgrading project to JUCE 7
     // double hostBPM; // Used to calculate loop points in seconds
     // double loopStartPositionInSeconds; // for more detailed indication on timeline indicator
@@ -70,12 +74,14 @@ struct HostTimelineData {
     // double editOriginPositionInSeconds;
 };
 
-struct find_panner {
+struct find_panner
+{
     int port;
 
     find_panner(int port) : port(port) {}
 
-    bool operator()(const PannerSettings& p) const {
+    bool operator()(const PannerSettings& p) const
+    {
         return p.port == port;
     }
 };

@@ -9,7 +9,7 @@ if(EXTERNAL_M1SDK_SOURCE_PATH)
     include(${EXTERNAL_M1SDK_SOURCE_PATH})
 else()
     # link to binary based M1-SDK
-    if(EXTERNAL_M1SDK_PATH) 
+    if(EXTERNAL_M1SDK_PATH)
         message(STATUS "Using an external M1SDK Path: ${EXTERNAL_M1SDK_PATH}")
         set(MACH1SPATIAL_LIBS_PATH ${EXTERNAL_M1SDK_PATH}/mach1spatial-libs)
     else()
@@ -58,7 +58,7 @@ else()
             optimized ${MACH1DECODE_LIBRARY_RELEASE}
         )
     else()
-        find_library(MACH1DECODE_LIBRARY 
+        find_library(MACH1DECODE_LIBRARY
             NAMES Mach1DecodeCAPI
             PATHS ${MACH1SPATIAL_LIBS_UNIX_PATH}/lib
         )

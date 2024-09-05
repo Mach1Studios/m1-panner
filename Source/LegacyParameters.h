@@ -12,28 +12,24 @@
 
 // This header contains the refactored logic for `setStateInformation` and `getStateInformation` to help make the PluginProcessor more readable
 
-class AudioParameterCustom {
+class AudioParameterCustom
+{
 public:
     std::type_index type_index = std::type_index(typeid(NULL));
 
     virtual void update() {}
     virtual void update(void* ptr) {}
-    virtual ~AudioParameterCustom() { }
+    virtual ~AudioParameterCustom() {}
 };
 
-class AudioParameterCustomFloat : public AudioParameterCustom, public juce::AudioParameterFloat {
+class AudioParameterCustomFloat : public AudioParameterCustom, public juce::AudioParameterFloat
+{
     float* ptr = nullptr;
     float data = 0;
 
 public:
-    AudioParameterCustomFloat(float* ptr_, const juce::String& parameterID,
-        const juce::String& name,
-                              juce::NormalisableRange<float> normalisableRange,
-        float defaultValue,
-        const juce::String& label = juce::String(),
-        Category category = juce::AudioProcessorParameter::genericParameter,
-        std::function<juce::String(float value, int maximumStringLength)> stringFromValue = nullptr,
-        std::function<float(const juce::String& text)> valueFromString = nullptr) : juce::AudioParameterFloat(parameterID, name, normalisableRange, defaultValue, label, category, stringFromValue, valueFromString) {
+    AudioParameterCustomFloat(float* ptr_, const juce::String& parameterID, const juce::String& name, juce::NormalisableRange<float> normalisableRange, float defaultValue, const juce::String& label = juce::String(), Category category = juce::AudioProcessorParameter::genericParameter, std::function<juce::String(float value, int maximumStringLength)> stringFromValue = nullptr, std::function<float(const juce::String& text)> valueFromString = nullptr) : juce::AudioParameterFloat(parameterID, name, normalisableRange, defaultValue, label, category, stringFromValue, valueFromString)
+    {
         data = defaultValue;
         ptr = ptr_;
         type_index = std::type_index(typeid(float));
@@ -42,72 +38,85 @@ public:
     operator float() const noexcept { return juce::AudioParameterFloat::get(); }
     float getNormalized() { return getNormalisableRange().convertTo0to1(juce::AudioParameterFloat::get()); }
 
-    AudioParameterCustomFloat& operator = (float newValue) {
+    AudioParameterCustomFloat& operator=(float newValue)
+    {
         float val = convertFrom0to1(convertTo0to1(newValue));
         (juce::AudioParameterFloat::operator=)(val);
 
-        if (ptr) {
+        if (ptr)
+        {
             data = val;
             *ptr = val;
         }
         return *this;
     }
 
-    void update() override {
-        if (ptr && *ptr != data) {
+    void update() override
+    {
+        if (ptr && *ptr != data)
+        {
             this->operator=(*ptr);
         }
     }
 
-    void update(void* ptr_) override {
-        if (ptr == ptr_) {
+    void update(void* ptr_) override
+    {
+        if (ptr == ptr_)
+        {
             this->operator=(*ptr);
         }
     }
 
-    bool isAutomatable() const override {
+    bool isAutomatable() const override
+    {
         return shouldAutomate;
     }
 };
 
-class AudioParameterCustomBool : public AudioParameterCustom, public juce::AudioParameterBool {
+class AudioParameterCustomBool : public AudioParameterCustom, public juce::AudioParameterBool
+{
     bool* ptr = nullptr;
     bool data = 0;
 
 public:
-    AudioParameterCustomBool(bool* ptr_, const juce::String& parameterID,
-        const juce::String& name,
-        float defaultValue,
-        const juce::String& label = juce::String()) : juce::AudioParameterBool(parameterID, name, defaultValue, label) {
+    AudioParameterCustomBool(bool* ptr_, const juce::String& parameterID, const juce::String& name, float defaultValue, const juce::String& label = juce::String()) : juce::AudioParameterBool(parameterID, name, defaultValue, label)
+    {
         data = defaultValue;
         ptr = ptr_;
         type_index = std::type_index(typeid(bool));
     };
     bool shouldAutomate = false;
-    operator bool() const noexcept { return  AudioParameterBool::get(); }
+    operator bool() const noexcept { return AudioParameterBool::get(); }
 
-    AudioParameterCustomBool& operator= (bool newValue) {
+    AudioParameterCustomBool& operator=(bool newValue)
+    {
         (AudioParameterBool::operator=)(newValue);
-        if (ptr) {
+        if (ptr)
+        {
             data = newValue;
             *ptr = newValue;
         }
         return *this;
     }
 
-    void update() override {
-        if (ptr && *ptr != data) {
+    void update() override
+    {
+        if (ptr && *ptr != data)
+        {
             this->operator=(*ptr);
         }
     }
 
-    void update(void* ptr_) override {
-        if (ptr == ptr_) {
+    void update(void* ptr_) override
+    {
+        if (ptr == ptr_)
+        {
             this->operator=(*ptr);
         }
     }
 
-    bool isAutomatable() const override {
+    bool isAutomatable() const override
+    {
         return shouldAutomate;
     }
 };
@@ -140,26 +149,26 @@ const juce::String paramDelayTime = "DelayTime";
 const juce::String paramITDClampActive = "ITDClamp";
 const juce::String paramDelayDistance = "ITDDistance";
 
-AudioParameterCustomBool *bypassParameter = nullptr;
-AudioParameterCustomFloat *xParameter = nullptr;
-AudioParameterCustomFloat *yParameter = nullptr;
-AudioParameterCustomFloat *zParameter = nullptr;
-AudioParameterCustomFloat *gainParameter = nullptr;
-AudioParameterCustomFloat *stereoSpreadParameter = nullptr;
-AudioParameterCustomFloat *rotationParameter = nullptr;
-AudioParameterCustomFloat *stereoOrbitAngleParameter = nullptr;
-AudioParameterCustomFloat *stereoInputBalanceParameter = nullptr;
-AudioParameterCustomBool *stereoAutoOrbitParameter = nullptr; // bool ?
-AudioParameterCustomBool *isotropicEncodeParameter = nullptr; // bool ?
-AudioParameterCustomFloat *pannerModeParameter = nullptr; // int ?
-AudioParameterCustomFloat *quadModeParameter = nullptr; // int ?
-AudioParameterCustomFloat *surroundModeParameter = nullptr; // int ?
-AudioParameterCustomFloat *divergeParameter = nullptr;
-AudioParameterCustomBool *ghostParameter = nullptr; // bool ?
-AudioParameterCustomBool *equalPowerEncodeParameter = nullptr; // bool ?
-AudioParameterCustomBool *itdParameter = nullptr;
-AudioParameterCustomFloat *delayTimeParameter = nullptr;
-AudioParameterCustomFloat *delayDistanceParameter = nullptr;
+AudioParameterCustomBool* bypassParameter = nullptr;
+AudioParameterCustomFloat* xParameter = nullptr;
+AudioParameterCustomFloat* yParameter = nullptr;
+AudioParameterCustomFloat* zParameter = nullptr;
+AudioParameterCustomFloat* gainParameter = nullptr;
+AudioParameterCustomFloat* stereoSpreadParameter = nullptr;
+AudioParameterCustomFloat* rotationParameter = nullptr;
+AudioParameterCustomFloat* stereoOrbitAngleParameter = nullptr;
+AudioParameterCustomFloat* stereoInputBalanceParameter = nullptr;
+AudioParameterCustomBool* stereoAutoOrbitParameter = nullptr; // bool ?
+AudioParameterCustomBool* isotropicEncodeParameter = nullptr; // bool ?
+AudioParameterCustomFloat* pannerModeParameter = nullptr; // int ?
+AudioParameterCustomFloat* quadModeParameter = nullptr; // int ?
+AudioParameterCustomFloat* surroundModeParameter = nullptr; // int ?
+AudioParameterCustomFloat* divergeParameter = nullptr;
+AudioParameterCustomBool* ghostParameter = nullptr; // bool ?
+AudioParameterCustomBool* equalPowerEncodeParameter = nullptr; // bool ?
+AudioParameterCustomBool* itdParameter = nullptr;
+AudioParameterCustomFloat* delayTimeParameter = nullptr;
+AudioParameterCustomFloat* delayDistanceParameter = nullptr;
 
 float getParameterFromValueTreeState(juce::AudioProcessorValueTreeState* mState, juce::String parameterIO)
 {
@@ -172,12 +181,13 @@ void legacyParametersRecall(const void* data, int sizeInBytes, juce::AudioProces
     juce::MemoryInputStream input(data, sizeInBytes, false);
     input.setPosition(0);
     juce::ValueTree tree = juce::ValueTree::readFromStream(input);
-    if (tree.isValid()) {
+    if (tree.isValid())
+    {
         // load from tree
-        
+
         // TODO: is this safe to create a temp timer? should we destroy it?
         juce::ScopedPointer<juce::AudioProcessorValueTreeState> mState = new juce::AudioProcessorValueTreeState(processorToConnectTo, new juce::UndoManager());
-        
+
         mState->createAndAddParameter("empty parameter", "empty parameter", TRANS("empty parameter"), juce::NormalisableRange<float>(0.0f, 1.0f, 0.1), 0, nullptr, nullptr, false, /* automatable ?*/ false);
         mState->createAndAddParameter(paramX, "x", TRANS("X"), juce::NormalisableRange<float>(-100.0f, 100.0f, 0.1), 0, nullptr, nullptr, false, /* automatable ?*/ false);
         mState->createAndAddParameter(paramY, "y", TRANS("Y"), juce::NormalisableRange<float>(-100.0f, 100.0f, 0.1), 70.7f, nullptr, nullptr, false, /* automatable ?*/ false);
@@ -193,8 +203,8 @@ void legacyParametersRecall(const void* data, int sizeInBytes, juce::AudioProces
         mState->createAndAddParameter(paramPannerMode, "PannerMode", TRANS("Panner Mode"), juce::NormalisableRange<float>(0.0f, 4.0f, 1.0f), 1.0f, nullptr, nullptr, false, /* automatable ?*/ false);
         mState->createAndAddParameter(paramQuadMode, "QuadMode", TRANS("QuadMode"), juce::NormalisableRange<float>(0.0f, 4.0f /*Max number of 4 channel input types, TODO: make var */, 1.0f), 0.0f, nullptr, nullptr, false, /* automatable ?*/ false);
         mState->createAndAddParameter(paramSurroundMode, "SurroundMode", TRANS("SurroundMode"), juce::NormalisableRange<float>(0.0f, 6.0f /*Max number of 4 channel input types, TODO: make var */, 1.0f), 0.0f, nullptr, nullptr, false, /* automatable ?*/ false);
-//            mState->createAndAddParameter(paramAmbiMode, "AmbiMode", TRANS("AmbiMode"), NormalisableRange<float>(0.0f, 1.0f /*Max number of 2 channel input types, TODO: make var */, 1.0f), 0.0f, nullptr, nullptr, false, /* automatable ?*/ false);
-        mState->createAndAddParameter(paramGhost, "Ghost", TRANS("Ghost"),  juce::NormalisableRange<float>(0.0f, 1.0f, 1.0f), 1.0f, nullptr, nullptr, false, /* automatable ?*/ false);
+        //            mState->createAndAddParameter(paramAmbiMode, "AmbiMode", TRANS("AmbiMode"), NormalisableRange<float>(0.0f, 1.0f /*Max number of 2 channel input types, TODO: make var */, 1.0f), 0.0f, nullptr, nullptr, false, /* automatable ?*/ false);
+        mState->createAndAddParameter(paramGhost, "Ghost", TRANS("Ghost"), juce::NormalisableRange<float>(0.0f, 1.0f, 1.0f), 1.0f, nullptr, nullptr, false, /* automatable ?*/ false);
         mState->createAndAddParameter(paramEqualPowerEncode, "EqualPower Encode", TRANS("EqualPowerEncode"), juce::NormalisableRange<float>(0.0f, 1.0f, 1.0f), 0.0f, nullptr, nullptr, false, /* automatable ?*/ true);
         mState->createAndAddParameter(paramITDActive, "ITD Processing", TRANS("ITDProcessing"), juce::NormalisableRange<float>(0.0f, 1.0f, 1.0f), 0.0f, nullptr, nullptr, false, true);
         mState->createAndAddParameter(paramDelayTime, "Delay Time (max)", TRANS("DelayTime"), juce::NormalisableRange<float>(0.0f, 10000.0f, 1.0f), 600.0f, nullptr, nullptr, false, true);

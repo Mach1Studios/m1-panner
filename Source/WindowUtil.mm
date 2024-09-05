@@ -25,28 +25,28 @@ std::string WindowUtil::name = "";
 void WindowListApplierFunction(const void *inputDictionary, void *context) {
     NSDictionary *entry = (__bridge NSDictionary*)inputDictionary;
     NSString *appName = @(WindowUtil::name.c_str());
-    
+
     // The flags that we pass to CGWindowListCopyWindowInfo will automatically filter out most undesirable windows.
     // However, it is possible that we will get back a window that we cannot read from, so we'll filter those out manually.
     int sharingState = [[entry objectForKey:(id)kCGWindowSharingState] intValue];
     if(sharingState != kCGWindowSharingNone) {
     NSString *sVisible = [entry objectForKey:(id)kCGWindowIsOnscreen];
     float isVisible = [sVisible floatValue];
-    
+
         if(isVisible==1) {
             // Grab the application name, but since it's optional we need to check before we can use it.
             NSString *applicationName = [entry objectForKey:(id)kCGWindowOwnerName];
             if(applicationName != NULL) {
                 if ([applicationName isEqualToString:appName]){
-                    
+
                     // Grab the Window Bounds, it's a dictionary in the array, but we want to display it as a string
                     CGRect bounds;
                     CGRectMakeWithDictionaryRepresentation((CFDictionaryRef)[entry objectForKey:(id)kCGWindowBounds], &bounds);
-                    
+
                     //     NSAlert *alert = [[[NSAlert alloc] init] autorelease];
                     //      [alert setMessageText:applicationName];
                     //    [alert runModal];
-       
+
                     WindowUtil::x = bounds.origin.x;
                     WindowUtil::y = bounds.origin.y + 15;
                     WindowUtil::width = bounds.size.width;
@@ -61,14 +61,14 @@ void WindowListApplierFunction(const void *inputDictionary, void *context) {
 void WindowUtil::update() {
     CGWindowListOption listOptions;
     CFArrayRef windowList = CGWindowListCopyWindowInfo(listOptions, kCGNullWindowID);
-    
+
     if(!WindowUtil::isBusy) {
         WindowUtil::isBusy = true;
         WindowUtil::isFound = false;
 
         CFArrayApplyFunction(windowList, CFRangeMake(0, CFArrayGetCount(windowList)), &WindowListApplierFunction, nullptr);
         CFRelease(windowList);
-        
+
         WindowUtil::isBusy = false;
     }
 }
