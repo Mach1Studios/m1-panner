@@ -6,20 +6,20 @@ class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private ju
 {
     bool init(int helperPort);
     bool initFromSettings(std::string jsonSettingsFilePath);
-	int helperPort = 0, port = 0;
-	bool isConnected = false;
-	std::function<void(juce::OSCMessage msg)> messageReceived;
-	void oscMessageReceived(const juce::OSCMessage& msg) override;
-    juce::uint32 lastMessageTime = 0; 
+    int helperPort = 0, port = 0;
+    bool isConnected = false;
+    std::function<void(juce::OSCMessage msg)> messageReceived;
+    void oscMessageReceived(const juce::OSCMessage& msg) override;
+    juce::uint32 lastMessageTime = 0;
 
 public:
-	PannerOSC();
-	~PannerOSC();
+    PannerOSC();
+    ~PannerOSC();
 
-	void update();
-	void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
-	bool Send(const juce::OSCMessage& msg);
-	bool IsConnected();
+    void update();
+    void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
+    bool Send(const juce::OSCMessage& msg);
+    bool IsConnected();
     bool sendPannerSettings(int state);
     bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread);
 };

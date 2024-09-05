@@ -6,12 +6,12 @@
   ==============================================================================
 */
 
-#include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "PluginProcessor.h"
 
 //==============================================================================
-M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor (M1PannerAudioProcessor &p)
-    : AudioProcessorEditor (&p)
+M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcessor& p)
+    : AudioProcessorEditor(&p)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -61,10 +61,10 @@ M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 }
 
 //==============================================================================
-void M1PannerAudioProcessorEditor::paint (juce::Graphics& g)
+void M1PannerAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (40, 40, 40));
-    g.setColour (juce::Colour (40, 40, 40));
+    g.fillAll(juce::Colour(40, 40, 40));
+    g.setColour(juce::Colour(40, 40, 40));
 }
 
 void M1PannerAudioProcessorEditor::resized()
@@ -75,11 +75,13 @@ void M1PannerAudioProcessorEditor::resized()
 
 void M1PannerAudioProcessorEditor::timerCallback()
 {
-    if (isOverlayShow && !overlayDialogWindow->isVisible()) {
+    if (isOverlayShow && !overlayDialogWindow->isVisible())
+    {
         overlayWindow->addOpenGLComponent();
         overlayDialogWindow->setVisible(true);
     }
-    else if (!isOverlayShow && overlayDialogWindow->isVisible()) {
+    else if (!isOverlayShow && overlayDialogWindow->isVisible())
+    {
         overlayDialogWindow->setVisible(false);
         overlayWindow->removeOpenGLComponent();
     }
