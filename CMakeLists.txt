@@ -12,12 +12,6 @@ if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Architectures" FORCE)
     set(CMAKE_XCODE_ATTRIBUTE_MACOSX_DEPLOYMENT_TARGET[arch=arm64] "11.0" CACHE STRING "arm 64 minimum deployment target" FORCE)
 endif()# IDEs:  Enable grouping of source files into folders in IDEs.
-if(WIN32 OR MSVC OR MINGW OR CMAKE_COMPILER_IS_MSVC)
-    if(CMAKE_GENERATOR STREQUAL "Ninja")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS -j1")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS -j1")
-    endif()
-endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # IDEs:  Create a folder in the IDE with the JUCE Module code.
 option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Show all module sources in IDE projects" ON)
