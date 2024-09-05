@@ -38,7 +38,12 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 
 - MacOS setup M1-Panner
 ```
-cmake -Bbuild -G "Xcode" -DBUILD_VST3=ON -DBUILD_AAX=ON -DAAX_PATH="/Users/[USERNAME]/SDKs/aax-sdk-2-4-1" -DBUILD_AU=ON -DBUILD_VST=ON -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK" -DBUILD_AUV3=ON -DBUILD_UNITY=ON -DBUILD_STANDALONE=ON
+cmake -Bbuild -G "Xcode" -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_AU=ON -DBUILD_VST=ON -DVST2_PATH="/Users/[USERNAME]/SDKs/VST_SDK_vst2/VST2_SDK" -DBUILD_UNITY=ON -DBUILD_STANDALONE=ON
+```
+
+- Ninja (Crossplatform)
+```
+cmake -Bbuild -G "Ninja" -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_AU=ON -DBUILD_UNITY=ON -DBUILD_STANDALONE=ON
 ```
 
 - MacOS setup & compile M1-Panner with specific I/O:
