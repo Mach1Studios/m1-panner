@@ -590,7 +590,9 @@ void PannerUIBaseComponent::draw()
             {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
-                auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+                auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 })
+                                                .withLabel(inputLabelText)
+                                                .withOutline(true);
                 inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE - 5);
                 inputDropdownButton.draw();
 
@@ -640,7 +642,9 @@ void PannerUIBaseComponent::draw()
             {
                 // Displaying options only available as 4 channel INPUT
                 // Dropdown is used for QUADMODE indication only
-                auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+                auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 })
+                                                .withLabel(inputLabelText)
+                                                .withOutline(true);
                 inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE - 5);
                 inputDropdownButton.draw();
 
@@ -682,7 +686,9 @@ void PannerUIBaseComponent::draw()
         else if (processor->hostType.isReaper() || processor->getMainBusNumInputChannels() > 2)
         {
             // Multichannel DAWs will scale the available inputs based on what the host offers
-            auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 }).withLabel(inputLabelText);
+            auto& inputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 - 60 - 40, m.getSize().height() - 28, 80, 20 })
+                                            .withLabel(inputLabelText)
+                                            .withOutline(true);
             inputDropdownButton.withFontSize(DEFAULT_FONT_SIZE - 5);
             inputDropdownButton.draw();
 
@@ -740,6 +746,7 @@ void PannerUIBaseComponent::draw()
                                                                         20 })
                                             .withLabel(inputLabelText)
                                             .withFontSize(DEFAULT_FONT_SIZE - 5)
+                                            .withOutline(true)
                                             .draw();
             std::vector<std::string> input_options = { "MONO", "STEREO" };
             auto& inputDropdownMenu = m.prepare<M1DropdownMenu>({ m.getSize().width() / 2 - 60 - 40,
@@ -806,7 +813,9 @@ void PannerUIBaseComponent::draw()
             outputLabel.draw();
 
             auto outputType = pannerState->m1Encode.getOutputMode();
-            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 + 20, m.getSize().height() - 28, 80, 20 }).withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount()));
+            auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 + 20, m.getSize().height() - 28, 80, 20 })
+                                             .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount()))
+                                             .withOutline(true);
             outputDropdownButton.withFontSize(DEFAULT_FONT_SIZE - 5);
             outputDropdownButton.draw();
 
