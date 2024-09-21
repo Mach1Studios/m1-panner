@@ -114,6 +114,11 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
         }
     });
 
+    // print build time for debug
+    juce::String date(__DATE__);
+    juce::String time(__TIME__);
+    DBG("[PANNER] Build date: " + date + " | Build time: " + time);
+
     // pannerOSC update timer loop
     startTimer(200);
 }

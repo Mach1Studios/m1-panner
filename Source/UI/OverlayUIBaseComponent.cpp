@@ -121,19 +121,6 @@ OverlayUIBaseComponent::~OverlayUIBaseComponent()
 void OverlayUIBaseComponent::initialise()
 {
     JuceMurkaBaseComponent::initialise();
-
-    std::string resourcesPath;
-    if ((juce::SystemStats::getOperatingSystemType() & juce::SystemStats::MacOSX) != 0)
-    {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Application Support/Mach1 Spatial System/resources").getFullPathName().toStdString();
-    }
-    else
-    {
-        resourcesPath = juce::File::getSpecialLocation(juce::File::SpecialLocationType::userApplicationDataDirectory).getChildFile("Mach1 Spatial System/resources").getFullPathName().toStdString();
-    }
-    printf("Resources Loaded From: %s \n", resourcesPath.c_str());
-    m.setResourcesPath(resourcesPath);
-
     makeTransparent();
 }
 
@@ -235,13 +222,10 @@ void OverlayUIBaseComponent::draw()
 //==============================================================================
 void OverlayUIBaseComponent::paint(juce::Graphics& g)
 {
-    // You can add your component specific drawing code here!
     // This will draw over the top of the openGL background.
 }
 
 void OverlayUIBaseComponent::resized()
 {
     // This is called when the OverlayUIBaseComponent is resized.
-    // If you add any child components, this is where you should
-    // update their positions.
 }
