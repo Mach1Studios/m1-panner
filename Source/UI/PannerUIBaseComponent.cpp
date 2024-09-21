@@ -946,13 +946,10 @@ void PannerUIBaseComponent::draw()
 //==============================================================================
 void PannerUIBaseComponent::paint(juce::Graphics& g)
 {
-    // You can add your component specific drawing code here!
     // This will draw over the top of the openGL background.
 }
 
 void PannerUIBaseComponent::resized()
 {
     // This is called when the PannerUIBaseComponent is resized.
-    // If you add any child components, this is where you should
-    // update their positions.
 }
