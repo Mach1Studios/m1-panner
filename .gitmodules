@@ -4,7 +4,7 @@
 	branch = 1_0
 [submodule "Modules/m1-sdk"]
 	path = Modules/m1-sdk
-	url = git@github.com:Mach1Studios/m1-sdk.git
+	url = git@github.com:Mach1Studios/m1-sdk-dev.git
 	branch = master
 [submodule "JUCE"]
 	path = JUCE
