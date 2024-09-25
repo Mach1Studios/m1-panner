@@ -250,7 +250,7 @@ public:
     bool shouldDrawDivergeLine = false;
     bool shouldDrawRotateLine = false;
     float sRotate = 0, sSpread = 50;
-    Mach1Encode* m1Encode = nullptr;
+    Mach1Encode<float>* m1Encode = nullptr;
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;
