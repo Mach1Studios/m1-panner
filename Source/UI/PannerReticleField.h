@@ -182,11 +182,11 @@ public:
                     MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
                     clamp(point.y, 0, shape.size.y);
-                    if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeStereo)
+                    if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
                     {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
                     }
-                    else if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat)
+                    else if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat)
                     {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
                     }

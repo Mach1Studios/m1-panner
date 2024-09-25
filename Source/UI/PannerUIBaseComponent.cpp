@@ -254,7 +254,7 @@ void PannerUIBaseComponent::draw()
     zKnob.speed = knobSpeed;
     zKnob.defaultValue = 0;
     zKnob.isEndlessRotary = false;
-    zKnob.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
+    zKnob.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAFUMA) /* Block Elevation rotations on some input modes */;
     zKnob.externalHover = pitchWheelHoveredAtLastFrame;
     zKnob.cursorHide = cursorHide;
     zKnob.cursorShow = cursorShowAndTeleportBack;
@@ -271,7 +271,7 @@ void PannerUIBaseComponent::draw()
     auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 450, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     zLabel.label = "Z";
     zLabel.alignment = TEXT_CENTER;
-    zLabel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
+    zLabel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAFUMA) /* Block Elevation rotations on some input modes */;
     zLabel.highlighted = zKnob.hovered || reticleHoveredLastFrame;
     zLabel.draw();
 
@@ -307,7 +307,7 @@ void PannerUIBaseComponent::draw()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
+    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo) && !pannerState->autoOrbit);
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
@@ -322,7 +322,7 @@ void PannerUIBaseComponent::draw()
     auto& srLabel = m.prepare<M1Label>(MurkaShape(xOffset + 190, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     srLabel.label = "S ROTATE";
     srLabel.alignment = TEXT_CENTER;
-    srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo) && !pannerState->autoOrbit);
+    srLabel.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo) && !pannerState->autoOrbit);
     srLabel.highlighted = srKnob.hovered || reticleHoveredLastFrame;
     srLabel.draw();
 
@@ -339,7 +339,7 @@ void PannerUIBaseComponent::draw()
     ssKnob.speed = knobSpeed;
     ssKnob.defaultValue = 50.;
     ssKnob.isEndlessRotary = false;
-    ssKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+    ssKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     ssKnob.externalHover = false;
     ssKnob.cursorHide = cursorHide;
     ssKnob.cursorShow = cursorShowAndTeleportBack;
@@ -354,7 +354,7 @@ void PannerUIBaseComponent::draw()
     auto& ssLabel = m.prepare<M1Label>(MurkaShape(xOffset + 280, yOffset - M1LabelOffsetY, knobWidth + 10, knobHeight));
     ssLabel.label = "S SPREAD";
     ssLabel.alignment = TEXT_CENTER;
-    ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+    ssLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     ssLabel.highlighted = ssKnob.hovered || reticleHoveredLastFrame;
     ssLabel.draw();
 
@@ -370,7 +370,7 @@ void PannerUIBaseComponent::draw()
     spKnob.speed = knobSpeed;
     spKnob.defaultValue = 0;
     spKnob.isEndlessRotary = false;
-    spKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+    spKnob.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     spKnob.externalHover = false;
     spKnob.cursorHide = cursorHide;
     spKnob.cursorShow = cursorShowAndTeleportBack;
@@ -385,7 +385,7 @@ void PannerUIBaseComponent::draw()
     auto& spLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     spLabel.label = "S PAN";
     spLabel.alignment = TEXT_CENTER;
-    spLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+    spLabel.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     spLabel.highlighted = spKnob.hovered || reticleHoveredLastFrame;
     spLabel.draw();
 
@@ -440,7 +440,7 @@ void PannerUIBaseComponent::draw()
     auto& autoOrbitCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
                                   .controlling(&pannerState->autoOrbit)
                                   .withLabel("AUTO ORBIT");
-    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo);
+    autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     autoOrbitCheckbox.draw();
 
     if (autoOrbitCheckbox.changed)
@@ -455,7 +455,7 @@ void PannerUIBaseComponent::draw()
     pitchWheel.offset = 10.;
     pitchWheel.rangeFrom = 90.;
     pitchWheel.rangeTo = -90.;
-    pitchWheel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeB3OAFUMA) /* Block Elevation rotations on some input modes */;
+    pitchWheel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAFUMA) /* Block Elevation rotations on some input modes */;
     pitchWheel.externalHovered = zHovered;
     pitchWheel.isConnected = processor->pannerOSC.IsConnected();
     pitchWheel.monitorState = monitorState;
@@ -553,29 +553,29 @@ void PannerUIBaseComponent::draw()
 
         std::string inputLabelText = "";
         // we do not protect from PT host here because it is expected to be checked before the GUI
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeMono)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Mono)
             inputLabelText = "MONO ";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeStereo)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
             inputLabelText = "STEREO";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeLCR)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::LCR)
             inputLabelText = "LCR ";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeQuad)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Quad)
             inputLabelText = "QUAD ";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeLCRS)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::LCRS)
             inputLabelText = "LCRS ";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeAFormat)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat)
             inputLabelText = "AFORMAT";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot0)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::FiveDotZero)
             inputLabelText = "5.0 Film";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1Film)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::FiveDotOneFilm)
             inputLabelText = "5.1 Film";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1DTS)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::FiveDotOneDTS)
             inputLabelText = "5.1 DTS";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode5dot1SMTPE)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::FiveDotOneSMTPE)
             inputLabelText = "5.1 SMPTE";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAACN)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN)
             inputLabelText = "1OA ACN";
-        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputModeBFOAFUMA)
+        if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA)
             inputLabelText = "1OA FuMa";
 
         // INPUT DROPDOWN
@@ -617,23 +617,23 @@ void PannerUIBaseComponent::draw()
                 {
                     if (inputDropdownMenu.selectedOption == 0)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeQuad);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::Quad);
                     }
                     else if (inputDropdownMenu.selectedOption == 1)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeLCRS);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::LCRS);
                     }
                     else if (inputDropdownMenu.selectedOption == 2)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeAFormat);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::AFormat);
                     }
                     else if (inputDropdownMenu.selectedOption == 3)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAACN);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::BFOAACN);
                     }
                     else if (inputDropdownMenu.selectedOption == 4)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeBFOAFUMA);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::BFOAFUMA);
                     }
                     processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 }
@@ -669,15 +669,15 @@ void PannerUIBaseComponent::draw()
                 {
                     if (inputDropdownMenu.selectedOption == 0)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1Film);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::FiveDotOneFilm);
                     }
                     else if (inputDropdownMenu.selectedOption == 1)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1DTS);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::FiveDotOneDTS);
                     }
                     else if (inputDropdownMenu.selectedOption == 2)
                     {
-                        pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputMode5dot1SMTPE);
+                        pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::FiveDotOneSMTPE);
                     }
                     processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
                 }
@@ -733,8 +733,8 @@ void PannerUIBaseComponent::draw()
 
             if (inputDropdownMenu.changed)
             {
-                pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType(inputDropdownMenu.selectedOption));
-                processor->parameterChanged(processor->paramInputMode, Mach1EncodeInputModeType(inputDropdownMenu.selectedOption));
+                pannerState->m1Encode.setInputMode(Mach1EncodeInputMode(inputDropdownMenu.selectedOption));
+                processor->parameterChanged(processor->paramInputMode, Mach1EncodeInputMode(inputDropdownMenu.selectedOption));
             }
         }
         else
@@ -769,11 +769,11 @@ void PannerUIBaseComponent::draw()
             {
                 if (inputDropdownMenu.selectedOption == 0)
                 {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeMono);
+                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::Mono);
                 }
                 else if (inputDropdownMenu.selectedOption == 1)
                 {
-                    pannerState->m1Encode.setInputMode(Mach1EncodeInputModeType::Mach1EncodeInputModeStereo);
+                    pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::Stereo);
                 }
                 processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
             }
@@ -862,19 +862,19 @@ void PannerUIBaseComponent::draw()
             {
                 if (outputDropdownMenu.selectedOption == 0)
                 {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Horizon_4);
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
                 }
                 else if (outputDropdownMenu.selectedOption == 1)
                 {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_8);
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                 }
                 else if (outputDropdownMenu.selectedOption == 2)
                 {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_12);
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_12);
                 }
                 else if (outputDropdownMenu.selectedOption == 3)
                 {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputModeType::Mach1EncodeOutputModeM1Spatial_14);
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
                 }
                 processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
             }

@@ -131,7 +131,7 @@ public:
     bool opened = false;
     int selectedOption = 0;
     std::vector<std::string> options;
-    Mach1EncodeInputModeType* dataToControl = nullptr;
+    Mach1EncodeInputMode* dataToControl = nullptr;
 
     int optionHeight = 30;
     int fontSize = 10;
@@ -142,7 +142,7 @@ public:
     int labelPadding_x = 0;
     int labelPadding_y = 0;
 
-    M1DropdownMenu& controlling(Mach1EncodeInputModeType* dataPointer)
+    M1DropdownMenu& controlling(Mach1EncodeInputMode* dataPointer)
     {
         dataToControl = dataPointer;
         return *this;

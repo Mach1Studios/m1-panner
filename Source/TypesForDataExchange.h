@@ -26,7 +26,7 @@ struct PannerSettings
     /// - `Mach1EncodeInputModeType`
     /// - `Mach1EncodeOutputModeType`
     /// - `Mach1EncodePannerModeType`
-    Mach1Encode m1Encode;
+    Mach1Encode<float> m1Encode;
 
     float x = 0.;
     float y = 70.7;
