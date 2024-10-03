@@ -126,17 +126,13 @@ void OverlayUIBaseComponent::initialise()
 
 void OverlayUIBaseComponent::draw()
 {
-    float scale = (float)openGLContext.getRenderingScale() * 0.7; // (Desktop::getInstance().getMainMouseSource().getScreenPosition().x / 300.0); //  0.7;
-
+    // TODO: Remove this and rescale all sizing and positions
+    float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
     {
         m.setScreenScale(scale);
-        m.updateFontsTextures(&m);
-        m.clearFontsTextures();
+        m.reloadFonts(&m);
     }
-
-    // This clears the context with a black background.
-    //OpenGLHelpers::clear (Colours::black);
 
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
     m.setColor(0, 0);
