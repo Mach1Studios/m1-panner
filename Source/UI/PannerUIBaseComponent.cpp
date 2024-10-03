@@ -27,16 +27,12 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::draw()
 {
-    // This clears the context with our background.
-    //juce::OpenGLHelpers::clear(juce::Colour(255.0, 198.0, 30.0));
-
-    float scale = (float)openGLContext.getRenderingScale() * 0.7; // (Desktop::getInstance().getMainMouseSource().getScreenPosition().x / 300.0); //  0.7;
-
+    // TODO: Remove this and rescale all sizing and positions
+    float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
     {
         m.setScreenScale(scale);
-        m.updateFontsTextures(&m);
-        m.clearFontsTextures();
+        m.reloadFonts(&m);
     }
 
     currentMousePositionJuceScaled = m.mousePosition() / m.getScreenScale();
@@ -44,7 +40,6 @@ void PannerUIBaseComponent::draw()
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 1);
     m.setColor(BACKGROUND_GREY);
     m.clear();
-
     m.setLineWidth(2);
 
     XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
