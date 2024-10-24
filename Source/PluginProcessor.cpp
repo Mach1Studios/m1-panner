@@ -474,6 +474,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
 
     if (hostType.isReaper())
     {
+        // Reaper supports flexible I/O resizing without re-initializing the plugin
         return true;
     }
 
@@ -501,12 +502,14 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
             return false;
         }
     }
+    /* TODO: Finish EXTERNAL STREAMING Mode before using this
     else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
     {
         // RETURN TRUE FOR EXTERNAL STREAMING MODE
         // hard set {1,2} and {2,2} for streaming use case
         return true;
     }
+    */
     else
     {
         // Test for all available Mach1Encode configs
@@ -706,8 +709,15 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     {
         if (input_channel > mainInput.getNumChannels() - 1)
         {
-            // TODO: error?
-            break;
+            // Input channel is missing, set its gains to zero
+            for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
+            {
+                int output_channel_reordered = output_channel_indices[output_channel];
+                if (output_channel_reordered >= 0)
+                {
+                    smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(0.0f);
+                }
+            }
         }
         else
         {
@@ -756,9 +766,14 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     // processing loop
-    // TODO: check for input number of channels matches the pannerSettings input number
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++)
     {
+        if (input_channel > mainInput.getNumChannels() - 1)
+        {
+            // Skip processing for missing input channels
+            continue;
+        }
+
         for (int sample = 0; sample < buffer.getNumSamples(); sample++)
         {
             // break if expected input channel num size does not match current input channel num size from host
@@ -776,15 +791,14 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 {
                     // break if expected output channel num size does not match current output channel num size from host
 
-                    // Get the next Mach1Encode coeff
-                    float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
-
                     // Output channel reordering from fillChannelOrder()
                     int output_channel_reordered = output_channel_indices[output_channel];
 
                     // process via temp buffer that will also be used for meters
                     if (output_channel_reordered >= 0)
                     {
+                        // Get the next Mach1Encode coeff
+                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
                         buf.addSample(output_channel_reordered, sample, inValue * spatialGainCoeff);
                     }
 
