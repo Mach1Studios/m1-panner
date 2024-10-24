@@ -436,7 +436,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
             needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
-            createLayout();
         }
     }
     else if (parameterID == paramOutputMode)
@@ -449,7 +448,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
             needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
-            createLayout();
         }
     }
     // send a pannersettings update to helper since a parameter changed
@@ -629,20 +627,18 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
 
 void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    if (needToUpdateM1EncodePoints)
-    {
-        updateM1EncodePoints();
-        needToUpdateM1EncodePoints = false;
-    }
-
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     // Use this method as the place to do any pre-playback
     if (!layoutCreated)
     {
-        createLayout();
+        createLayout(); // this should only be called here to avoid threading issues
+    }
+
+    if (needToUpdateM1EncodePoints)
+    {
+        updateM1EncodePoints();
+        needToUpdateM1EncodePoints = false;
     }
 
     // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
@@ -783,7 +779,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     // Get the next Mach1Encode coeff
                     float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
 
-                    // TODO: check if `output_channel_reordered` is appropriate here
                     // Output channel reordering from fillChannelOrder()
                     int output_channel_reordered = output_channel_indices[output_channel];
 
