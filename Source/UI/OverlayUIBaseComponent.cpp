@@ -157,6 +157,7 @@ void OverlayUIBaseComponent::draw()
         overlayReticleField.sRotate = pannerState->stereoOrbitAzimuth;
         overlayReticleField.sSpread = pannerState->stereoSpread;
         overlayReticleField.isConnected = processor->pannerOSC.IsConnected();
+        overlayReticleField.track_color = processor->osc_colour;
         overlayReticleField.monitorState = monitorState;
         overlayReticleField.pannerState = pannerState;
         overlayReticleField.draw();

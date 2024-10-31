@@ -168,7 +168,11 @@ public:
         float realx = x;
         float realy = y;
 
-        m.setColor(M1_ACTION_YELLOW);
+        if (isConnected) {
+            m.setColor(MurkaColor(track_color.red, track_color.green, track_color.blue, track_color.alpha));
+        } else {
+            m.setColor(M1_ACTION_YELLOW);
+        }
         m.disableFill();
         m.drawCircle(realx - 1, realy - 1, (10 + 3 * A(reticleHovered)));
 
@@ -186,8 +190,6 @@ public:
         }
 
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered)));
-        m.setColor(M1_ACTION_YELLOW);
-        m.disableFill();
         M1Label& l = m.prepare<M1Label>(MurkaShape(realx - 9, realy - 7 - 2 * A(reticleHovered), 50, 50)).text(label.c_str()).draw();
 
         if (realx + 20 > getSize().x)
@@ -254,4 +256,5 @@ public:
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;
+    juce::OSCColour track_color;
 };

@@ -65,6 +65,7 @@ void PannerUIBaseComponent::draw()
         }
     };
     reticleField.isConnected = processor->pannerOSC.IsConnected();
+    reticleField.track_color = processor->osc_colour;
     reticleField.draw();
 
     if (reticleField.results)

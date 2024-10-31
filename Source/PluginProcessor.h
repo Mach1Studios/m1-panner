@@ -172,6 +172,7 @@ public:
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
     void timerCallback() override;
     PannerOSC pannerOSC;
+    juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
     // TODO: change this
     bool external_spatialmixer_active = false; // global detect spatialmixer

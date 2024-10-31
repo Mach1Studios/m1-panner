@@ -182,7 +182,7 @@ public:
                     MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
                     clamp(point.y, 0, shape.size.y);
-                    if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
+                    if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::LCR)
                     {
                         drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
                     }
@@ -269,12 +269,23 @@ public:
     void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, Murka& m)
     {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered) + (2 * (pannerState->elevation / 90))));
-        m.setColor(M1_ACTION_YELLOW);
+
         m.disableFill();
 
+        if (isConnected)
+        {
+            // fill reticle with track color
+            m.setColor(MurkaColor(track_color.red, track_color.green, track_color.blue, track_color.alpha));
+            // inner
+            m.drawCircle(x, y, (8 * reticleSizeMultiplier) + 1 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
+            // outer
+            m.drawCircle(x, y, (12 * reticleSizeMultiplier) + 5 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
+        }
+        // Draw outer m1-yellow circle
+        m.setColor(M1_ACTION_YELLOW);
         m.drawCircle(x, y, (10 * reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
         // re-adjust label x offset for size of string
-        m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (pannerState->elevation / 90)), y - 8 - 2 * A(reticleHovered) - (2 * (pannerState->elevation / 90)), 50, 50)).text(label.c_str()).draw();
+        m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (pannerState->elevation / 90)), y - 9 - 2 * A(reticleHovered) - (2 * (pannerState->elevation / 90)), 50, 50)).text(label.c_str()).draw();
     }
 
     void drawMonitorYaw(float yawAngle, Murka& m)
@@ -328,6 +339,7 @@ public:
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;
+    juce::OSCColour track_color;
 
     // The results type, you also need to define it even if it's nothing.
     typedef bool Results;
