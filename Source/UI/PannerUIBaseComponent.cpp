@@ -817,8 +817,6 @@ void PannerUIBaseComponent::draw()
 
             std::vector<std::string> output_options = { "M1Horizon-4", "M1Spatial-8" };
             // add the outputs based on discovered number of channels from host
-            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 12)
-                output_options.push_back("M1Spatial-12");
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14)
                 output_options.push_back("M1Spatial-14");
 
@@ -837,11 +835,8 @@ void PannerUIBaseComponent::draw()
                     case 8:
                         outputDropdownMenu.selectedOption = 1;
                         break;
-                    case 12:
-                        outputDropdownMenu.selectedOption = 2;
-                        break;
                     case 14:
-                        outputDropdownMenu.selectedOption = 3;
+                        outputDropdownMenu.selectedOption = 2;
                         break;
                     default:
                         outputDropdownMenu.selectedOption = -1;
@@ -865,10 +860,6 @@ void PannerUIBaseComponent::draw()
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                 }
                 else if (outputDropdownMenu.selectedOption == 2)
-                {
-                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_12);
-                }
-                else if (outputDropdownMenu.selectedOption == 3)
                 {
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
                 }
