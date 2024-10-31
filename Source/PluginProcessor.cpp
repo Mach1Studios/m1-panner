@@ -114,6 +114,20 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
         }
     });
 
+    // Get or assign a track color for panner instance -> player
+    if (track_properties.colour.getAlpha() != 0)
+    { // unfound colors are 0,0,0,0
+        osc_colour.fromInt32(track_properties.colour.getARGB());
+    }
+    else
+    {
+        // randomize a color
+        osc_colour.red = juce::Random().nextInt(255);
+        osc_colour.green = juce::Random().nextInt(255);
+        osc_colour.blue = juce::Random().nextInt(255);
+        osc_colour.alpha = 255;
+    }
+
     // print build time for debug
     juce::String date(__DATE__);
     juce::String time(__TIME__);
@@ -451,13 +465,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         }
     }
     // send a pannersettings update to helper since a parameter changed
-    juce::OSCColour osc_colour = { 0, 0, 0, 255 };
     if (pannerOSC.IsConnected())
     {
-        if (track_properties.colour.getAlpha() != 0)
-        {
-            osc_colour.fromInt32(track_properties.colour.getARGB());
-        }
         pannerOSC.sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
     }
 }
@@ -635,7 +644,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Use this method as the place to do any pre-playback
     if (!layoutCreated)
     {
-        createLayout(); // this should only be called here to avoid threading issues
+        createLayout(); // this should only be called here after initialization to avoid threading issues
     }
 
     if (needToUpdateM1EncodePoints)
@@ -730,7 +739,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
                 // Output channel reordering from fillChannelOrder()
                 int output_channel_reordered = output_channel_indices[output_channel];
-
                 if (output_channel_reordered >= 0)
                 {
                     smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel_reordered]);
@@ -939,37 +947,6 @@ void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float& r, float&
     }
 }
 
-//==============================================================================
-juce::XmlElement* addXmlElement(juce::XmlElement& root, juce::String paramName, juce::String value)
-{
-    juce::XmlElement* el = root.createNewChildElement("param_" + paramName);
-    el->setAttribute("value", juce::String(value));
-    return el;
-}
-
-double getParameterDoubleFromXmlElement(juce::XmlElement* xml, juce::String paramName, double defVal)
-{
-    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value"))
-    {
-        double val = xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
-        if (std::isnan(val))
-        {
-            return defVal;
-        }
-        return val;
-    }
-    return defVal;
-}
-
-int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName, int defVal)
-{
-    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value"))
-    {
-        return xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
-    }
-    return defVal;
-}
-
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode inputMode, Mach1EncodeOutputMode outputMode)
 {
     pannerSettings.m1Encode.setInputMode(inputMode);
@@ -1004,6 +981,37 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
     }
 }
 
+//==============================================================================
+juce::XmlElement* addXmlElement(juce::XmlElement& root, juce::String paramName, juce::String value)
+{
+    juce::XmlElement* el = root.createNewChildElement("param_" + paramName);
+    el->setAttribute("value", juce::String(value));
+    return el;
+}
+
+double getParameterDoubleFromXmlElement(juce::XmlElement* xml, juce::String paramName, double defVal)
+{
+    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value"))
+    {
+        double val = xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
+        if (std::isnan(val))
+        {
+            return defVal;
+        }
+        return val;
+    }
+    return defVal;
+}
+
+int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName, int defVal)
+{
+    if (xml->getChildByName("param_" + paramName) && xml->getChildByName("param_" + paramName)->hasAttribute("value"))
+    {
+        return xml->getChildByName("param_" + paramName)->getDoubleAttribute("value", defVal);
+    }
+    return defVal;
+}
+
 void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     // Store the parameters in the memory block.
@@ -1028,6 +1036,12 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     addXmlElement(root, paramDelayTime, juce::String(pannerSettings.delayTime));
     addXmlElement(root, paramDelayDistance, juce::String(pannerSettings.delayDistance));
 #endif
+
+    // Extras
+    addXmlElement(root, "trackColor_r", juce::String(osc_colour.red));
+    addXmlElement(root, "trackColor_g", juce::String(osc_colour.green));
+    addXmlElement(root, "trackColor_b", juce::String(osc_colour.blue));
+    addXmlElement(root, "trackColor_a", juce::String(osc_colour.alpha));
 
     juce::String strDoc = root.createDocument(juce::String(""), false, false);
     stream.writeString(strDoc);
@@ -1066,6 +1080,12 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
         parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
 #endif
+
+        // Extras
+        osc_colour.red = (int)getParameterIntFromXmlElement(root.get(), "trackColor_r", osc_colour.red);
+        osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
+        osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
+        osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
 
         // Parsing old plugin QUADMODE and applying to new inputType structure
         if (prefix == "1.5.1")
