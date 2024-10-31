@@ -23,9 +23,9 @@ struct PannerSettings
     } color;
 
     /// This object contains:
-    /// - `Mach1EncodeInputModeType`
-    /// - `Mach1EncodeOutputModeType`
-    /// - `Mach1EncodePannerModeType`
+    /// - `Mach1EncodeInputMode`
+    /// - `Mach1EncodeOutputMode`
+    /// - `Mach1EncodePannerMode`
     Mach1Encode<float> m1Encode;
 
     float x = 0.;
