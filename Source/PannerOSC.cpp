@@ -155,9 +155,20 @@ bool PannerOSC::IsConnected()
     return isConnected;
 }
 
+bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
+{
+    if (IsConnected() && port > 0)
+    {
+        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/setChannelConfigReq"));
+        m.addInt32(channel_count_for_config); // int of new layout
+        return juce::OSCSender::send(m); // check to update isConnected for error catching;
+    }
+    return false;
+}
+
 bool PannerOSC::sendPannerSettings(int state)
 {
-    if (isConnected && port > 0)
+    if (IsConnected() && port > 0)
     {
         // Each call will transmit an OSC message with the relevant current panner settings
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
@@ -171,7 +182,7 @@ bool PannerOSC::sendPannerSettings(int state)
 
 bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
-    if (isConnected && port > 0)
+    if (IsConnected() && port > 0)
     {
         // Each call will transmit an OSC message with the relevant current panner settings
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));

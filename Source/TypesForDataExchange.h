@@ -33,7 +33,7 @@ struct PannerSettings
     float azimuth = 0.;
     float elevation = 0.; // also known as `z`
     float diverge = 50.;
-    float gain = 6.;
+    float gain = 0.; // dB
     float stereoOrbitAzimuth = 0.;
     float stereoSpread = 50.;
     float stereoInputBalance = 0.;
@@ -41,6 +41,7 @@ struct PannerSettings
     bool overlay = false;
     bool isotropicMode = false;
     bool equalpowerMode = false;
+    bool lockOutputLayout = false;
 
 #ifdef ITD_PARAMETERS
     bool itdActive = false;

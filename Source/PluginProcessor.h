@@ -164,6 +164,7 @@ public:
     void updateTrackProperties(const TrackProperties& properties) override { track_properties = properties; }
     TrackProperties getTrackProperties() { return track_properties; }
     bool layoutCreated = false;
+    bool lockOutputLayout = false;
 
     // update m1encode obj points
     bool needToUpdateM1EncodePoints = false;

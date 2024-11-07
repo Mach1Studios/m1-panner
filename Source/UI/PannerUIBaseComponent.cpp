@@ -218,7 +218,7 @@ void PannerUIBaseComponent::draw()
     gKnob.prefix = std::string(pannerState->gain > 0 ? "+" : "");
     gKnob.floatingPointPrecision = 1;
     gKnob.speed = knobSpeed;
-    gKnob.defaultValue = 6;
+    gKnob.defaultValue = 0;
     gKnob.isEndlessRotary = false;
     gKnob.enabled = true;
     gKnob.externalHover = false;
@@ -539,7 +539,7 @@ void PannerUIBaseComponent::draw()
         {
             // Input Channel Mode Selector
             m.setColor(200, 255);
-            auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() / 2 - 120 - 25, m.getSize().height() - 26, 60, 20));
+            auto& inputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() / 2 - 120 - 25, m.getSize().height() - 25, 60, 20));
             inputLabel.label = "IN";
             inputLabel.alignment = TEXT_CENTER;
             inputLabel.enabled = false;
@@ -801,14 +801,26 @@ void PannerUIBaseComponent::draw()
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
             m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 3);
-            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() / 2 + 95, m.getSize().height() - 26, 60, 20));
+            auto& outputLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() / 2 + 95, m.getSize().height() - 25, 60, 20));
             outputLabel.label = "OUT";
             outputLabel.alignment = TEXT_CENTER;
             outputLabel.enabled = false;
             outputLabel.highlighted = false;
             outputLabel.draw();
 
-            auto outputType = pannerState->m1Encode.getOutputMode();
+            auto& outputLayoutLockCheckbox = m.prepare<M1Checkbox>(MurkaShape(m.getSize().width() / 2 + 95 + 65, m.getSize().height() - 27, 140, 15))
+                                                 .controlling(&pannerState->lockOutputLayout)
+                                                 .withLabel("LOCK");
+            outputLayoutLockCheckbox.enabled = true;
+            outputLayoutLockCheckbox.labelPadding_x = 17;
+            outputLayoutLockCheckbox.fontSize = DEFAULT_FONT_SIZE - 3;
+            outputLayoutLockCheckbox.draw();
+
+            if (outputLayoutLockCheckbox.changed)
+            {
+                processor->parameterChanged(juce::String("output_layout_lock"), pannerState->lockOutputLayout);
+            }
+
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 + 20, m.getSize().height() - 28, 80, 20 })
                                              .withLabel(std::to_string(pannerState->m1Encode.getOutputChannelsCount()))
                                              .withOutline(true);
