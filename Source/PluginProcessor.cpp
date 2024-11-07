@@ -112,6 +112,31 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                 }
             }
         }
+        else if (msg.getAddressPattern() == "/m1-channel-config")
+        {
+            DBG("[OSC] Recieved msg | Channel Config: " + std::to_string(msg[0].getInt32()));
+            // Capturing monitor active state
+            int channel_count = msg[0].getInt32();
+            if (!pannerSettings.lockOutputLayout && channel_count != pannerSettings.m1Encode.getInputChannelsCount()) // got a request for a different config
+            {
+                if (channel_count == 4)
+                {
+                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_4));
+                }
+                else if (channel_count == 8)
+                {
+                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_8));
+                }
+                else if (channel_count == 14)
+                {
+                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_14));
+                }
+                else
+                {
+                    DBG("[OSC] Error with received channel config!");
+                }
+            }
+        }
     });
 
     // Get or assign a track color for panner instance -> player
@@ -463,6 +488,11 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
+    }
+    else if (parameterID == "output_layout_lock")
+    {
+        pannerSettings.lockOutputLayout = (bool)newValue;
+        lockOutputLayout = (bool)newValue;
     }
     // send a pannersettings update to helper since a parameter changed
     if (pannerOSC.IsConnected())
@@ -949,8 +979,16 @@ void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float& r, float&
 
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode inputMode, Mach1EncodeOutputMode outputMode)
 {
+    if (pannerSettings.m1Encode.getOutputMode() != outputMode)
+    {
+        DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
+        pannerSettings.m1Encode.setOutputMode(outputMode);
+        if (!pannerSettings.lockOutputLayout)
+        {
+            pannerOSC.sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
+        }
+    }
     pannerSettings.m1Encode.setInputMode(inputMode);
-    pannerSettings.m1Encode.setOutputMode(outputMode);
 
     needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
 
@@ -1042,6 +1080,7 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     addXmlElement(root, "trackColor_g", juce::String(osc_colour.green));
     addXmlElement(root, "trackColor_b", juce::String(osc_colour.blue));
     addXmlElement(root, "trackColor_a", juce::String(osc_colour.alpha));
+    addXmlElement(root, "output_layout_lock", juce::String(pannerSettings.lockOutputLayout ? 1 : 0));
 
     juce::String strDoc = root.createDocument(juce::String(""), false, false);
     stream.writeString(strDoc);
@@ -1086,6 +1125,7 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
         osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
         osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
+        parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
 
         // Parsing old plugin QUADMODE and applying to new inputType structure
         if (prefix == "1.5.1")

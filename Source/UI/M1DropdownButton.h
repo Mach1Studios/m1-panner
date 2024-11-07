@@ -51,12 +51,12 @@ public:
 
     std::string label = "";
     float labelPadding_x = 0;
+    float labelPadding_y = 0;
     MurkaColor labelColor = MurkaColor(LABEL_TEXT_COLOR);
     bool pressed = false;
     float fontSize = 10;
     bool outlineEnabled = false;
     TextAlignment textAlignment = TEXT_CENTER;
-    int labelPadding_y = 0;
     MurkaColor bgColor, outlineColor;
     bool drawTriangle = false;
 
