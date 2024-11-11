@@ -401,6 +401,8 @@ void M1PannerAudioProcessor::releaseResources()
 
 void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
 {
+    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
+
     if (parameterID == paramAzimuth)
     {
         pannerSettings.azimuth = newValue; // update pannerSettings value from host
@@ -472,7 +474,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         {
             Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
             pannerSettings.m1Encode.setInputMode(inputType);
-            needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
@@ -484,7 +485,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         {
             Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
             pannerSettings.m1Encode.setOutputMode(outputType);
-            needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
@@ -709,7 +709,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     // Set m1Encode obj values for processing
-    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
     // vector of input channel buffers
@@ -990,8 +989,6 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
 
-    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
-
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
 
@@ -1017,6 +1014,8 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
     }
+
+    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
 }
 
 //==============================================================================
