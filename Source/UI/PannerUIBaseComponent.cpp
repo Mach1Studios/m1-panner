@@ -64,7 +64,7 @@ void PannerUIBaseComponent::draw()
             }
         }
     };
-    reticleField.isConnected = processor->pannerOSC.IsConnected();
+    reticleField.isConnected = processor->pannerOSC->IsConnected();
     reticleField.track_color = processor->osc_colour;
     reticleField.draw();
 
@@ -453,7 +453,7 @@ void PannerUIBaseComponent::draw()
     pitchWheel.rangeTo = -90.;
     pitchWheel.enabled = !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAFUMA) /* Block Elevation rotations on some input modes */;
     pitchWheel.externalHovered = zHovered;
-    pitchWheel.isConnected = processor->pannerOSC.IsConnected();
+    pitchWheel.isConnected = processor->pannerOSC->IsConnected();
     pitchWheel.monitorState = monitorState;
     pitchWheel.dataToControl = &pannerState->elevation;
     pitchWheel.draw();

@@ -83,7 +83,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
 
-    pannerOSC.AddListener([&](juce::OSCMessage msg) {
+    // Setup osc and listener
+    pannerOSC = std::make_unique<PannerOSC>();
+    pannerOSC->AddListener([&](juce::OSCMessage msg) {
         if (msg.getAddressPattern() == "/monitor-settings")
         {
             if (msg.size() > 0)
@@ -495,9 +497,9 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         lockOutputLayout = (bool)newValue;
     }
     // send a pannersettings update to helper since a parameter changed
-    if (pannerOSC.IsConnected())
+    if (pannerOSC->IsConnected())
     {
-        pannerOSC.sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+        pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
     }
 }
 
@@ -908,7 +910,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 void M1PannerAudioProcessor::timerCallback()
 {
     // Added if we need to move the OSC stuff from the processorblock
-    pannerOSC.update(); // test for connection
+    pannerOSC->update(); // test for connection
 }
 
 //==============================================================================
@@ -984,7 +986,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         pannerSettings.m1Encode.setOutputMode(outputMode);
         if (!pannerSettings.lockOutputLayout)
         {
-            pannerOSC.sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
+            pannerOSC->sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
         }
     }
     pannerSettings.m1Encode.setInputMode(inputMode);

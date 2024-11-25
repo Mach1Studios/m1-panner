@@ -172,7 +172,7 @@ public:
 
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
     void timerCallback() override;
-    PannerOSC pannerOSC;
+    std::unique_ptr<PannerOSC> pannerOSC;
     juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
     // TODO: change this
