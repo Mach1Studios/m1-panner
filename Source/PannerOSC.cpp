@@ -97,7 +97,20 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 {
     if (messageReceived != nullptr)
     {
-        messageReceived(msg);
+        if (msg.getAddressPattern() == "/m1-ping")
+        {
+            if (juce::OSCSender::connect("127.0.0.1", helperPort))
+            {
+                juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
+                msg.addInt32(port);
+                isConnected = juce::OSCSender::send(msg);
+                DBG("[OSC] Ping responed: " + std::to_string(port));
+            }
+        }
+        else
+        {
+            messageReceived(msg);
+        }
     }
     lastMessageTime = juce::Time::getMillisecondCounter();
 }
