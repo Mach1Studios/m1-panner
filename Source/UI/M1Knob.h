@@ -215,11 +215,11 @@ public:
         {
             if (abs(mouseDelta().y) >= 1)
             {
-                // Shift key fine-tune mode
+                // Command / Shift key fine-tune mode
                 float s = speed; // TODO: check if this speed constant should be dependent on UIScale
-                if (isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT))
+                if (isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT) || isKeyHeld(murka::MurkaKey::MURKA_KEY_CONTROL) || isKeyHeld(murka::MurkaKey::MURKA_KEY_COMMAND))
                 {
-                    s /= 10;
+                    s *= 50.0f;
                 }
                 *((float*)dataToControl) += (mouseDelta().y / s) * (rangeTo - rangeFrom);
             }

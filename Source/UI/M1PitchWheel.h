@@ -104,7 +104,13 @@ public:
         {
             if (abs(mouseDelta().y) >= 1)
             {
-                *((float*)dataToControl) += mouseDelta().y / 2;
+                // Command / Shift key fine-tune mode
+                float s = 1.0f;
+                if (isKeyHeld(murka::MurkaKey::MURKA_KEY_SHIFT) || isKeyHeld(murka::MurkaKey::MURKA_KEY_CONTROL) || isKeyHeld(murka::MurkaKey::MURKA_KEY_COMMAND))
+                {
+                    s *= 50;
+                }
+                *((float*)dataToControl) += (mouseDelta().y / s) / 2;
             }
             // TODO: why is the order inversed here?
             if (*((float*)dataToControl) < rangeTo)
