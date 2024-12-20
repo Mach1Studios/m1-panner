@@ -35,7 +35,8 @@ void PannerUIBaseComponent::draw()
         m.reloadFonts(&m);
     }
 
-    currentMousePositionJuceScaled = m.mousePosition() / m.getScreenScale();
+    // Storing mouse for the curorHide() and cursorShow() functions
+    currentMousePosition = getLocalPoint(nullptr, Desktop::getMousePosition());
 
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 1);
     m.setColor(BACKGROUND_GREY);

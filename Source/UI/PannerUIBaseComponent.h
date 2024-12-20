@@ -51,8 +51,8 @@ public:
     std::function<void(bool)> setOverlayVisible;
 
 private:
-    MurkaPoint cachedMousePositionWhenMouseWasHidden = { 0, 0 };
-    MurkaPoint currentMousePositionJuceScaled = { 0, 0 };
+    juce::Point<int> cachedMousePositionWhenMouseWasHidden = { 0, 0 };
+    juce::Point<int> currentMousePosition = { 0, 0 };
 
     MurImage m1logo;
 
@@ -63,7 +63,7 @@ private:
 
     std::function<void()> cursorHide = [&]() {
         setMouseCursor(juce::MouseCursor::NoCursor);
-        cachedMousePositionWhenMouseWasHidden = currentMousePositionJuceScaled;
+        cachedMousePositionWhenMouseWasHidden = getLocalPoint(nullptr, juce::Desktop::getMousePosition());
     };
     std::function<void()> cursorShow = [&]() {
         setMouseCursor(juce::MouseCursor::NormalCursor);
@@ -73,7 +73,7 @@ private:
         juce::Desktop::setMousePosition(localPointToGlobal(juce::Point<int>(cachedMousePositionWhenMouseWasHidden.x, cachedMousePositionWhenMouseWasHidden.y)));
     };
     std::function<void(int, int)> teleportCursor = [&](int x, int y) {
-        //
+        juce::Desktop::setMousePosition(localPointToGlobal(juce::Point<int>(x, y)));
     };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PannerUIBaseComponent)
