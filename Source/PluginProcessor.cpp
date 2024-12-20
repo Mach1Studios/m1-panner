@@ -645,6 +645,7 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
     pannerSettings.m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
     pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
     pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
+    pannerSettings.m1Encode.setOutputGain(pannerSettings.gain, true);
 
     pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
     pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
@@ -724,9 +725,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     mDelayTimeSmoother.setTargetValue(delayTimeParameter->get());
     const float udtime = mDelayTimeSmoother.getNextValue() * mSampleRate / 1000000; // number of samples in a microsecond * number of microseconds
 #endif
-
-    // Multiply input buffer by inputGain parameter
-    mainInput.applyGain(juce::Decibels::decibelsToGain(pannerSettings.gain));
 
     // input pan balance for stereo input
     if (mainInput.getNumChannels() > 1 && pannerSettings.m1Encode.getInputChannelsCount() == 2)
