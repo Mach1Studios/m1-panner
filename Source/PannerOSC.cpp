@@ -99,12 +99,22 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
     {
         if (msg.getAddressPattern() == "/m1-ping")
         {
-            if (juce::OSCSender::connect("127.0.0.1", helperPort))
+            try
             {
-                juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
-                msg.addInt32(port);
-                isConnected = juce::OSCSender::send(msg);
-                DBG("[OSC] Ping responed: " + std::to_string(port));
+                // Create a temporary sender for the ping response to avoid disturbing main connection
+                juce::OSCSender tempSender;
+                if (tempSender.connect("127.0.0.1", helperPort))
+                {
+                    juce::OSCMessage response = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
+                    response.addInt32(port);
+                    isConnected = tempSender.send(response);
+                    DBG("[OSC] Ping responded: " + std::to_string(port));
+                }
+            }
+            catch (...)
+            {
+                DBG("[OSC] Failed to respond to ping");
+                isConnected = false;
             }
         }
         else
@@ -183,12 +193,29 @@ bool PannerOSC::sendPannerSettings(int state)
 {
     if (IsConnected() && port > 0)
     {
-        // Each call will transmit an OSC message with the relevant current panner settings
+        // Check socket connection before building message
+        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
+        {
+            isConnected = false;
+            return false;
+        }
+
+        // Build and send message only if we're still connected
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
         m.addInt32(port); // used for id
         m.addInt32(state); // used for panner interactive state
-        isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
-        return true;
+
+        // Add extra protection around the send operation
+        try
+        {
+            isConnected = juce::OSCSender::send(m);
+        }
+        catch (...)
+        {
+            isConnected = false;
+            return false;
+        }
+        return isConnected;
     }
     return false;
 }
@@ -197,7 +224,14 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
 {
     if (IsConnected() && port > 0)
     {
-        // Each call will transmit an OSC message with the relevant current panner settings
+        // Try to reconnect if needed - this will return false if connection fails
+        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
+        {
+            isConnected = false;
+            return false;
+        }
+
+        // Build message
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
         m.addInt32(port); // [msg[0]]: used for id
         m.addInt32(state); // [msg[1]]: used for panner interactive state
@@ -216,8 +250,18 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
             m.addFloat32(st_azimuth); // [msg[11]]: expected degrees -180->180
             m.addFloat32(st_spread); // [msg[12]]: expected normalized -100->100
         }
-        isConnected = juce::OSCSender::send(m); // check to update isConnected for error catching
-        return true;
+
+        // Add extra protection around the send operation
+        try
+        {
+            isConnected = juce::OSCSender::send(m);
+        }
+        catch (...)
+        {
+            isConnected = false;
+            return false;
+        }
+        return isConnected;
     }
     return false;
 }
