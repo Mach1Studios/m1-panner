@@ -54,7 +54,6 @@ void PannerUIBaseComponent::draw()
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
-    // TODO: look into this update; make the update related to the processor->parameterChanged() call to capture host side calls
     reticleField.m1encodeUpdate = [&]() {
         juce::AudioPlayHead::CurrentPositionInfo currentPosition;
         if (processor->getPlayHead() != nullptr)
@@ -72,8 +71,11 @@ void PannerUIBaseComponent::draw()
     if (reticleField.results)
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -103,10 +105,12 @@ void PannerUIBaseComponent::draw()
 
     if (xKnob.changed)
     {
-        // update this parameter here, notifying host
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -135,8 +139,11 @@ void PannerUIBaseComponent::draw()
     if (yKnob.changed)
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -166,8 +173,11 @@ void PannerUIBaseComponent::draw()
     if (azKnob.changed)
     {
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -197,8 +207,11 @@ void PannerUIBaseComponent::draw()
     if (dKnob.changed)
     {
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-        processor->parameterChanged(processor->paramAzimuth, pannerState->azimuth);
-        processor->parameterChanged(processor->paramDiverge, pannerState->diverge);
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
     }
 
     divergeKnobDraggingNow = dKnob.draggingNow;
@@ -229,7 +242,9 @@ void PannerUIBaseComponent::draw()
 
     if (gKnob.changed)
     {
-        processor->parameterChanged(processor->paramGain, pannerState->gain);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramGain);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->gain));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -259,7 +274,9 @@ void PannerUIBaseComponent::draw()
 
     if (zKnob.changed)
     {
-        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramElevation);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->elevation));
     }
 
     bool zHovered = zKnob.hovered;
@@ -312,7 +329,9 @@ void PannerUIBaseComponent::draw()
 
     if (srKnob.changed)
     {
-        processor->parameterChanged(processor->paramStereoOrbitAzimuth, pannerState->stereoOrbitAzimuth);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramStereoOrbitAzimuth);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoOrbitAzimuth));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -344,7 +363,9 @@ void PannerUIBaseComponent::draw()
 
     if (ssKnob.changed)
     {
-        processor->parameterChanged(processor->paramStereoSpread, pannerState->stereoSpread);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramStereoSpread);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoSpread));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -375,7 +396,9 @@ void PannerUIBaseComponent::draw()
 
     if (spKnob.changed)
     {
-        processor->parameterChanged(processor->paramStereoInputBalance, pannerState->stereoInputBalance);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramStereoInputBalance);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoInputBalance));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -414,23 +437,19 @@ void PannerUIBaseComponent::draw()
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed)
     {
+        auto& params = processor->getValueTreeState();
+        auto* param_isotropicCheckbox = params.getParameter(processor->paramIsotropicEncodeMode);
+        param_isotropicCheckbox->setValueNotifyingHost(isotropicCheckbox.checked ? true : false);
+
         if (isotropicCheckbox.checked)
         {
-            if (equalPowerCheckbox.checked)
-            {
-                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
-                processor->parameterChanged(processor->paramEqualPowerEncodeMode, true);
-            }
-            else
-            {
-                processor->parameterChanged(processor->paramIsotropicEncodeMode, true);
-                processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
-            }
+            auto* param_equalPowerCheckbox = params.getParameter(processor->paramEqualPowerEncodeMode);
+            param_equalPowerCheckbox->setValueNotifyingHost(equalPowerCheckbox.checked ? true : false);
         }
         else
         {
-            processor->parameterChanged(processor->paramIsotropicEncodeMode, false);
-            processor->parameterChanged(processor->paramEqualPowerEncodeMode, false);
+            auto* param_equalPowerCheckbox = params.getParameter(processor->paramEqualPowerEncodeMode);
+            param_equalPowerCheckbox->setValueNotifyingHost(false);
         }
     }
 
@@ -442,7 +461,9 @@ void PannerUIBaseComponent::draw()
 
     if (autoOrbitCheckbox.changed)
     {
-        processor->parameterChanged(processor->paramAutoOrbit, pannerState->autoOrbit);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramAutoOrbit);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->autoOrbit));
     }
 
     // Note: pitchwheel range in inverted to draw top down
@@ -461,7 +482,9 @@ void PannerUIBaseComponent::draw()
 
     if (pitchWheel.changed)
     {
-        processor->parameterChanged(processor->paramElevation, pannerState->elevation);
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramElevation);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->elevation));
     }
 
     pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
@@ -632,7 +655,9 @@ void PannerUIBaseComponent::draw()
                     {
                         pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::BFOAFUMA);
                     }
-                    processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
+                    auto& params = processor->getValueTreeState();
+                    auto* param = params.getParameter(processor->paramInputMode);
+                    param->setValueNotifyingHost(param->convertTo0to1(pannerState->m1Encode.getInputMode()));
                 }
             }
             else if (processor->getMainBusNumInputChannels() == 6)
@@ -676,7 +701,9 @@ void PannerUIBaseComponent::draw()
                     {
                         pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::FiveDotOneSMTPE);
                     }
-                    processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
+                    auto& params = processor->getValueTreeState();
+                    auto* param = params.getParameter(processor->paramInputMode);
+                    param->setValueNotifyingHost(param->convertTo0to1(pannerState->m1Encode.getInputMode()));
                 }
             }
         }
@@ -731,7 +758,9 @@ void PannerUIBaseComponent::draw()
             if (inputDropdownMenu.changed)
             {
                 pannerState->m1Encode.setInputMode(Mach1EncodeInputMode(inputDropdownMenu.selectedOption));
-                processor->parameterChanged(processor->paramInputMode, Mach1EncodeInputMode(inputDropdownMenu.selectedOption));
+                auto& params = processor->getValueTreeState();
+                auto* param = params.getParameter(processor->paramInputMode);
+                param->setValueNotifyingHost(param->convertTo0to1(Mach1EncodeInputMode(inputDropdownMenu.selectedOption)));
             }
         }
         else
@@ -772,7 +801,9 @@ void PannerUIBaseComponent::draw()
                 {
                     pannerState->m1Encode.setInputMode(Mach1EncodeInputMode::Stereo);
                 }
-                processor->parameterChanged(processor->paramInputMode, pannerState->m1Encode.getInputMode());
+                auto& params = processor->getValueTreeState();
+                auto* param = params.getParameter(processor->paramInputMode);
+                param->setValueNotifyingHost(param->convertTo0to1(pannerState->m1Encode.getInputMode()));
             }
         }
 
@@ -876,7 +907,9 @@ void PannerUIBaseComponent::draw()
                 {
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
                 }
-                processor->parameterChanged(processor->paramOutputMode, pannerState->m1Encode.getOutputMode());
+                auto& params = processor->getValueTreeState();
+                auto* param = params.getParameter(processor->paramOutputMode);
+                param->setValueNotifyingHost(param->convertTo0to1(pannerState->m1Encode.getOutputMode()));
             }
         }
         else

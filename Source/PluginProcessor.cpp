@@ -392,9 +392,11 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 
     if (parameterID == paramAzimuth)
     {
-        pannerSettings.azimuth = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramAzimuth)->setValue(newValue);
-        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        // Update internal state
+        pannerSettings.azimuth = newValue;
+        // Update dependent values
+        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
+                        pannerSettings.x, pannerSettings.y);
     }
     else if (parameterID == paramElevation)
     {
@@ -522,6 +524,17 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3)
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5)
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (hostType.isJUCEPluginHost()) {
+        // JUCE Plugin Host only supports stereo in/out
+        if (layouts.getMainInputChannels() <= 2 && layouts.getMainOutputChannels() == 2)
         {
             return true;
         }
@@ -677,12 +690,16 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()))
     {
         DBG("Unexpected Input mismatch! Inputs=" + std::to_string((int)pannerSettings.m1Encode.getInputMode()) + "|" + std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())));
-        parameterChanged(paramInputMode, pannerSettings.m1Encode.getInputMode());
+        auto& params = getValueTreeState();
+        auto* param = params.getParameter(paramInputMode);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
     }
     if ((int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue()))
     {
         DBG("Unexpected Output mismatch! Outputs=" + std::to_string((int)pannerSettings.m1Encode.getOutputMode()) + "|" + std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
-        parameterChanged(paramOutputMode, pannerSettings.m1Encode.getOutputMode());
+        auto& params = getValueTreeState();
+        auto* param = params.getParameter(paramOutputMode);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerSettings.m1Encode.getOutputMode()));
     }
 
     // Update the host playhead data external usage
@@ -1089,6 +1106,7 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
 
+        // TODO: Check if this should notify host
         parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
         parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
         parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
