@@ -212,8 +212,6 @@ public:
         {
             draggingNow = false;
             cursorShow();
-            teleportCursor(shape.position.x + reticlePositionInWidgetSpace.x,
-                shape.position.x + reticlePositionInWidgetSpace.y);
         }
 
         if (draggingNow)

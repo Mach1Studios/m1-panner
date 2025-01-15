@@ -134,6 +134,9 @@ void OverlayUIBaseComponent::draw()
         m.reloadFonts(&m);
     }
 
+    // Storing mouse for the curorHide() and cursorShow() functions
+    currentMousePosition = getLocalPoint(nullptr, Desktop::getMousePosition());
+
     m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE);
     m.setColor(0, 0);
     m.clear();
