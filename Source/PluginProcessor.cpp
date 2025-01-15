@@ -11,7 +11,6 @@
 
 /*
  Architecture:
-    - the parameterChanged() updates the pannerSettings values
     - parameterChanged() updates the i/o layout
     - parameterChanged() checks if matched with pannerSettings and otherwise updates this too
     - parameters expect normalized 0->1 except the i/o which expects int
@@ -322,25 +321,11 @@ void M1PannerAudioProcessor::createLayout()
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 8)
+                else if (getBus(false, 0)->getCurrentLayout().size() == 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 16)
-                {
-                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
-                    {
-                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
-                    }
-                }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 36)
-                {
-                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
-                    {
-                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
-                    }
-                }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 64)
+                else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
                 {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
                     {
@@ -523,15 +508,17 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     {
         if ((layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::mono().size()
                 || layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::stereo().size()
-                || layouts.getMainInputChannelSet() == juce::AudioChannelSet::createLCR()
+                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::createLCR()
                 || layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::quadraphonic().size()
-                || layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point0()
-                || layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point1()
-                || layouts.getMainInputChannelSet() == juce::AudioChannelSet::create6point0())
+                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create5point0()
+                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create5point1()
+                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create6point0())
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
             //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
-            && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1()
+            && (layouts.getMainOutputChannelSet()    == juce::AudioChannelSet::create7point1()
+                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1point6()
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()
+                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(2)
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3)
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5)
                 || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)))
