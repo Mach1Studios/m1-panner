@@ -498,16 +498,18 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 #ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    Mach1Encode<float> configTester;
-
-    // block plugin if input or output is disabled on construction
-    if (layouts.getMainInputChannelSet() == juce::AudioChannelSet::disabled()
-        || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled())
+    // Add safety check
+    if (layouts.getMainInputChannelSet().isDisabled() || 
+        layouts.getMainOutputChannelSet().isDisabled())
+    {
+        DBG("Layout REJECTED - Disabled buses");
         return false;
+    }
 
+    // If the host is Reaper always allow all configurations
+    // Reaper supports flexible I/O resizing without re-initializing the plugin
     if (hostType.isReaper())
     {
-        // Reaper supports flexible I/O resizing without re-initializing the plugin
         return true;
     }
 
@@ -559,7 +561,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     else
     {
         // Test for all available Mach1Encode configs
-        // manually maintained for-loop of first enum element to last enum element
+        Mach1Encode<float> configTester;
         for (int inputEnum = Mach1EncodeInputMode::Mono; inputEnum != Mach1EncodeInputMode::FiveDotOneSMTPE; inputEnum++)
         {
             configTester.setInputMode(static_cast<Mach1EncodeInputMode>(inputEnum));
@@ -569,7 +571,6 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
                 // Note: Change the max for loop output to max bus size when new formats are introduced
                 for (int outputEnum = 0; outputEnum != Mach1EncodeOutputMode::M1Spatial_14; outputEnum++)
                 {
-                    // test each output
                     configTester.setOutputMode(static_cast<Mach1EncodeOutputMode>(outputEnum));
                     if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount())
                     {

@@ -34,10 +34,18 @@ public:
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         juce::PluginHostType hostType;
 
-        // Multichannel Pro Tools
-        // TODO: Check if Ultimate/HD
+        // For standalone and unknown hosts, use the most basic stereo configuration
+        if (JUCEApplicationBase::isStandaloneApp())
+        {
+            return BusesProperties()
+                .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                .withOutput("Output", juce::AudioChannelSet::stereo(), true);
+        }
+
+        // Pro Tools specific layout
         if (hostType.isProTools())
         {
+            // Pro Tools needs a fixed, stable initial configuration
             return BusesProperties()
                 .withInput("Default Input", juce::AudioChannelSet::stereo(), true)
                 .withOutput("Default Output", juce::AudioChannelSet::create7point1(), true);
@@ -61,7 +69,7 @@ public:
             }
         }
 
-        if (hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Standalone || hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Unity)
+        if (hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_Unity)
         {
             return BusesProperties()
                 .withInput("Input", juce::AudioChannelSet::stereo(), true)
