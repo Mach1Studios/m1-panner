@@ -234,6 +234,12 @@ void M1PannerAudioProcessor::changeProgramName(int index, const juce::String& ne
 //==============================================================================
 void M1PannerAudioProcessor::createLayout()
 {
+    if (!getBus(false, 0) || !getBus(true, 0))
+    {
+        DBG("Invalid bus configuration in createLayout()");
+        return;
+    }
+
     if (external_spatialmixer_active)
     {
         /// EXTERNAL MULTICHANNEL PROCESSING
@@ -264,7 +270,7 @@ void M1PannerAudioProcessor::createLayout()
             // Outputs: The outputs for this plugin allows the m1Encode object to have a higher channel count output mode than what the host allows to support more configurations on channel specific hosts
 
             /// INPUTS
-            if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputMode())
+            if (getBus(true, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getInputChannelsCount())
             {
                 if (getBus(true, 0)->getCurrentLayout().size() == 1)
                 {
@@ -315,7 +321,7 @@ void M1PannerAudioProcessor::createLayout()
             parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
 
             /// OUTPUTS
-            if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputMode())
+            if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputChannelsCount())
             {
                 if (getBus(false, 0)->getCurrentLayout().size() == 4)
                 {
@@ -499,7 +505,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     // Add safety check
-    if (layouts.getMainInputChannelSet().isDisabled() || 
+    if (layouts.getMainInputChannelSet().isDisabled() ||
         layouts.getMainOutputChannelSet().isDisabled())
     {
         DBG("Layout REJECTED - Disabled buses");
@@ -513,42 +519,50 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
         return true;
     }
 
+    // For standalone, only allow stereo in/out
+    if (JUCEApplicationBase::isStandaloneApp())
+    {
+        auto inputLayout = layouts.getMainInputChannelSet();
+        auto outputLayout = layouts.getMainOutputChannelSet();
+
+        bool isValid = (inputLayout == juce::AudioChannelSet::mono() ||
+                        inputLayout == juce::AudioChannelSet::stereo() &&
+                       outputLayout == juce::AudioChannelSet::stereo());
+
+        DBG("Standalone Layout " + String(isValid ? "ACCEPTED" : "REJECTED") +
+            " - Input: " + inputLayout.getDescription() +
+            " Output: " + outputLayout.getDescription());
+
+        return isValid;
+    }
+
+    // If the host is Pro Tools only allow the standard bus configurations
     if (hostType.isProTools())
     {
-        if ((layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::mono().size()
-                || layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::stereo().size()
-                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::createLCR()
-                || layouts.getMainInputChannelSet().size() == juce::AudioChannelSet::quadraphonic().size()
-                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create5point0()
-                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create5point1()
-                || layouts.getMainInputChannelSet()  == juce::AudioChannelSet::create6point0())
-            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(2)
-            //||  layouts.getMainInputChannelSet() == AudioChannelSet::ambisonic(3)
-            && (layouts.getMainOutputChannelSet()    == juce::AudioChannelSet::create7point1()
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1point6()
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic()
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(2)
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3)
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5)
-                || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7)))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if (hostType.isJUCEPluginHost()) {
-        // JUCE Plugin Host only supports stereo in/out
-        if (layouts.getMainInputChannels() <= 2 && layouts.getMainOutputChannels() == 2)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        bool validInput = (layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::createLCR() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::createLCRS() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::quadraphonic() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::ambisonic(1) ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point0() ||
+                           layouts.getMainInputChannelSet() == juce::AudioChannelSet::create5point1());
+
+        bool validOutput = (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::quadraphonic() ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1() ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::create7point1point6() ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(2) ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(3) ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(4) ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(5) ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(6) ||
+                            layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7));
+
+        DBG("Layout " + String(validInput && validOutput ? "ACCEPTED" : "REJECTED") +
+            " - Input: " + layouts.getMainInputChannelSet().getDescription() +
+            " Output: " + layouts.getMainOutputChannelSet().getDescription());
+
+        return validInput && validOutput;
     }
     /* TODO: Finish EXTERNAL STREAMING Mode before using this
     else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
