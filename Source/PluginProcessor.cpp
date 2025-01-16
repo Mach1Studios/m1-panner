@@ -484,9 +484,14 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         lockOutputLayout = (bool)newValue;
     }
     // send a pannersettings update to helper since a parameter changed
-    if (pannerOSC->IsConnected())
-    {
-        pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+    try {
+        if (pannerOSC->IsConnected())
+        {
+            pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+        }
+    }
+    catch (...) {
+        // TODO: Add error handling
     }
 }
 
