@@ -30,7 +30,7 @@ juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncode
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 #endif
-#ifdef ITD_PARAMETER
+#ifdef ITD_PARAMETERS
 juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
 juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
 juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
