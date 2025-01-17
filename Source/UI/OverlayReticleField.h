@@ -82,11 +82,11 @@ public:
                 float r, d;
                 float x = points[i].z;
                 float y = points[i].x;
-                
+
                 if (pointsNames[i] == "LFE") {
                     continue;
                 }
-                
+
                 if (x == 0 && y == 0)
                 {
                     r = 0;
@@ -123,7 +123,6 @@ public:
         {
             draggingNow = false;
             cursorShow();
-            teleportCursor(shape.position.x + reticlePositionInWidgetSpace.x, shape.position.x + reticlePositionInWidgetSpace.y);
         }
 
         if (draggingNow)

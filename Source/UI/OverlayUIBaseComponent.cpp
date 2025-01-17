@@ -199,7 +199,7 @@ void OverlayUIBaseComponent::draw()
         divergeKnob.speed = knobSpeed;
         divergeKnob.externalHover = reticleHoveredLastFrame;
         divergeKnob.cursorHide = cursorHide;
-        divergeKnob.cursorShow = cursorShow;
+        divergeKnob.cursorShow = cursorShowAndTeleportBack;
         divergeKnob.draw();
 
         if (divergeKnob.changed)
