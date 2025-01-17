@@ -299,7 +299,7 @@ void PannerUIBaseComponent::draw()
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)
             || // or is pro tools and has a higher order output configuration
-            (processor->getMainBusNumOutputChannels() > 8)))
+            (processor->getMainBusNumOutputChannels() >= 8)))
     {
         yOffset += 140 - 10;
     }
@@ -544,7 +544,7 @@ void PannerUIBaseComponent::draw()
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)
             || // or is pro tools and has a higher order output configuration
-            (processor->getMainBusNumOutputChannels() > 8)))
+            (processor->getMainBusNumOutputChannels() >= 8)))
     {
         // Show bottom bar
         m.setLineWidth(1);
@@ -813,7 +813,7 @@ void PannerUIBaseComponent::draw()
             (processor->hostType.isProTools() && // or has an input dropdown in PT
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
             || (processor->hostType.isProTools() && // or has an output dropdown in PT
-                processor->getMainBusNumOutputChannels() > 8))
+                processor->getMainBusNumOutputChannels() >= 8))
         {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
@@ -828,7 +828,7 @@ void PannerUIBaseComponent::draw()
 
         if (!processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an output dropdown in PT
-                processor->getMainBusNumOutputChannels() > 8))
+                processor->getMainBusNumOutputChannels() >= 8))
         {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
@@ -931,7 +931,7 @@ void PannerUIBaseComponent::draw()
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)
             || // or is pro tools and has a higher order output configuration
-            (processor->getMainBusNumOutputChannels() > 8)))
+            (processor->getMainBusNumOutputChannels() >= 8)))
     {
         labelYOffset = 26;
     }
@@ -955,7 +955,7 @@ void PannerUIBaseComponent::draw()
         ((processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
              (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
             || // or is pro tools and has a higher order output configuration
-            (processor->getMainBusNumOutputChannels() > 8)))
+            (processor->getMainBusNumOutputChannels() >= 8)))
     {
         m.drawImage(m1logo, 25, m.getSize().height() - labelYOffset, 161 / 3, 39 / 3);
     }

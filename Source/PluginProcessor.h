@@ -34,16 +34,8 @@ public:
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
         juce::PluginHostType hostType;
 
-        // For standalone and unknown hosts, use the most basic stereo configuration
-        if (JUCEApplicationBase::isStandaloneApp())
-        {
-            return BusesProperties()
-                .withInput("Input", juce::AudioChannelSet::stereo(), true)
-                .withOutput("Output", juce::AudioChannelSet::stereo(), true);
-        }
-
         // Pro Tools specific layout
-        if (hostType.isProTools())
+        if (hostType.isProTools() || AudioProcessor::wrapperType_AAX)
         {
             // Pro Tools needs a fixed, stable initial configuration
             return BusesProperties()

@@ -504,7 +504,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 #ifndef CUSTOM_CHANNEL_LAYOUT
 bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    // Add safety check
     if (layouts.getMainInputChannelSet().isDisabled() ||
         layouts.getMainOutputChannelSet().isDisabled())
     {
@@ -519,26 +518,11 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
         return true;
     }
 
-    // For standalone, only allow stereo in/out
-    if (JUCEApplicationBase::isStandaloneApp())
-    {
-        auto inputLayout = layouts.getMainInputChannelSet();
-        auto outputLayout = layouts.getMainOutputChannelSet();
-
-        bool isValid = (inputLayout == juce::AudioChannelSet::mono() ||
-                        inputLayout == juce::AudioChannelSet::stereo() &&
-                       outputLayout == juce::AudioChannelSet::stereo());
-
-        DBG("Standalone Layout " + String(isValid ? "ACCEPTED" : "REJECTED") +
-            " - Input: " + inputLayout.getDescription() +
-            " Output: " + outputLayout.getDescription());
-
-        return isValid;
-    }
-
     // If the host is Pro Tools only allow the standard bus configurations
-    if (hostType.isProTools())
+    if (hostType.isProTools() || AudioProcessor::wrapperType_AAX)
     {
+        // Using a compiler flag for instances of Pro Tools scanning plugins externally from the main application
+        // This is a feature seen in 2024+ versions of Pro Tools
         bool validInput = (layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() ||
                            layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo() ||
                            layouts.getMainInputChannelSet() == juce::AudioChannelSet::createLCR() ||
@@ -564,6 +548,23 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
 
         return validInput && validOutput;
     }
+
+    // For standalone, only allow stereo in/out
+    if (JUCEApplicationBase::isStandaloneApp())
+    {
+        auto inputLayout = layouts.getMainInputChannelSet();
+        auto outputLayout = layouts.getMainOutputChannelSet();
+
+        bool isValid = (inputLayout == juce::AudioChannelSet::mono() ||
+                        inputLayout == juce::AudioChannelSet::stereo() &&
+                       outputLayout == juce::AudioChannelSet::stereo());
+
+        DBG("Standalone Layout " + String(isValid ? "ACCEPTED" : "REJECTED") +
+            " - Input: " + inputLayout.getDescription() +
+            " Output: " + outputLayout.getDescription());
+
+        return isValid;
+    }
     /* TODO: Finish EXTERNAL STREAMING Mode before using this
     else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
     {
@@ -575,6 +576,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     else
     {
         // Test for all available Mach1Encode configs
+        // manually maintained for-loop of first enum element to last enum element
         Mach1Encode<float> configTester;
         for (int inputEnum = Mach1EncodeInputMode::Mono; inputEnum != Mach1EncodeInputMode::FiveDotOneSMTPE; inputEnum++)
         {
