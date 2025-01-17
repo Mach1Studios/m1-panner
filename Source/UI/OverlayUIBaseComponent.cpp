@@ -150,7 +150,7 @@ void OverlayUIBaseComponent::draw()
     if (pannerState)
     {
         XYRZ xyrz = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->elevation };
-        auto& overlayReticleField = m.prepare<OverlayReticleField>({ 0, 0, getWidth() * m.getScreenScale(), getHeight() * m.getScreenScale() }).controlling(&xyrz);
+        auto& overlayReticleField = m.prepare<OverlayReticleField>({ 0, 0, m.getSize().width(), m.getSize().height() }).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
         overlayReticleField.teleportCursor = teleportCursor;
