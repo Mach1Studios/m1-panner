@@ -35,7 +35,7 @@ public:
         juce::PluginHostType hostType;
 
         // Pro Tools specific layout
-        if (hostType.isProTools() || AudioProcessor::wrapperType_AAX)
+        if (hostType.isProTools() || hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_AAX)
         {
             // Pro Tools needs a fixed, stable initial configuration
             return BusesProperties()

@@ -519,7 +519,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     }
 
     // If the host is Pro Tools only allow the standard bus configurations
-    if (hostType.isProTools() || AudioProcessor::wrapperType_AAX)
+    if (hostType.isProTools() || hostType.getPluginLoadedAs() == AudioProcessor::wrapperType_AAX)
     {
         // Using a compiler flag for instances of Pro Tools scanning plugins externally from the main application
         // This is a feature seen in 2024+ versions of Pro Tools
