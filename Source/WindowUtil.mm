@@ -20,6 +20,7 @@ std::vector<std::string> WindowUtil::videoPlayerNames = {
     "Avid Video Engine",
     "Video Engine",
     "Video",
+    "Video Player",
     "FL Studio Video Player",
     "Logic Pro Video",
     "Studio One Video Player",

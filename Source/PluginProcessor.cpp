@@ -837,6 +837,12 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             continue;
         }
 
+        // Skip processing if channel is muted
+        if (channelMuteStates[input_channel])
+        {
+            continue;
+        }
+
         for (int sample = 0; sample < buffer.getNumSamples(); sample++)
         {
             // break if expected input channel num size does not match current input channel num size from host
@@ -1014,6 +1020,8 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         }
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
+    // Initialize all channels as unmuted
+    channelMuteStates.resize(pannerSettings.m1Encode.getInputChannelsCount(), false);
 
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();

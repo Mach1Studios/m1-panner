@@ -184,15 +184,15 @@ public:
                     clamp(point.y, 0, shape.size.y);
                     if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::LCR)
                     {
-                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, m);
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1, processor->channelMuteStates[i], m);
                     }
                     else if (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat)
                     {
-                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, m);
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 2, processor->channelMuteStates[i], m);
                     }
                     else
                     {
-                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, m);
+                        drawAdditionalReticle(point.x, point.y, pointsNames[i], reticleHovered, 1.5, processor->channelMuteStates[i], m);
                     }
                 }
             }
@@ -242,6 +242,26 @@ public:
 
         clamp(std::get<0>(*xyrd), -100, 100);
         clamp(std::get<1>(*xyrd), -100, 100);
+
+        // Add option-click handling for reticles
+        if (mouseDownPressed(0) && isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT))
+        {
+            std::vector<Mach1Point3D> points = pannerState->m1Encode.getPoints();
+            std::vector<std::string> pointsNames = pannerState->m1Encode.getPointsNames();
+
+            for (int i = 0; i < pannerState->m1Encode.getPointsCount(); i++)
+            {
+                MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
+
+                // Check if click is within reticle area
+                if (MurkaShape(point.x - 10, point.y - 10, 20, 20).inside(mousePosition()))
+                {
+                    // Toggle mute state for this channel
+                    processor->channelMuteStates[i] = !processor->channelMuteStates[i];
+                    break;
+                }
+            }
+        }
     }
 
     void clampPoint(MurkaPoint& input, float min, float max)
@@ -264,7 +284,7 @@ public:
             input = max;
     }
 
-    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, Murka& m)
+    void drawAdditionalReticle(float x, float y, std::string label, bool reticleHovered, float reticleSizeMultiplier, bool is_muted, Murka& m)
     {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, (DEFAULT_FONT_SIZE + 2 * A(reticleHovered) + (2 * (pannerState->elevation / 90))));
 
@@ -272,15 +292,24 @@ public:
 
         if (isConnected)
         {
-            // fill reticle with track color
-            m.setColor(MurkaColor(track_color.red, track_color.green, track_color.blue, track_color.alpha));
+            // Use grey color if muted, otherwise use track color
+            if (is_muted) {
+                m.setColor(DISABLED_PARAM);
+            } else {
+                m.setColor(MurkaColor(track_color.red, track_color.green, track_color.blue, track_color.alpha));
+            }
+
             // inner
             m.drawCircle(x, y, (8 * reticleSizeMultiplier) + 1 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
             // outer
             m.drawCircle(x, y, (12 * reticleSizeMultiplier) + 5 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
         }
         // Draw outer m1-yellow circle
-        m.setColor(M1_ACTION_YELLOW);
+        if (is_muted) {
+            m.setColor(DISABLED_PARAM);
+        } else {
+            m.setColor(M1_ACTION_YELLOW);
+        }
         m.drawCircle(x, y, (10 * reticleSizeMultiplier) + 3 * A(reticleHovered) + (2 * (pannerState->elevation / 90)));
         // re-adjust label x offset for size of string
         m.prepare<murka::Label>(MurkaShape(x - (4 + label.length() * 4.75) - (2 * (pannerState->elevation / 90)), y - 9 - 2 * A(reticleHovered) - (2 * (pannerState->elevation / 90)), 50, 50)).text(label.c_str()).draw();
@@ -338,6 +367,8 @@ public:
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;
     juce::OSCColour track_color;
+
+    M1PannerAudioProcessor* processor; // Add this member variable
 
     // The results type, you also need to define it even if it's nothing.
     typedef bool Results;

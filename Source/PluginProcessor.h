@@ -216,6 +216,9 @@ public:
     void convertRCtoXYRaw(float r, float d, float& x, float& y);
     void convertXYtoRCRaw(float x, float y, float& r, float& d);
 
+    // Add mute states vector for each input channel
+    std::vector<bool> channelMuteStates;
+
 private:
     TrackProperties track_properties;
     void createLayout();
