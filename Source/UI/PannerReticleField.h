@@ -243,8 +243,8 @@ public:
         clamp(std::get<0>(*xyrd), -100, 100);
         clamp(std::get<1>(*xyrd), -100, 100);
 
-        // Add option-click handling for reticles
-        if (mouseDownPressed(0) && isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT))
+        // Add option-click handling for muting reticles when input mode is greater than mono
+        if (mouseDownPressed(0) && isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT && pannerState->m1Encode.getInputChannelsCount() > 1))
         {
             std::vector<Mach1Point3D> points = pannerState->m1Encode.getPoints();
             std::vector<std::string> pointsNames = pannerState->m1Encode.getPointsNames();
