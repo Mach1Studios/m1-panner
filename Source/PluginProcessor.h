@@ -29,6 +29,52 @@ public:
     M1PannerAudioProcessor();
     ~M1PannerAudioProcessor() override;
 
+    inline juce::AAXClientExtensions& getAAXClientExtensions() override
+    {
+        return aaxExtensions;
+    }
+
+    class M1PannerAAXExtensions : public juce::AAXClientExtensions
+    {
+    public:
+        int32 getPluginIDForMainBusConfig(const juce::AudioChannelSet& mainInputLayout,
+                                         const juce::AudioChannelSet& mainOutputLayout,
+                                         bool idForAudioSuite) const override
+        {
+            // Handle legacy configurations
+            if (mainInputLayout == juce::AudioChannelSet::mono() && mainOutputLayout == juce::AudioChannelSet::quadraphonic())
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636161 /* 'jcaa' */); //1-4 panner1
+
+            if (mainInputLayout == juce::AudioChannelSet::mono() && mainOutputLayout == juce::AudioChannelSet::quadraphonic()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636161 /* 'jcaa' */); //1-4 panner1
+            }
+            if (mainInputLayout == juce::AudioChannelSet::mono() && mainOutputLayout == juce::AudioChannelSet::create7point1()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636162 /* 'jcab' */); //1-8 panner2
+            }
+            if (mainInputLayout == juce::AudioChannelSet::stereo() && mainOutputLayout == juce::AudioChannelSet::quadraphonic()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636163 /* 'jcac' */); //2-4 panner3
+            }
+            if (mainInputLayout == juce::AudioChannelSet::stereo() && mainOutputLayout == juce::AudioChannelSet::create7point1()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636164 /* 'jcad' */); //2-8 panner4
+            }
+            if (mainInputLayout == juce::AudioChannelSet::quadraphonic() && mainOutputLayout == juce::AudioChannelSet::quadraphonic()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636165 /* 'jcae' */); //4-4 panner5
+            }
+            if (mainInputLayout == juce::AudioChannelSet::quadraphonic() && mainOutputLayout == juce::AudioChannelSet::create7point1()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636166 /* 'jcaf' */); //4-8 panner6
+            }
+            if (mainInputLayout == juce::AudioChannelSet::ambisonic(1) && mainOutputLayout == juce::AudioChannelSet::quadraphonic()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a636169 /* 'jcai' */); //4-4 panner9
+            }
+            if (mainInputLayout == juce::AudioChannelSet::ambisonic(1) && mainOutputLayout == juce::AudioChannelSet::create7point1()) {
+                return (idForAudioSuite ? 0x6a796161 /* 'jyaa' */ : 0x6a63616a /* 'jcaj' */); //4-8 panner10
+            }
+            // For any undefined configuration, generate a unique ID using JUCE's default logic
+            // This ensures every configuration gets a unique ID without having to explicitly define them all
+            return juce::AAXClientExtensions::getPluginIDForMainBusConfig(mainInputLayout, mainOutputLayout, idForAudioSuite);
+        }
+    };
+
     static AudioProcessor::BusesProperties getHostSpecificLayout()
     {
         // This determines the initial bus i/o for plugin on construction and depends on the `isBusesLayoutSupported()`
@@ -220,6 +266,7 @@ public:
     std::vector<bool> channelMuteStates;
 
 private:
+    M1PannerAAXExtensions aaxExtensions;
     TrackProperties track_properties;
     void createLayout();
 

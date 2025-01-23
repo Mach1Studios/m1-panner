@@ -43,8 +43,8 @@ set(RBRACKET_LITERAL "}")
 
 # DYNAMIC_IO_PLUGIN_MODE or STREAMING_PANNER_PLUGIN or AAX/RTAS
 set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
-set(CUSTOM_BUNDLE_ID "com.mach1.spatial.panner")
-set(CUSTOM_PLUGIN_CODE "M1PN")
+set(CUSTOM_BUNDLE_ID "com.mach1.panner")
+set(CUSTOM_PLUGIN_CODE "M1Pn")
 
 if(ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
@@ -98,6 +98,7 @@ juce_add_plugin(${PLUGIN_NAME}
                 FORMATS ${FORMATS}
                 VST3_CATEGORIES "Spatial Surround Up-Downmix"
                 AAX_CATEGORY "AAX_ePlugInCategory_None"
+                DISABLE_AAX_MULTI_MONO TRUE
                 AU_MAIN_TYPE "kAudioUnitType_Effect"
                 BUNDLE_ID ${CUSTOM_BUNDLE_ID}
                 PLUGIN_NAME ${PLUGIN_NAME}
