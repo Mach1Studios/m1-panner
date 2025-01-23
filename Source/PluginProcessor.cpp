@@ -323,20 +323,17 @@ void M1PannerAudioProcessor::createLayout()
             /// OUTPUTS
             if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputChannelsCount())
             {
-                if (getBus(false, 0)->getCurrentLayout().size() == 4)
+                if (getBus(false, 0)->getCurrentLayout().size() >= 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
                 {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
+                else if (getBus(false, 0)->getCurrentLayout().size() >= 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
+                else if (getBus(false, 0)->getCurrentLayout().size() >= 4)
                 {
-                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
-                    {
-                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
-                    }
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
                 }
             }
             // update parameter from start
@@ -464,23 +461,34 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramInputMode)
     {
+        Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
+        pannerSettings.m1Encode.setInputMode(inputType);
+        parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
+
         // stop pro tools from using plugin data to change input after creation
-        if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6)))
+        if (hostType.isProTools())
         {
-            Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
-            pannerSettings.m1Encode.setInputMode(inputType);
-            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
+            m1EncodeChangeInputOutputMode(inputType, pannerSettings.m1Encode.getOutputMode());
+        }
+        else
+        {
             layoutCreated = false;
         }
     }
     else if (parameterID == paramOutputMode)
     {
-        // stop pro tools from using plugin data to change output after creation
-        if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8))
+
+        Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
+        pannerSettings.m1Encode.setOutputMode(outputType);
+        parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
+
+        // stop pro tools from using plugin data to change input after creation
+        if (hostType.isProTools())
         {
-            Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
-            pannerSettings.m1Encode.setOutputMode(outputType);
-            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
+            m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), outputType);
+        }
+        else
+        {
             layoutCreated = false;
         }
     }
@@ -613,7 +621,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels)
 
     if (!chanset.isDiscreteLayout())
     { // Check for DAW specific instructions
-        if (hostType.isProTools() && chanset.size() == 8 && chanset.getDescription().contains(juce::String("7.1 Surround")))
+        if (hostType.isProTools() && pannerSettings.m1Encode.getOutputMode() == Mach1EncodeOutputMode::M1Spatial_8 && chanset.size() == 8 && chanset.getDescription().contains(juce::String("7.1 Surround")))
         {
             // TODO: Remove this and figure out why we cannot use what is in "else" on PT 7.1
             chan_types[0] = juce::AudioChannelSet::ChannelType::left;
@@ -1010,6 +1018,8 @@ void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float& r, float&
 
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode inputMode, Mach1EncodeOutputMode outputMode)
 {
+    // Note: Dangerous to call outside of createLayout()
+    // TODO: Look into just moving this function into the createLayout()
     if (pannerSettings.m1Encode.getOutputMode() != outputMode)
     {
         DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
