@@ -323,17 +323,20 @@ void M1PannerAudioProcessor::createLayout()
             /// OUTPUTS
             if (getBus(false, 0)->getCurrentLayout().size() != pannerSettings.m1Encode.getOutputChannelsCount())
             {
-                if (getBus(false, 0)->getCurrentLayout().size() >= 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
+                if (getBus(false, 0)->getCurrentLayout().size() == 4)
                 {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
+                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() >= 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
+                else if (getBus(false, 0)->getCurrentLayout().size() == 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() >= 4)
+                else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
                 {
-                    pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
+                    {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
+                    }
                 }
             }
             // update parameter from start
@@ -461,34 +464,23 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramInputMode)
     {
-        Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
-        pannerSettings.m1Encode.setInputMode(inputType);
-        parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
-
         // stop pro tools from using plugin data to change input after creation
-        if (hostType.isProTools())
+        if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6)))
         {
-            m1EncodeChangeInputOutputMode(inputType, pannerSettings.m1Encode.getOutputMode());
-        }
-        else
-        {
+            Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
+            pannerSettings.m1Encode.setInputMode(inputType);
+            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
     }
     else if (parameterID == paramOutputMode)
     {
-
-        Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
-        pannerSettings.m1Encode.setOutputMode(outputType);
-        parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
-
-        // stop pro tools from using plugin data to change input after creation
-        if (hostType.isProTools())
+        // stop pro tools from using plugin data to change output after creation
+        if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8))
         {
-            m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), outputType);
-        }
-        else
-        {
+            Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
+            pannerSettings.m1Encode.setOutputMode(outputType);
+            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
     }
@@ -621,7 +613,7 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels)
 
     if (!chanset.isDiscreteLayout())
     { // Check for DAW specific instructions
-        if (hostType.isProTools() && pannerSettings.m1Encode.getOutputMode() == Mach1EncodeOutputMode::M1Spatial_8 && chanset.size() == 8 && chanset.getDescription().contains(juce::String("7.1 Surround")))
+        if (hostType.isProTools() && chanset.size() == 8 && chanset.getDescription().contains(juce::String("7.1 Surround")))
         {
             // TODO: Remove this and figure out why we cannot use what is in "else" on PT 7.1
             chan_types[0] = juce::AudioChannelSet::ChannelType::left;
@@ -1018,8 +1010,6 @@ void M1PannerAudioProcessor::convertXYtoRCRaw(float x, float y, float& r, float&
 
 void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode inputMode, Mach1EncodeOutputMode outputMode)
 {
-    // Note: Dangerous to call outside of createLayout()
-    // TODO: Look into just moving this function into the createLayout()
     if (pannerSettings.m1Encode.getOutputMode() != outputMode)
     {
         DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
@@ -1030,11 +1020,12 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         }
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
-    // Initialize all channels as unmuted
-    channelMuteStates.resize(pannerSettings.m1Encode.getInputChannelsCount(), false);
 
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
+
+    // Initialize all channels as unmuted
+    channelMuteStates.resize(inputChannelsCount, false);
 
     smoothedChannelCoeffs = std::vector<std::vector<juce::LinearSmoothedValue<float>>>(inputChannelsCount, std::vector<juce::LinearSmoothedValue<float>>(outputChannelsCount));
     for (int in = 0; in < inputChannelsCount; ++in)
@@ -1138,7 +1129,7 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
     /*
      This prefix string check is to define when we swap from mState parameters to newer AVPTS, using this to check if the plugin
      was made before this release version (1.5.1) since it would still be using mState, if it is a M1-Panner made before "1.5.1"
-     then we use the mState tree to call the saved automation and values of all our parameters in those older sessions.
+     then we no longer support recall of those plugin parameters.
     */
 
     if (!prefix.isEmpty() && (prefix == "1.5.1" || prefix == "2.0.0"))
@@ -1146,7 +1137,10 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
 
-        // TODO: Check if this should notify host
+        // Update parameters through APVTS to notify host
+        auto& params = getValueTreeState();
+
+        // update local parameters first
         parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
         parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
         parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
@@ -1158,10 +1152,25 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
         parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
 
+        // update the host parameters
+        params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth)));
+        params.getParameter(paramElevation)->setValueNotifyingHost(params.getParameter(paramElevation)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation)));
+        params.getParameter(paramDiverge)->setValueNotifyingHost(params.getParameter(paramDiverge)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge)));
+        params.getParameter(paramGain)->setValueNotifyingHost(params.getParameter(paramGain)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain)));
+        params.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(params.getParameter(paramStereoOrbitAzimuth)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth)));
+        params.getParameter(paramStereoSpread)->setValueNotifyingHost(params.getParameter(paramStereoSpread)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread)));
+        params.getParameter(paramStereoInputBalance)->setValueNotifyingHost(params.getParameter(paramStereoInputBalance)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance)));
+        params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit)));
+        params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode)));
+        params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode)));
+
 #ifdef ITD_PARAMETERS
         parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
         parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
         parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
+        params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive)));
+        params.getParameter(paramDelayTime)->setValueNotifyingHost(params.getParameter(paramDelayTime)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime)));
+        params.getParameter(paramDelayDistance)->setValueNotifyingHost(params.getParameter(paramDelayDistance)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance)));
 #endif
 
         // Extras
@@ -1202,12 +1211,15 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
                 // error
             }
             parameterChanged(paramInputMode, tempInputType);
+            params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, tempInputType)));
         }
         else if (prefix == "2.0.0")
         {
             // if the parsed input from xml is not the default value
             parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
             parameterChanged(paramOutputMode, Mach1EncodeOutputMode(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
+            params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+            params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
         }
     }
     else
