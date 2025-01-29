@@ -1155,6 +1155,12 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
             parameterChanged(paramIsotropicEncodeMode, tempPannerSettings.isotropicMode);
             parameterChanged(paramEqualPowerEncodeMode, tempPannerSettings.equalpowerMode);
 
+#ifdef ITD_PARAMETERS
+            parameterChanged(paramITDActive, tempPannerSettings.itdActive));
+            parameterChanged(paramDelayTime, tempPannerSettings.delayTime));
+            parameterChanged(paramDelayDistance, tempPannerSettings.delayDistance));
+#endif
+
             // if the plugin was 4ch input then set the quadmode
             if (getTotalNumInputChannels() == 4)
             {
