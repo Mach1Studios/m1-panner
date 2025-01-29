@@ -57,7 +57,7 @@ struct MixerSettings
     float yaw;
     float pitch;
     float roll;
-    int monitor_mode;
+    int monitor_mode = 0; // set default for when no monitor is found
 
     bool yawActive, pitchActive, rollActive = true;
 };
