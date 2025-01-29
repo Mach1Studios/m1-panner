@@ -13,26 +13,31 @@
 namespace LegacyParameters
 {
     // Legacy parameter IDs (for backwards compatibility)
+    // JUCE and most hosts match up automation lanes based on when a parameter was intialized
+    // the list below is the order or initialization for versions 1.x.x
     const juce::String paramX = "x";
     const juce::String paramY = "y";
     const juce::String paramZ = "3";
-
+    const juce::String paramGain = "8";
     const juce::String paramRotation = "10";
     const juce::String paramDiverge = "19";
-    const juce::String paramGain = "8";
-
     const juce::String paramSTSpread = "9";
     const juce::String paramSTRotate = "11";
     const juce::String paramSTBalance = "12";
     const juce::String paramAutoOrbit = "16";
-
     const juce::String paramIsotropicEncode = "IsotropicEncode";
+    const juce::String paramPannerMode = "PannerMode";
     const juce::String paramQuadMode = "QuadMode";
+    const juce::String paramSurroundMode = "SurroundMode";
+    //const juce::String paramAmbiMode = "AmbiMode";
+    //const juce::String paramOverlay = "Overlay";
+    const juce::String paramGhost = "Ghost";
     const juce::String paramEqualPowerEncode = "EqualPowerEncode";
 
 #ifdef ITD_PARAMETERS
     const juce::String paramITDActive = "ITDProcessing";
     const juce::String paramDelayTime = "DelayTime";
+    const String paramITDClampActive = "ITDClamp";
     const juce::String paramDelayDistance = "ITDDistance";
 #endif
 
