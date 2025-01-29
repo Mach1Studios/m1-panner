@@ -394,6 +394,8 @@ void M1PannerAudioProcessor::releaseResources()
 
 void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
 {
+    // Expects non-normalised values
+
     needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
 
     if (parameterID == paramAzimuth)
@@ -1088,7 +1090,7 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     // Store the parameters in the memory block.
     juce::MemoryOutputStream stream(destData, false);
-    stream.writeString("2.0.0"); // write the last major prefix
+    stream.writeString("M1-Panner");
 
     juce::XmlElement root("Root");
     addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
@@ -1126,106 +1128,104 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
     // whose contents will have been created by the getStateInformation() call.
     juce::MemoryInputStream input(data, sizeInBytes, false);
     auto prefix = input.readString();
+
     /*
      This prefix string check is to define when we swap from mState parameters to newer AVPTS, using this to check if the plugin
      was made before this release version (1.5.1) since it would still be using mState, if it is a M1-Panner made before "1.5.1"
      then we no longer support recall of those plugin parameters.
-    */
-
-    if (!prefix.isEmpty() && (prefix == "1.5.1" || prefix == "2.0.0"))
+     */
+    if (!prefix.isEmpty())
     {
         juce::XmlDocument doc(input.readString());
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
-
-        // Update parameters through APVTS to notify host
         auto& params = getValueTreeState();
 
-        // update local parameters first
-        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
-        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
-        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
-        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
-        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
-        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
-        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
-        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
-        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
-        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
-
-        // update the host parameters
-        params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth)));
-        params.getParameter(paramElevation)->setValueNotifyingHost(params.getParameter(paramElevation)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation)));
-        params.getParameter(paramDiverge)->setValueNotifyingHost(params.getParameter(paramDiverge)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge)));
-        params.getParameter(paramGain)->setValueNotifyingHost(params.getParameter(paramGain)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain)));
-        params.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(params.getParameter(paramStereoOrbitAzimuth)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth)));
-        params.getParameter(paramStereoSpread)->setValueNotifyingHost(params.getParameter(paramStereoSpread)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread)));
-        params.getParameter(paramStereoInputBalance)->setValueNotifyingHost(params.getParameter(paramStereoInputBalance)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance)));
-        params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit)));
-        params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode)));
-        params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode)));
-
-#ifdef ITD_PARAMETERS
-        parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
-        parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
-        parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
-        params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive)));
-        params.getParameter(paramDelayTime)->setValueNotifyingHost(params.getParameter(paramDelayTime)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime)));
-        params.getParameter(paramDelayDistance)->setValueNotifyingHost(params.getParameter(paramDelayDistance)->convertTo0to1((float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance)));
-#endif
-
-        // Extras
-        osc_colour.red = (int)getParameterIntFromXmlElement(root.get(), "trackColor_r", osc_colour.red);
-        osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
-        osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
-        osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
-        parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
-
-        // Parsing old plugin QUADMODE and applying to new inputType structure
         if (prefix == "1.5.1")
         {
-            // Get QUAD input type
-            int quadStoredInput = (int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode());
-            Mach1EncodeInputMode tempInputType;
-            if (quadStoredInput == 0)
+            // Handle legacy 1.5.1 parameters directly from XML and update locally first
+            PannerSettings tempPannerSettings;
+            LegacyParameters::updateFromLegacyXML(root.get(), tempPannerSettings);
+            parameterChanged(paramAzimuth, tempPannerSettings.azimuth);
+            parameterChanged(paramDiverge, tempPannerSettings.diverge);
+            parameterChanged(paramGain, tempPannerSettings.gain);
+            parameterChanged(paramStereoOrbitAzimuth, tempPannerSettings.stereoOrbitAzimuth);
+            parameterChanged(paramStereoSpread, tempPannerSettings.stereoSpread);
+            parameterChanged(paramStereoInputBalance, tempPannerSettings.stereoInputBalance);
+            parameterChanged(paramAutoOrbit, tempPannerSettings.autoOrbit);
+            parameterChanged(paramIsotropicEncodeMode, tempPannerSettings.isotropicMode);
+            parameterChanged(paramEqualPowerEncodeMode, tempPannerSettings.equalpowerMode);
+
+            // if the plugin was 4ch input then set the quadmode
+            if (getTotalNumInputChannels() == 4)
             {
-                tempInputType = Mach1EncodeInputMode::Quad; // 3
+                parameterChanged(paramInputMode, tempPannerSettings.m1Encode.getInputMode());
             }
-            else if (quadStoredInput == 1)
+
+            // set the output mode
+            if (getTotalNumOutputChannels() == 4)
             {
-                tempInputType = Mach1EncodeInputMode::LCRS; // 4
+                parameterChanged(paramOutputMode, Mach1EncodeOutputMode::M1Spatial_4);
             }
-            else if (quadStoredInput == 2)
+            else if (getTotalNumOutputChannels() == 8)
             {
-                tempInputType = Mach1EncodeInputMode::AFormat; // 5
-            }
-            else if (quadStoredInput == 3)
-            {
-                tempInputType = Mach1EncodeInputMode::BFOAACN; // 10
-            }
-            else if (quadStoredInput == 4)
-            {
-                tempInputType = Mach1EncodeInputMode::BFOAFUMA; // 11
+                parameterChanged(paramOutputMode, Mach1EncodeOutputMode::M1Spatial_8);
             }
             else
             {
-                // error
+                DBG("Unexpected channel count for output for a legacy recalled plugin: " + juce::String(getTotalNumOutputChannels()));
             }
-            parameterChanged(paramInputMode, tempInputType);
-            params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, tempInputType)));
         }
-        else if (prefix == "2.0.0")
+        else
         {
+            // update local parameters first
+            parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
+            parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
+            parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
+            parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
+            parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
+            parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
+            parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
+            parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
+            parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
+            parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
+
+#ifdef ITD_PARAMETERS
+            parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
+            parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
+            parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
+#endif
+
+            // Extras
+            osc_colour.red = (int)getParameterIntFromXmlElement(root.get(), "trackColor_r", osc_colour.red);
+            osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
+            osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
+            osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
+            parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
+
             // if the parsed input from xml is not the default value
             parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
             parameterChanged(paramOutputMode, Mach1EncodeOutputMode(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
             params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
             params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
         }
-    }
-    else
-    {
-        // Legacy recall
-        //legacyParametersRecall(data, sizeInBytes, *this);
+
+        // Update all parameters through the value tree
+        params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1(pannerSettings.azimuth));
+        params.getParameter(paramElevation)->setValueNotifyingHost(params.getParameter(paramElevation)->convertTo0to1(pannerSettings.elevation));
+        params.getParameter(paramDiverge)->setValueNotifyingHost(params.getParameter(paramDiverge)->convertTo0to1(pannerSettings.diverge));
+        params.getParameter(paramGain)->setValueNotifyingHost(params.getParameter(paramGain)->convertTo0to1(pannerSettings.gain));
+        params.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(params.getParameter(paramStereoOrbitAzimuth)->convertTo0to1(pannerSettings.stereoOrbitAzimuth));
+        params.getParameter(paramStereoSpread)->setValueNotifyingHost(params.getParameter(paramStereoSpread)->convertTo0to1(pannerSettings.stereoSpread));
+        params.getParameter(paramStereoInputBalance)->setValueNotifyingHost(params.getParameter(paramStereoInputBalance)->convertTo0to1(pannerSettings.stereoInputBalance));
+        params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1(pannerSettings.autoOrbit));
+        params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1(pannerSettings.isotropicMode));
+        params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1(pannerSettings.equalpowerMode));
+
+#ifdef ITD_PARAMETERS
+        params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1(pannerSettings.itdActive));
+        params.getParameter(paramDelayTime)->setValueNotifyingHost(params.getParameter(paramDelayTime)->convertTo0to1(pannerSettings.delayTime));
+        params.getParameter(paramDelayDistance)->setValueNotifyingHost(params.getParameter(paramDelayDistance)->convertTo0to1(pannerSettings.delayDistance));
+#endif
     }
 }
 

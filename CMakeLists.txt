@@ -109,7 +109,7 @@ target_compile_definitions(${PLUGIN_NAME}
     PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=0
+    JUCE_VST3_CAN_REPLACE_VST2=1
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.
@@ -177,7 +177,6 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
     juce::juce_audio_utils
     juce::juce_core
     juce::juce_data_structures
-    juce::juce_dsp
     juce::juce_events
     juce::juce_graphics
     juce::juce_gui_basics

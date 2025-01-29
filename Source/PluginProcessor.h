@@ -13,7 +13,7 @@
 #include "TypesForDataExchange.h"
 #include <JuceHeader.h>
 #include <Mach1Encode.h>
-//#include "LegacyParameters.h"
+#include "LegacyParameters.h"
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"
