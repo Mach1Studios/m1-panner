@@ -424,15 +424,22 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramAutoOrbit)
     {
-        if (pannerSettings.m1Encode.getInputMode() == 1)
+        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode
             pannerSettings.autoOrbit = (bool)newValue; // update pannerSettings value from host
             parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
+            // reset stereo params when auto orbit is disabled
+            if (!pannerSettings.autoOrbit)
+            {
+                parameters.getParameter(paramStereoOrbitAzimuth)->setValue(0.0f);
+                parameters.getParameter(paramStereoSpread)->setValue(0.0f);
+                parameters.getParameter(paramStereoInputBalance)->setValue(0.0f);
+            }
         }
     }
     else if (parameterID == paramStereoOrbitAzimuth)
     {
-        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false)
+        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
             pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
@@ -440,7 +447,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramStereoSpread)
     {
-        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false)
+        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
             pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoSpread)->setValue(newValue);
@@ -448,7 +455,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramStereoInputBalance)
     {
-        if (pannerSettings.m1Encode.getInputMode() == 1 && pannerSettings.autoOrbit == false)
+        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
             pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
