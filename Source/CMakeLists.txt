@@ -1,5 +1,6 @@
 target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     TypesForDataExchange.h
+                                    AlertData.h
                                     PluginEditor.cpp
                                     PluginEditor.h
                                     PluginProcessor.cpp
@@ -23,6 +24,7 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     UI/OverlayUIBaseComponent.h
                                     UI/OverlayUIBaseComponent.cpp
                                     UI/PannerReticleField.h
+                                    UI/M1AlertComponent.h
                                     UI/PannerUIBaseComponent.h
                                     UI/PannerUIBaseComponent.cpp)
 

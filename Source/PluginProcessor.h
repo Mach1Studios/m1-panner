@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Config.h"
+#include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
 #include <JuceHeader.h>
@@ -22,6 +23,7 @@
 //==============================================================================
 /**
 */
+class PannerOSC; // forward declare for PannerOSC
 class M1PannerAudioProcessor : public juce::AudioProcessor, juce::AudioProcessorValueTreeState::Listener, juce::Timer
 {
 public:
@@ -264,6 +266,11 @@ public:
 
     // Add mute states vector for each input channel
     std::vector<bool> channelMuteStates;
+
+    // This will be set by the UI or editor so we can notify it of alerts
+    std::function<void(const AlertData&)> postAlertToUI;
+    void postAlert(const AlertData& alert);
+    juce::Array<AlertData> pendingAlerts;
 
 private:
     M1PannerAAXExtensions aaxExtensions;

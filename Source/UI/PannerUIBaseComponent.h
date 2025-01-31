@@ -24,6 +24,8 @@
 #include "M1PitchWheel.h"
 #include "M1VolumeDisplayLine.h"
 #include "PannerReticleField.h"
+#include "M1AlertComponent.h"
+#include "../AlertData.h"
 
 //==============================================================================
 /*
@@ -50,6 +52,11 @@ public:
 
     std::function<void(bool)> setOverlayVisible;
 
+    void showAlert(const std::string& title, const std::string& message, const std::string& buttonText = "OK");
+
+    // Adds a new alert to the queue
+    void postAlert(const AlertData& alert);
+
 private:
     juce::Point<int> cachedMousePositionWhenMouseWasHidden = { 0, 0 };
     juce::Point<int> currentMousePosition = { 0, 0 };
@@ -75,6 +82,11 @@ private:
     std::function<void(int, int)> teleportCursor = [&](int x, int y) {
         juce::Desktop::setMousePosition(localPointToGlobal(juce::Point<int>(x, y)));
     };
+
+    M1AlertComponent murkaAlert;
+    juce::OwnedArray<AlertData> alertQueue; // queue for alerts
+    AlertData currentAlert;
+    bool hasActiveAlert = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PannerUIBaseComponent)
 };

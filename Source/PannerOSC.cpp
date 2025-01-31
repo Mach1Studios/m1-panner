@@ -1,70 +1,10 @@
 #include "PannerOSC.h"
 
-bool PannerOSC::init(int helperPort)
+#include "PluginProcessor.h"
+
+PannerOSC::PannerOSC(M1PannerAudioProcessor* processor_)
 {
-    // check port
-    juce::DatagramSocket socket(false);
-    socket.setEnablePortReuse(false);
-    this->helperPort = helperPort;
-
-    // find available port
-    for (port = 10001; port < 10200; port++)
-    {
-        if (socket.bindToPort(port))
-        {
-            socket.shutdown();
-            juce::OSCReceiver::connect(port);
-            break; // stops the incrementing on the first available port
-        }
-    }
-
-    if (port > 10000)
-    {
-        return true;
-    }
-}
-
-// finds the server port via the settings json file
-bool PannerOSC::initFromSettings(std::string jsonSettingsFilePath)
-{
-    juce::File settingsFile = juce::File(jsonSettingsFilePath);
-    if (!settingsFile.exists())
-    {
-        juce::AlertWindow::showMessageBoxAsync(
-            juce::AlertWindow::NoIcon,
-            "Warning",
-            "Settings file doesn't exist",
-            "",
-            nullptr,
-            juce::ModalCallbackFunction::create(([&](int result) {
-                //juce::JUCEApplicationBase::quit();
-            })));
-        return false;
-    }
-    else
-    {
-        juce::var mainVar = juce::JSON::parse(juce::File(jsonSettingsFilePath));
-        int helperPort = mainVar["helperPort"];
-
-        if (!init(helperPort))
-        {
-            juce::AlertWindow::showMessageBoxAsync(
-                juce::AlertWindow::WarningIcon,
-                "Warning",
-                "Conflict is happening and you need to choose a new port",
-                "",
-                nullptr,
-                juce::ModalCallbackFunction::create(([&](int result) {
-                    // juce::JUCEApplicationBase::quit();
-                })));
-            return false;
-        }
-    }
-    return true;
-}
-
-PannerOSC::PannerOSC()
-{
+    processor = processor_;
     isConnected = false;
 
     // We will assume the folders are properly created during the installation step
@@ -91,6 +31,61 @@ PannerOSC::PannerOSC()
 
     initFromSettings(settingsFile.getFullPathName().toStdString());
     juce::OSCReceiver::addListener(this);
+}
+
+bool PannerOSC::init(int helperPort)
+{
+    // check port
+    juce::DatagramSocket socket(false);
+    socket.setEnablePortReuse(false);
+    this->helperPort = helperPort;
+
+    // find available port
+    for (port = 10001; port < 10200; port++)
+    {
+        if (socket.bindToPort(port))
+        {
+            socket.shutdown();
+            juce::OSCReceiver::connect(port);
+            break; // stops the incrementing on the first available port
+        }
+    }
+
+    if (port > 10000)
+    {
+        return true;
+    }
+}
+
+// finds the server port via the settings json file
+bool PannerOSC::initFromSettings(const std::string& jsonSettingsFilePath)
+{
+    juce::File settingsFile(jsonSettingsFilePath);
+
+    if (!settingsFile.exists())
+    {
+        if (processor)
+        {
+            AlertData data { "Warning", "Settings file not found!", "OK" };
+            processor->postAlert(data);
+        }
+        return false;
+    }
+    else
+    {
+        juce::var mainVar = juce::JSON::parse(juce::File(jsonSettingsFilePath));
+        int helperPort = mainVar["helperPort"];
+
+        if (!init(helperPort))
+        {
+            if (processor)
+            {
+                AlertData data { "Warning", "There is a port conflict, please choose a new port", "OK" };
+                processor->postAlert(data);
+            }
+        }
+    }
+    return true;
 }
 
 void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)

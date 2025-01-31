@@ -19,6 +19,14 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
 
     processor = &p;
 
+    // Whenever the processor wants to post an alert, it calls postAlertToUI
+    // which we forward to our pannerUIBaseComponent:
+    processor->postAlertToUI = [this](const AlertData& alert)
+    {
+        if (pannerUIBaseComponent)
+            pannerUIBaseComponent->postAlert(alert);
+    };
+
     // overlay init
     {
         overlayWindow = std::make_unique<Overlay>(processor, this);
@@ -49,6 +57,12 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
     addAndMakeVisible(pannerUIBaseComponent);
 
     startTimer(50);
+
+    // Add this to flush stored alerts:
+    for (auto& alert : processor->pendingAlerts) {
+        pannerUIBaseComponent->postAlert(alert);
+    }
+    processor->pendingAlerts.clear();
 }
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()

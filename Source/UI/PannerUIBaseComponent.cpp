@@ -12,10 +12,24 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     processor = processor_;
     pannerState = &processor->pannerSettings;
     monitorState = &processor->monitorSettings;
+
+    // Set up alert dismiss callback
+    murkaAlert.onDismiss = [this]() {
+        // remove the top alert from our queue
+        if (alertQueue.size() > 0) {
+            alertQueue.remove(0);
+        }
+        murkaAlert.alertActive = false;
+    };
+
+    processor->postAlertToUI = [this](const AlertData& alert) {
+        this->postAlert(alert);
+    };
 }
 
 PannerUIBaseComponent::~PannerUIBaseComponent()
 {
+    murkaAlert.onDismiss();
 }
 
 //==============================================================================
@@ -972,6 +986,22 @@ void PannerUIBaseComponent::draw()
     {
         processor->pannerSettings.state = 1;
     }
+
+    // Draw the alert if active
+    if (hasActiveAlert)
+    {
+        auto& alertModal = m.prepare<M1AlertComponent>(MurkaShape(25, 30, 400, 400)); // same as reticlegrid
+        alertModal.alertActive = murkaAlert.alertActive;
+        alertModal.alert = murkaAlert.alert;
+        alertModal.alertWidth = 400;
+        alertModal.alertHeight = 200;
+        alertModal.onDismiss = [this]()
+        {
+            murkaAlert.alertActive = false;
+            hasActiveAlert = false;
+        };
+        alertModal.draw();
+    }
 }
 
 //==============================================================================
@@ -983,4 +1013,14 @@ void PannerUIBaseComponent::paint(juce::Graphics& g)
 void PannerUIBaseComponent::resized()
 {
     // This is called when the PannerUIBaseComponent is resized.
+}
+
+void PannerUIBaseComponent::postAlert(const AlertData& alert)
+{
+    currentAlert = alert;
+    murkaAlert.alertActive = true;
+    murkaAlert.alert.title = currentAlert.title;
+    murkaAlert.alert.message = currentAlert.message;
+    murkaAlert.alert.buttonText = currentAlert.buttonText;
+    hasActiveAlert = true;
 }

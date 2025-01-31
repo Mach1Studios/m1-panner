@@ -83,7 +83,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #endif
 
     // Setup osc and listener
-    pannerOSC = std::make_unique<PannerOSC>();
+    pannerOSC = std::make_unique<PannerOSC>(this);
     pannerOSC->AddListener([&](juce::OSCMessage msg) {
         if (msg.getAddressPattern() == "/monitor-settings")
         {
@@ -958,7 +958,15 @@ bool M1PannerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
-    return new M1PannerAudioProcessorEditor(*this);
+    auto* editor = new M1PannerAudioProcessorEditor(*this);
+
+    // When the processor sees a new alert, tell the editor to display it
+    postAlertToUI = [editor](const AlertData& a)
+    {
+        editor->pannerUIBaseComponent->postAlert(a);
+    };
+
+    return editor;
 }
 
 void M1PannerAudioProcessor::convertRCtoXYRaw(float r, float d, float& x, float& y)
@@ -1240,4 +1248,14 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new M1PannerAudioProcessor();
+}
+
+void M1PannerAudioProcessor::postAlert(const AlertData& alert)
+{
+    if (postAlertToUI) {
+        postAlertToUI(alert);
+    } else {
+        pendingAlerts.add(alert); // Store for later
+        DBG("Stored alert for UI. Total pending: " + juce::String(pendingAlerts.size()));
+    }
 }

@@ -1,11 +1,16 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "AlertData.h"
 
-class PannerOSC : private juce::OSCSender, private juce::OSCReceiver, private juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
+class M1PannerAudioProcessor;
+
+class PannerOSC : public juce::DeletedAtShutdown, private juce::OSCSender, private juce::OSCReceiver, private juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
 {
+    M1PannerAudioProcessor* processor = nullptr;
+
     bool init(int helperPort);
-    bool initFromSettings(std::string jsonSettingsFilePath);
+    bool initFromSettings(const std::string& jsonSettingsFilePath);
     int helperPort = 0, port = 0;
     std::function<void(juce::OSCMessage msg)> messageReceived;
     void oscMessageReceived(const juce::OSCMessage& msg) override;
@@ -15,7 +20,7 @@ private:
     bool isConnected = false;
 
 public:
-    PannerOSC();
+    PannerOSC(M1PannerAudioProcessor* processor);
     ~PannerOSC();
 
     void update();
