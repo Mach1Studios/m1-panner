@@ -6,6 +6,8 @@
 #include "../AlertData.h"
 
 // TODO: Resize button and message components based on size of the string
+// TODO: Add buttons for response actions to specific errors or alerts
+// TODO: Escape key to quickly dismiss alert
 
 using namespace murka;
 
