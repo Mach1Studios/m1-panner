@@ -66,7 +66,7 @@ bool PannerOSC::initFromSettings(const std::string& jsonSettingsFilePath)
     {
         if (processor)
         {
-            Mach1::AlertData data { "Warning", "Settings file not found!", "OK" };
+            Mach1::AlertData data { "Warning", "The settings.json file doesn't exist in Mach1's Application Support directory, please reinstall the Spatial System!", "OK" };
             processor->postAlert(data);
         }
         return false;

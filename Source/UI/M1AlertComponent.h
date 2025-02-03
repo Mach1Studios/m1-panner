@@ -5,7 +5,6 @@
 #include "../Config.h"
 #include "../AlertData.h"
 
-// TODO: Resize button and message components based on size of the string
 // TODO: Add buttons for response actions to specific errors or alerts
 // TODO: Escape key to quickly dismiss alert
 
@@ -26,6 +25,24 @@ public:
         // Alert background
         const auto centerX = shape.size.x * 0.5f;
         const auto centerY = shape.size.y * 0.5f;
+
+        // Calculate text bounds first to determine alert size
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 18);
+        juceFontStash::Rectangle message_label_box = m.getCurrentFont()->getStringBoundingBox(alert.message, 0, 0);
+
+        // Adjust alert height based on message length
+        const float minAlertHeight = 200;  // minimum height
+        const float messageMargin = 80;     // space for title + button
+        const float messageWidth = alertWidth - 40;  // width minus margins
+
+        // Calculate how many lines the text will take
+        float numLines = std::ceil(message_label_box.width / messageWidth);
+        float messageHeight = message_label_box.height * numLines;
+
+        // Set alert height based on content (with minimum)
+        alertHeight = std::max(minAlertHeight, messageHeight + messageMargin);
+
+        // Alert background
         // outline
         m.setColor(ENABLED_PARAM);
         m.drawRectangle(centerX - alertWidth * 0.5f,
@@ -42,7 +59,6 @@ public:
         // Title
         m.setColor(LABEL_TEXT_COLOR);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 22);
-        juceFontStash::Rectangle title_label_box = m.getCurrentFont()->getStringBoundingBox(alert.title, 0, 0); // used to find size of text
         m.prepare<murka::Label>({
             centerX - alertWidth * 0.5f + 20,
             centerY - alertHeight * 0.5f + 20,
@@ -50,19 +66,48 @@ public:
             30
         }).withAlignment(TEXT_LEFT).text(alert.title).draw();
 
-        // Message
+        // Message - with word wrap
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, 18);
-        juceFontStash::Rectangle message_label_box = m.getCurrentFont()->getStringBoundingBox(alert.message, 0, 0); // used to find size of text
-        m.prepare<murka::Label>({
-            centerX - alertWidth * 0.5f + 20,
-            centerY - alertHeight * 0.5f + 60,
-            alertWidth - 40,
-            alertHeight - 100
-        }).withAlignment(TEXT_LEFT).text(alert.message).draw();
+        const float textX = centerX - alertWidth * 0.5f + 20;
+        const float textY = centerY - alertHeight * 0.5f + 60;
+        const float maxWidth = alertWidth - 40;
+        float currentY = textY;
+
+        // Split text into words
+        juce::String message(alert.message);
+        juce::StringArray words;
+        words.addTokens(message, " \t\r\n", "\"'");
+
+        juce::String currentLine;
+        float lineHeight = m.getCurrentFont()->getLineHeight();
+
+        for (auto& word : words) {
+            juce::String testLine = currentLine.isEmpty() ? word : currentLine + " " + word;
+            float testWidth = m.getCurrentFont()->stringWidth(testLine.toStdString());
+
+            if (testWidth > maxWidth && !currentLine.isEmpty()) {
+                // Draw current line
+                m.prepare<murka::Label>({textX, currentY, maxWidth, lineHeight})
+                   .withAlignment(TEXT_LEFT)
+                   .text(currentLine.toStdString())
+                   .draw();
+                currentY += lineHeight;
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        }
+
+        // Draw remaining text
+        if (!currentLine.isEmpty()) {
+            m.prepare<murka::Label>({textX, currentY, maxWidth, lineHeight})
+               .withAlignment(TEXT_LEFT)
+               .text(currentLine.toStdString())
+               .draw();
+        }
 
         // OK Button
         const float buttonY = centerY + alertHeight * 0.5f - 50;
-        juceFontStash::Rectangle button_label_box = m.getCurrentFont()->getStringBoundingBox(alert.buttonText, 0, 0); // used to find size of text
         m.setColor(DISABLED_PARAM);
         if (isHovered())
         {
@@ -76,7 +121,10 @@ public:
             m.setColor(BACKGROUND_GREY);
         }
         m.prepare<murka::Label>({
-            centerX - 40, buttonY + button_label_box.height / 3, 80, 30
+            centerX - 40,
+            buttonY + 5,  // Slight vertical adjustment for centering
+            80,
+            20
         }).withAlignment(TEXT_CENTER).text(alert.buttonText).draw();
 
         // Dismiss if user clicks
@@ -87,7 +135,7 @@ public:
     }
 
     float alertWidth = 400;
-    float alertHeight = 200;
+    float alertHeight = 200;  // This will be adjusted based on content
     Mach1::AlertData alert;
     bool alertActive = false;
     std::function<void()> onDismiss;
