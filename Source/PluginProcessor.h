@@ -268,9 +268,9 @@ public:
     std::vector<bool> channelMuteStates;
 
     // This will be set by the UI or editor so we can notify it of alerts
-    std::function<void(const AlertData&)> postAlertToUI;
-    void postAlert(const AlertData& alert);
-    juce::Array<AlertData> pendingAlerts;
+    std::function<void(const Mach1::AlertData&)> postAlertToUI;
+    void postAlert(const Mach1::AlertData& alert);
+    std::vector<Mach1::AlertData> pendingAlerts;
 
 private:
     M1PannerAAXExtensions aaxExtensions;

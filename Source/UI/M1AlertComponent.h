@@ -88,7 +88,7 @@ public:
 
     float alertWidth = 400;
     float alertHeight = 200;
-    AlertData alert;
+    Mach1::AlertData alert;
     bool alertActive = false;
     std::function<void()> onDismiss;
 };

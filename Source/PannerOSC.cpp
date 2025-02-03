@@ -5,7 +5,7 @@
 PannerOSC::PannerOSC(M1PannerAudioProcessor* processor_)
 {
     processor = processor_;
-    isConnected = false;
+    is_connected = false;
 
     // We will assume the folders are properly created during the installation step
     juce::File settingsFile;
@@ -66,7 +66,7 @@ bool PannerOSC::initFromSettings(const std::string& jsonSettingsFilePath)
     {
         if (processor)
         {
-            AlertData data { "Warning", "Settings file not found!", "OK" };
+            Mach1::AlertData data { "Warning", "Settings file not found!", "OK" };
             processor->postAlert(data);
         }
         return false;
@@ -80,7 +80,7 @@ bool PannerOSC::initFromSettings(const std::string& jsonSettingsFilePath)
         {
             if (processor)
             {
-                AlertData data { "Warning", "There is a port conflict, please choose a new port", "OK" };
+                Mach1::AlertData data { "Warning", "There is a port conflict, please choose a new port", "OK" };
                 processor->postAlert(data);
             }
         }
@@ -102,14 +102,14 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
                 {
                     juce::OSCMessage response = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
                     response.addInt32(port);
-                    isConnected = tempSender.send(response);
+                    is_connected = tempSender.send(response);
                     DBG("[OSC] Ping responded: " + std::to_string(port));
                 }
             }
             catch (...)
             {
                 DBG("[OSC] Failed to respond to ping");
-                isConnected = false;
+                is_connected = false;
             }
         }
         else
@@ -122,23 +122,23 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
 
 void PannerOSC::update()
 {
-    if (!isConnected && helperPort > 0)
+    if (!is_connected && helperPort > 0)
     {
         if (juce::OSCSender::connect("127.0.0.1", helperPort))
         {
             juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
             msg.addInt32(port);
-            isConnected = juce::OSCSender::send(msg);
+            is_connected = juce::OSCSender::send(msg);
             DBG("[OSC] Registered: " + std::to_string(port));
         }
     }
 
-    if (isConnected)
+    if (is_connected)
     {
         juce::uint32 currentTime = juce::Time::getMillisecondCounter();
         if ((currentTime - lastMessageTime) > 10000)
         { // 10000 milliseconds = 10 seconds
-            isConnected = false;
+            is_connected = false;
         }
     }
 }
@@ -150,7 +150,7 @@ void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageRec
 
 PannerOSC::~PannerOSC()
 {
-    if (isConnected && port > 0)
+    if (is_connected && port > 0)
     {
         // send a "remove panner" message to helper
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
@@ -165,17 +165,17 @@ PannerOSC::~PannerOSC()
 
 bool PannerOSC::Send(const juce::OSCMessage& msg)
 {
-    return (isConnected && juce::OSCSender::send(msg));
+    return (is_connected && juce::OSCSender::send(msg));
 }
 
-bool PannerOSC::IsConnected()
+bool PannerOSC::isConnected()
 {
-    return isConnected;
+    return is_connected;
 }
 
 bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
 {
-    if (IsConnected() && port > 0)
+    if (isConnected() && port > 0)
     {
         juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/setChannelConfigReq"));
         m.addInt32(channel_count_for_config); // int of new layout
@@ -186,19 +186,19 @@ bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
 
 bool PannerOSC::sendPannerSettings(int state)
 {
-    if (!IsConnected() || port <= 0)
+    if (!isConnected() || port <= 0)
         return false;
 
     // Try to reconnect if needed - this will return false if connection fails
     try {
         if (!juce::OSCSender::connect("127.0.0.1", helperPort))
         {
-            isConnected = false;
+            is_connected = false;
             return false;
         }
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 
@@ -209,39 +209,39 @@ bool PannerOSC::sendPannerSettings(int state)
         m.addInt32(state); // used for panner interactive state
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 
     // Add extra protection around the send operation
     try {
         if (!juce::OSCSender::send(m)) {
-            isConnected = false;
+            is_connected = false;
             return false;
         }
         return true;
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 }
 
 bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
-    if (!IsConnected() || port <= 0)
+    if (!isConnected() || port <= 0)
         return false;
 
     // Try to reconnect if needed - this will return false if connection fails
     try {
         if (!juce::OSCSender::connect("127.0.0.1", helperPort))
         {
-            isConnected = false;
+            is_connected = false;
             return false;
         }
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 
@@ -267,20 +267,20 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
         }
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 
     // Add extra protection around the send operation
     try {
         if (!juce::OSCSender::send(m)) {
-            isConnected = false;
+            is_connected = false;
             return false;
         }
         return true;
     }
     catch (...) {
-        isConnected = false;
+        is_connected = false;
         return false;
     }
 }

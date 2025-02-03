@@ -22,7 +22,7 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
         murkaAlert.alertActive = false;
     };
 
-    processor->postAlertToUI = [this](const AlertData& alert) {
+    processor->postAlertToUI = [this](const Mach1::AlertData& alert) {
         this->postAlert(alert);
     };
 }
@@ -79,7 +79,7 @@ void PannerUIBaseComponent::draw()
         }
     };
     reticleField.processor = processor;
-    reticleField.isConnected = processor->pannerOSC->IsConnected();
+    reticleField.isConnected = processor->pannerOSC->isConnected();
     reticleField.track_color = processor->osc_colour;
     reticleField.draw();
 
@@ -490,7 +490,7 @@ void PannerUIBaseComponent::draw()
     pitchWheel.rangeTo = -90.;
     pitchWheel.enabled = pannerState->m1Encode.getOutputChannelsCount() > 4 && !(pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::AFormat || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::BFOAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B2OAFUMA || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAACN || pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::B3OAFUMA) /* Block Elevation rotations on some input modes */;
     pitchWheel.externalHovered = zHovered;
-    pitchWheel.isConnected = processor->pannerOSC->IsConnected();
+    pitchWheel.isConnected = processor->pannerOSC->isConnected();
     pitchWheel.monitorState = monitorState;
     pitchWheel.dataToControl = &pannerState->elevation;
     pitchWheel.draw();
@@ -1015,7 +1015,7 @@ void PannerUIBaseComponent::resized()
     // This is called when the PannerUIBaseComponent is resized.
 }
 
-void PannerUIBaseComponent::postAlert(const AlertData& alert)
+void PannerUIBaseComponent::postAlert(const Mach1::AlertData& alert)
 {
     currentAlert = alert;
     murkaAlert.alertActive = true;

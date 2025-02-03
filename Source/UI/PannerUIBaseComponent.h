@@ -53,9 +53,7 @@ public:
     std::function<void(bool)> setOverlayVisible;
 
     void showAlert(const std::string& title, const std::string& message, const std::string& buttonText = "OK");
-
-    // Adds a new alert to the queue
-    void postAlert(const AlertData& alert);
+    void postAlert(const Mach1::AlertData& alert); // Adds a new alert to the queue
 
 private:
     juce::Point<int> cachedMousePositionWhenMouseWasHidden = { 0, 0 };
@@ -84,8 +82,8 @@ private:
     };
 
     M1AlertComponent murkaAlert;
-    juce::OwnedArray<AlertData> alertQueue; // queue for alerts
-    AlertData currentAlert;
+    juce::OwnedArray<Mach1::AlertData> alertQueue; // queue for alerts
+    Mach1::AlertData currentAlert;
     bool hasActiveAlert = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PannerUIBaseComponent)

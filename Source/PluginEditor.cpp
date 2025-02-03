@@ -21,7 +21,7 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
 
     // Whenever the processor wants to post an alert, it calls postAlertToUI
     // which we forward to our pannerUIBaseComponent:
-    processor->postAlertToUI = [this](const AlertData& alert)
+    processor->postAlertToUI = [this](const Mach1::AlertData& alert)
     {
         if (pannerUIBaseComponent)
             pannerUIBaseComponent->postAlert(alert);

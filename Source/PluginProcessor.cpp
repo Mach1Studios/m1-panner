@@ -500,7 +500,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     // send a pannersettings update to helper since a parameter changed
     try {
-        if (pannerOSC->IsConnected())
+        if (pannerOSC->isConnected())
         {
             pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
         }
@@ -968,7 +968,7 @@ juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
     auto* editor = new M1PannerAudioProcessorEditor(*this);
 
     // When the processor sees a new alert, tell the editor to display it
-    postAlertToUI = [editor](const AlertData& a)
+    postAlertToUI = [editor](const Mach1::AlertData& a)
     {
         editor->pannerUIBaseComponent->postAlert(a);
     };
@@ -1257,12 +1257,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new M1PannerAudioProcessor();
 }
 
-void M1PannerAudioProcessor::postAlert(const AlertData& alert)
+void M1PannerAudioProcessor::postAlert(const Mach1::AlertData& alert)
 {
     if (postAlertToUI) {
         postAlertToUI(alert);
     } else {
-        pendingAlerts.add(alert); // Store for later
+        pendingAlerts.push_back(alert); // Store for later
         DBG("Stored alert for UI. Total pending: " + juce::String(pendingAlerts.size()));
     }
 }
