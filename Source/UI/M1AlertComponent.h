@@ -40,7 +40,7 @@ public:
         float messageHeight = message_label_box.height * numLines;
 
         // Set alert height based on content (with minimum)
-        alertHeight = std::max(minAlertHeight, messageHeight + messageMargin);
+        alertHeight = (std::max)(minAlertHeight, messageHeight + messageMargin);
 
         // Alert background
         // outline
