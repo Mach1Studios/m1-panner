@@ -154,13 +154,13 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
         osc_colour.alpha = 255;
     }
 
+    // pannerOSC update timer loop
+    startTimer(200);
+
     // print build time for debug
     juce::String date(__DATE__);
     juce::String time(__TIME__);
     DBG("[PANNER] Build date: " + date + " | Build time: " + time);
-
-    // pannerOSC update timer loop
-    startTimer(200);
 }
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
