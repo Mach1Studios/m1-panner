@@ -94,7 +94,7 @@ public:
 
         // Action
 
-        if ((mouseDownPressed(0)) && (inside()) && (!draggingNow))
+        if ((mouseDownPressed(0)) && (inside()) && (!draggingNow) && (enabled))
         {
             draggingNow = true;
             cursorHide();
@@ -122,22 +122,22 @@ public:
                 *((float*)dataToControl) = rangeFrom;
             }
             // drawing tooltip
-            dataCache = *((float*)dataToControl);
-            hintPosition = { getAbsoluteViewPosition().x - 1,
-                getAbsoluteViewPosition().y + (reticlePositionNorm * (getSize().y - offset * 2) + 4) };
-            m.addOverlay([&]() {
-                m.setColor(LABEL_TEXT_COLOR);
-                m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 3);
-                m.prepare<murka::Label>({ hintPosition.x,
-                                            hintPosition.y,
-                                            75 /* */,
-                                            20 /* */ })
-                    .text(
-                        std::to_string(int(dataCache)))
-                    .draw();
-            },
-                this);
-
+            if (enabled)
+            {
+                dataCache = *((float*)dataToControl);
+                hintPosition = { getAbsoluteViewPosition().x - 1, getAbsoluteViewPosition().y + (reticlePositionNorm * (getSize().y - offset * 2) + 4) };
+                m.addOverlay([&]() {
+                    m.setColor(LABEL_TEXT_COLOR);
+                    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 3);
+                    m.prepare<murka::Label>({ hintPosition.x,
+                                                hintPosition.y,
+                                                75 /* */,
+                                                20 /* */ })
+                        .text(
+                            std::to_string(int(dataCache)))
+                        .draw();
+                }, this);
+            }
             changed = true;
         }
 

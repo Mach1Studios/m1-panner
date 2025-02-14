@@ -227,7 +227,6 @@ public:
     std::vector<Mach1::AlertData> pendingAlerts;
 
 private:
-    M1PannerAAXExtensions aaxExtensions;
     TrackProperties track_properties;
     void createLayout();
 
