@@ -227,7 +227,7 @@ bool PannerOSC::sendPannerSettings(int state)
     }
 }
 
-bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread)
+bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool gain_comp_active, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
     if (!isConnected() || port <= 0)
         return false;
@@ -258,6 +258,7 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
         m.addFloat32(diverge); // [msg[7]]: expected normalized -100->100
         m.addFloat32(gain); // [msg[8]]: expected as dB value -90->24
         m.addInt32(panner_mode); // [msg[9]]: int of enum `Mach1EncodePannerModeType`
+        m.addInt32(gain_comp_active); // [msg[13]: bool
         if (input_mode == 1)
         {
             // send stereo parameters

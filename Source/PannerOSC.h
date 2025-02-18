@@ -25,7 +25,7 @@ public:
     bool isConnected();
     bool sendRequestToChangeChannelConfig(int channel_count_for_config);
     bool sendPannerSettings(int state);
-    bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool st_auto_orbit, float st_azimuth, float st_spread);
+    bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool gain_comp_active, bool st_auto_orbit, float st_azimuth, float st_spread);
 
 private:
     bool is_connected = false; // used to track connection with helper utility

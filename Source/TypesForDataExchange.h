@@ -42,6 +42,7 @@ struct PannerSettings
     bool isotropicMode = false;
     bool equalpowerMode = false;
     bool lockOutputLayout = false;
+    bool gainCompensationMode = true; // used for gain compensation when changing the output mode
 
 #ifdef ITD_PARAMETERS
     bool itdActive = false;

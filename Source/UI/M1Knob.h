@@ -13,6 +13,8 @@ public:
     void internalDraw(Murka& m)
     {
         float* data = dataToControl;
+        float inputValueNormalised = ((*data - rangeFrom) / (rangeTo - rangeFrom));
+        float inputValueAngleInDegrees = inputValueNormalised * 360;
 
         bool isInside = isHovered() * (!editingTextNow);
         changed = false; // false unless the user changed a value using this knob
@@ -57,9 +59,6 @@ public:
             shape.size.y * 0.35,
             0);
 
-        float inputValueNormalised = ((*data - rangeFrom) / (rangeTo - rangeFrom));
-        float inputValueAngleInDegrees = inputValueNormalised * 360;
-
         if (!isEndlessRotary)
         {
             inputValueAngleInDegrees = inputValueNormalised * 300 + 30;
@@ -75,6 +74,34 @@ public:
 
         m.popMatrix();
         m.popStyle();
+
+        // Draw secondary indicator if enabled
+        if (useSecondaryIndicator) {
+            m.pushMatrix();
+            m.translate(shape.size.x / 2,
+                shape.size.y * 0.35,
+                0);
+
+            float secondaryValueNormalised = ((secondaryIndicatorValue - rangeFrom) / (rangeTo - rangeFrom));
+            float secondaryValueAngleInDegrees = secondaryValueNormalised * 360;
+
+            if (!isEndlessRotary)
+            {
+                secondaryValueAngleInDegrees = secondaryValueNormalised * 280 + 40; // Adjusted for new angle range
+            }
+
+            secondaryValueAngleInDegrees += secondaryIndicatorStartAngle;
+
+            m.rotateZRad(secondaryValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
+
+            // Draw secondary indicator on the outside with distinct size and color
+            m.setColor(secondaryIndicatorColor);
+            float secondaryWidth = width * 0.5; // Make it thinner than main indicator
+            m.drawRectangle(-secondaryWidth, -shape.size.x * 0.28, // Position outside main indicator
+                           secondaryWidth * 2, shape.size.x * 0.15); // Shorter length than main indicator
+
+            m.popMatrix();
+        }
 
         m.setColor(100 + 90 * enabled + A(30 * hoveredLocal), 255);
         auto labelPositionY = shape.size.x * 0.8 / width + 10;
@@ -280,6 +307,12 @@ public:
     bool changed = false;
     bool hovered = false;
 
+    // For an additional inner indicator
+    bool useSecondaryIndicator = false;
+    float secondaryIndicatorValue = 0;
+    float secondaryIndicatorStartAngle = 0; // New variable for starting angle
+    MurkaColor secondaryIndicatorColor = MurkaColor(ENABLED_PARAM); // Default color
+
     M1Knob& withParameters(float rangeFrom_, float rangeTo_, std::string postfix_ = "", std::string prefix_ = "", int floatingPointPrecision_ = 0, float speed_ = 250., float defaultValue_ = 0, bool isEndlessRotary_ = false, bool enabled_ = true, bool externalHover_ = false, std::function<void()> cursrorHide_ = []() {}, std::function<void()> cursorShow_ = []() {})
     {
         //        parameterName = parameterName_;
@@ -301,6 +334,15 @@ public:
     M1Knob& controlling(float* dataPointer)
     {
         dataToControl = dataPointer;
+        return *this;
+    }
+
+    // Updated helper method to include start angle
+    M1Knob& withSecondaryIndicator(bool useSecondary, float value, MurkaColor color, float startAngle = 0) {
+        useSecondaryIndicator = useSecondary;
+        secondaryIndicatorValue = value;
+        secondaryIndicatorColor = color;
+        secondaryIndicatorStartAngle = startAngle;
         return *this;
     }
 };

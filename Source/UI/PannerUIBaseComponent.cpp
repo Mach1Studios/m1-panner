@@ -253,6 +253,54 @@ void PannerUIBaseComponent::draw()
     gKnob.externalHover = false;
     gKnob.cursorHide = cursorHide;
     gKnob.cursorShow = cursorShowAndTeleportBack;
+    if (pannerState->gainCompensationMode)
+    {
+        gKnob.useSecondaryIndicator = true;
+        gKnob.secondaryIndicatorColor = MurkaColor(M1_ACTION_YELLOW);
+        gKnob.secondaryIndicatorStartAngle = 90;
+        gKnob.secondaryIndicatorValue = processor->gain_comp_in_db;
+
+        // Draw dB labels around gain knob
+        m.setColor(M1_ACTION_YELLOW);
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 6); // Smaller font
+
+        float centerX = xOffset + 370 + knobWidth/2;
+        float centerY = yOffset + knobHeight * 0.35;
+        float labelRadius = knobWidth * 0.28; // Closer to the knob
+
+        float angle0dB = 270 * (juce::MathConstants<float>::pi / 180.0f);
+        float angle6dB = 20 * (juce::MathConstants<float>::pi / 180.0f);
+        float angle13_2dB = 45 * (juce::MathConstants<float>::pi / 180.0f);
+
+        // Draw "0" label at top
+        float x0 = centerX + labelRadius * cos(angle0dB);
+        float y0 = centerY + labelRadius * sin(angle0dB);
+        m.prepare<murka::Label>({ x0 - 15, y0 - 10, 30, 10 })
+            .withAlignment(TEXT_CENTER)
+            .text("0")
+            .draw();
+
+        // Draw "+6.0" label
+        float x6 = centerX + labelRadius * cos(angle6dB);
+        float y6 = centerY + labelRadius * sin(angle6dB);
+        m.prepare<murka::Label>({ x6 - 10, y6 - 8, 30, 10 })
+            .withAlignment(TEXT_CENTER)
+            .text("6")
+            .draw();
+
+        // Draw "+13.2" label
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 8); // Even smaller font
+        float x13_2 = centerX + labelRadius * cos(angle13_2dB);
+        float y13_2 = centerY + labelRadius * sin(angle13_2dB);
+        m.prepare<murka::Label>({ x13_2 - 7, y13_2 - 0, 30, 10 })
+            .withAlignment(TEXT_CENTER)
+            .text("13.2")
+            .draw();
+    }
+    else
+    {
+        gKnob.useSecondaryIndicator = false;
+    }
     gKnob.draw();
 
     if (gKnob.changed)
@@ -262,7 +310,10 @@ void PannerUIBaseComponent::draw()
         param->setValueNotifyingHost(param->convertTo0to1(pannerState->gain));
     }
 
+    // Reset font size
     m.setColor(ENABLED_PARAM);
+    m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 1);
+
     auto& gLabel = m.prepare<M1Label>(MurkaShape(xOffset + 370, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
     gLabel.label = "GAIN";
     gLabel.alignment = TEXT_CENTER;
@@ -468,7 +519,20 @@ void PannerUIBaseComponent::draw()
         }
     }
 
-    auto& autoOrbitCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
+    auto& gainCompensationCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
+                                  .controlling(&pannerState->gainCompensationMode)
+                                  .withLabel("AUTO OUT GAIN");
+    gainCompensationCheckbox.enabled = (pannerState->m1Encode.getOutputChannelsCount() > 4);
+    gainCompensationCheckbox.draw();
+
+    if (gainCompensationCheckbox.changed)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* param = params.getParameter(processor->paramGainCompensationMode);
+        param->setValueNotifyingHost(param->convertTo0to1(pannerState->gainCompensationMode));
+    }
+
+    auto& autoOrbitCheckbox = m.prepare<M1Checkbox>({ 557, yOffset - M1LabelOffsetY, 200, 20 })
                                   .controlling(&pannerState->autoOrbit)
                                   .withLabel("AUTO ORBIT");
     autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);

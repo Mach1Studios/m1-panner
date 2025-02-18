@@ -26,6 +26,7 @@ juce::String M1PannerAudioProcessor::paramStereoInputBalance("stereoInputBalance
 juce::String M1PannerAudioProcessor::paramAutoOrbit("autoOrbit");
 juce::String M1PannerAudioProcessor::paramIsotropicEncodeMode("isotropicEncodeMode");
 juce::String M1PannerAudioProcessor::paramEqualPowerEncodeMode("equalPowerEncodeMode");
+juce::String M1PannerAudioProcessor::paramGainCompensationMode("gainCompensationMode");
 #ifndef CUSTOM_CHANNEL_LAYOUT
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
@@ -50,6 +51,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
           std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoInputBalance, 1), TRANS("Stereo Input Balance"), juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.stereoInputBalance, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
           std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramIsotropicEncodeMode, 1), TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
           std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramEqualPowerEncodeMode, 1), TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramGainCompensationMode, 1), TRANS("Gain Compensation Mode"), pannerSettings.gainCompensationMode),
 #ifndef CUSTOM_CHANNEL_LAYOUT
           std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputMode::BFOAACN, Mach1EncodeInputMode::Mono),
           // Note: Change init output to max bus size when new formats are introduced
@@ -72,6 +74,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramStereoInputBalance, this);
     parameters.addParameterListener(paramIsotropicEncodeMode, this);
     parameters.addParameterListener(paramEqualPowerEncodeMode, this);
+    parameters.addParameterListener(paramGainCompensationMode, this);
 #ifndef CUSTOM_CHANNEL_LAYOUT
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
@@ -326,16 +329,19 @@ void M1PannerAudioProcessor::createLayout()
                 if (getBus(false, 0)->getCurrentLayout().size() == 4)
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_4);
+                    gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                 }
                 else if (getBus(false, 0)->getCurrentLayout().size() == 8 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 2)
                 {
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
+                    gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                 }
                 else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
                 {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
                     {
                         pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
+                        gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                     }
                 }
             }
@@ -489,9 +495,15 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         {
             Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
             pannerSettings.m1Encode.setOutputMode(outputType);
+            gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
+    }
+    else if (parameterID == paramGainCompensationMode)
+    {
+        pannerSettings.gainCompensationMode = newValue;
+        parameters.getParameter(paramGainCompensationMode)->setValue(newValue);
     }
     else if (parameterID == "output_layout_lock")
     {
@@ -502,7 +514,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     try {
         if (pannerOSC->isConnected())
         {
-            pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+            pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
         }
     }
     catch (...) {
@@ -677,10 +689,12 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
     pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
     pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
     pannerSettings.m1Encode.setOutputGain(pannerSettings.gain, true);
+    gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
 
     pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
     pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
     pannerSettings.m1Encode.setStereoSpread(pannerSettings.stereoSpread / 100.0); // Mach1Encode expects an unsigned normalized input
+    pannerSettings.m1Encode.setGainCompensationActive(pannerSettings.gainCompensationMode);
 
     if (pannerSettings.isotropicMode)
     {
@@ -1031,6 +1045,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
     {
         DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
         pannerSettings.m1Encode.setOutputMode(outputMode);
+        gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
         if (!pannerSettings.lockOutputLayout)
         {
             pannerOSC->sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
@@ -1209,6 +1224,7 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
             parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
             parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
             parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
+            parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode));
 
 #ifdef ITD_PARAMETERS
             parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
@@ -1241,6 +1257,7 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1(pannerSettings.autoOrbit));
         params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1(pannerSettings.isotropicMode));
         params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1(pannerSettings.equalpowerMode));
+        params.getParameter(paramGainCompensationMode)->setValueNotifyingHost(params.getParameter(paramGainCompensationMode)->convertTo0to1(pannerSettings.gainCompensationMode));
 
 #ifdef ITD_PARAMETERS
         params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1(pannerSettings.itdActive));
