@@ -256,13 +256,12 @@ void PannerUIBaseComponent::draw()
     if (pannerState->gainCompensationMode)
     {
         gKnob.useSecondaryIndicator = true;
-        gKnob.secondaryIndicatorColor = MurkaColor(M1_ACTION_YELLOW);
+        gKnob.secondaryIndicatorColor = MurkaColor(GRID_LINES_4_RGB);
         gKnob.secondaryIndicatorOffset = 180;
         gKnob.secondaryIndicatorValue = processor->gain_comp_in_db;
-        //gKnob.secondaryIndicatorValue = processor->getValueTreeState().getParameter(processor->paramGain)->convertTo0to1(processor->gain_comp_in_db); // Get the normalized value for secondary indicator using the same parameter scaling
 
         // Draw dB labels around gain knob
-        m.setColor(M1_ACTION_YELLOW);
+        m.setColor(GRID_LINES_4_RGB);
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 7); // Smaller font
 
         float centerX = xOffset + 370 + knobWidth/2;
