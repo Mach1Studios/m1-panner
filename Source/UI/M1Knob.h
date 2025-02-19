@@ -83,22 +83,25 @@ public:
                 0);
 
             float secondaryValueNormalised = ((secondaryIndicatorValue - rangeFrom) / (rangeTo - rangeFrom));
-            float secondaryValueAngleInDegrees = secondaryValueNormalised * 360;
+            float secondaryValueAngleInDegrees;
 
             if (!isEndlessRotary)
             {
-                secondaryValueAngleInDegrees = secondaryValueNormalised * 280 + 40; // Adjusted for new angle range
+                secondaryValueAngleInDegrees = secondaryValueNormalised * 300 + 30;
+            }
+            else
+            {
+                secondaryValueAngleInDegrees = secondaryValueNormalised * 360.0f;
             }
 
-            secondaryValueAngleInDegrees += secondaryIndicatorStartAngle;
-
+            secondaryValueAngleInDegrees += secondaryIndicatorOffset;
             m.rotateZRad(secondaryValueAngleInDegrees * (juce::MathConstants<float>::pi / 180));
 
             // Draw secondary indicator on the outside with distinct size and color
             m.setColor(secondaryIndicatorColor);
             float secondaryWidth = width * 0.5; // Make it thinner than main indicator
-            m.drawRectangle(-secondaryWidth, -shape.size.x * 0.28, // Position outside main indicator
-                           secondaryWidth * 2, shape.size.x * 0.15); // Shorter length than main indicator
+            m.drawRectangle(-secondaryWidth, -shape.size.x * 0.30, // Position outside main indicator
+                           secondaryWidth * 2, shape.size.x * 0.18); // Shorter length than main indicator
 
             m.popMatrix();
         }
@@ -310,7 +313,7 @@ public:
     // For an additional inner indicator
     bool useSecondaryIndicator = false;
     float secondaryIndicatorValue = 0;
-    float secondaryIndicatorStartAngle = 0; // New variable for starting angle
+    float secondaryIndicatorOffset = 0; // New variable for starting angle
     MurkaColor secondaryIndicatorColor = MurkaColor(ENABLED_PARAM); // Default color
 
     M1Knob& withParameters(float rangeFrom_, float rangeTo_, std::string postfix_ = "", std::string prefix_ = "", int floatingPointPrecision_ = 0, float speed_ = 250., float defaultValue_ = 0, bool isEndlessRotary_ = false, bool enabled_ = true, bool externalHover_ = false, std::function<void()> cursrorHide_ = []() {}, std::function<void()> cursorShow_ = []() {})
@@ -342,7 +345,7 @@ public:
         useSecondaryIndicator = useSecondary;
         secondaryIndicatorValue = value;
         secondaryIndicatorColor = color;
-        secondaryIndicatorStartAngle = startAngle;
+        secondaryIndicatorOffset = startAngle;
         return *this;
     }
 };

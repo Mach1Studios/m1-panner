@@ -8,12 +8,13 @@
 
 #pragma once
 
+#include <JuceHeader.h>
+#include <Mach1Encode.h>
+
 #include "Config.h"
 #include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
-#include <JuceHeader.h>
-#include <Mach1Encode.h>
 #include "LegacyParameters.h"
 
 #ifdef ITD_PARAMETERS

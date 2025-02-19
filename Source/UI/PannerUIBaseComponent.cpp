@@ -257,25 +257,26 @@ void PannerUIBaseComponent::draw()
     {
         gKnob.useSecondaryIndicator = true;
         gKnob.secondaryIndicatorColor = MurkaColor(M1_ACTION_YELLOW);
-        gKnob.secondaryIndicatorStartAngle = 90;
+        gKnob.secondaryIndicatorOffset = 180;
         gKnob.secondaryIndicatorValue = processor->gain_comp_in_db;
+        //gKnob.secondaryIndicatorValue = processor->getValueTreeState().getParameter(processor->paramGain)->convertTo0to1(processor->gain_comp_in_db); // Get the normalized value for secondary indicator using the same parameter scaling
 
         // Draw dB labels around gain knob
         m.setColor(M1_ACTION_YELLOW);
-        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 6); // Smaller font
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 7); // Smaller font
 
         float centerX = xOffset + 370 + knobWidth/2;
         float centerY = yOffset + knobHeight * 0.35;
         float labelRadius = knobWidth * 0.28; // Closer to the knob
 
-        float angle0dB = 270 * (juce::MathConstants<float>::pi / 180.0f);
-        float angle6dB = 20 * (juce::MathConstants<float>::pi / 180.0f);
-        float angle13_2dB = 45 * (juce::MathConstants<float>::pi / 180.0f);
+        float angle0dB = 0 * (juce::MathConstants<float>::pi / 180.0f);
+        float angle6dB = 29 * (juce::MathConstants<float>::pi / 180.0f);
+        float angle13_2dB = 44 * (juce::MathConstants<float>::pi / 180.0f);
 
         // Draw "0" label at top
         float x0 = centerX + labelRadius * cos(angle0dB);
         float y0 = centerY + labelRadius * sin(angle0dB);
-        m.prepare<murka::Label>({ x0 - 15, y0 - 10, 30, 10 })
+        m.prepare<murka::Label>({ x0 - 6.5, y0 - 8, 30, 10 })
             .withAlignment(TEXT_CENTER)
             .text("0")
             .draw();
@@ -283,7 +284,7 @@ void PannerUIBaseComponent::draw()
         // Draw "+6.0" label
         float x6 = centerX + labelRadius * cos(angle6dB);
         float y6 = centerY + labelRadius * sin(angle6dB);
-        m.prepare<murka::Label>({ x6 - 10, y6 - 8, 30, 10 })
+        m.prepare<murka::Label>({ x6 - 4, y6 - 7, 30, 10 })
             .withAlignment(TEXT_CENTER)
             .text("6")
             .draw();
@@ -292,7 +293,7 @@ void PannerUIBaseComponent::draw()
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 8); // Even smaller font
         float x13_2 = centerX + labelRadius * cos(angle13_2dB);
         float y13_2 = centerY + labelRadius * sin(angle13_2dB);
-        m.prepare<murka::Label>({ x13_2 - 7, y13_2 - 0, 30, 10 })
+        m.prepare<murka::Label>({ x13_2 - 6, y13_2 - 0, 30, 10 })
             .withAlignment(TEXT_CENTER)
             .text("13.2")
             .draw();
@@ -521,7 +522,7 @@ void PannerUIBaseComponent::draw()
 
     auto& gainCompensationCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
                                   .controlling(&pannerState->gainCompensationMode)
-                                  .withLabel("AUTO OUT GAIN");
+                                  .withLabel("AUTO GAIN");
     gainCompensationCheckbox.enabled = (pannerState->m1Encode.getOutputChannelsCount() > 4);
     gainCompensationCheckbox.draw();
 
