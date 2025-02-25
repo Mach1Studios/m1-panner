@@ -522,7 +522,7 @@ void PannerUIBaseComponent::draw()
     auto& gainCompensationCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
                                   .controlling(&pannerState->gainCompensationMode)
                                   .withLabel("AUTO GAIN");
-    gainCompensationCheckbox.enabled = (pannerState->m1Encode.getOutputChannelsCount() > 4);
+    gainCompensationCheckbox.enabled = true;
     gainCompensationCheckbox.draw();
 
     if (gainCompensationCheckbox.changed)
@@ -887,9 +887,10 @@ void PannerUIBaseComponent::draw()
         /// -> label
         if (!processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an input dropdown in PT
-                (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
-            || (processor->hostType.isProTools() && // or has an output dropdown in PT
-                processor->getMainBusNumOutputChannels() >= 8))
+            (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
+            || (processor->hostType.isProTools() && // or has an output dropdown in PT but not a 7.1 output buss
+                processor->getMainBusNumOutputChannels() >= 8 &&
+                processor->getBus(false, 0)->getCurrentLayout() != juce::AudioChannelSet::create7point1()))
         {
             //draw the arrow in PT when there is a dropdown
             m.setColor(200, 255);
@@ -904,7 +905,8 @@ void PannerUIBaseComponent::draw()
 
         if (!processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an output dropdown in PT
-                processor->getMainBusNumOutputChannels() >= 8))
+             processor->getMainBusNumOutputChannels() >= 8 &&
+             processor->getBus(false, 0)->getCurrentLayout() != juce::AudioChannelSet::create7point1()))
         {
             // OUTPUT DROPDOWN or LABEL
             m.setColor(200, 255);
@@ -941,9 +943,9 @@ void PannerUIBaseComponent::draw()
                 output_options.push_back("M1Spatial-14");
 
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({ m.getSize().width() / 2 + 20,
-                                                                     m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
-                                                                     120,
-                                                                     output_options.size() * dropdownItemHeight })
+                                                                   m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
+                                                                   120,
+                                                                   output_options.size() * dropdownItemHeight })
                                            .withOptions(output_options);
             if (outputDropdownButton.pressed)
             {

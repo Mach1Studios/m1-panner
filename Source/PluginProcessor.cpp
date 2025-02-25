@@ -336,7 +336,7 @@ void M1PannerAudioProcessor::createLayout()
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                     gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
+                else if (getBus(false, 0)->getCurrentLayout().size() >= 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
                 {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
                     {
