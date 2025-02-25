@@ -13,7 +13,7 @@
  Architecture:
     - parameterChanged() updates the i/o layout
     - parameterChanged() checks if matched with pannerSettings and otherwise updates this too
-    - parameters expect normalized 0->1 except the i/o which expects int
+    - parameters expect normalized 0->1 except the i/o and pannerSettings which expects unnormalled values
  */
 
 juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
@@ -1170,81 +1170,37 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
         auto& params = getValueTreeState();
 
-        if (prefix == "1.5.1")
-        {
-            // Handle legacy 1.5.1 parameters directly from XML and update locally first
-            PannerSettings tempPannerSettings;
-            LegacyParameters::updateFromLegacyXML(root.get(), tempPannerSettings);
-            parameterChanged(paramAzimuth, tempPannerSettings.azimuth);
-            parameterChanged(paramDiverge, tempPannerSettings.diverge);
-            parameterChanged(paramGain, tempPannerSettings.gain);
-            parameterChanged(paramStereoOrbitAzimuth, tempPannerSettings.stereoOrbitAzimuth);
-            parameterChanged(paramStereoSpread, tempPannerSettings.stereoSpread);
-            parameterChanged(paramStereoInputBalance, tempPannerSettings.stereoInputBalance);
-            parameterChanged(paramAutoOrbit, tempPannerSettings.autoOrbit);
-            parameterChanged(paramIsotropicEncodeMode, tempPannerSettings.isotropicMode);
-            parameterChanged(paramEqualPowerEncodeMode, tempPannerSettings.equalpowerMode);
+        // update local parameters first
+        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
+        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
+        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
+        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
+        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
+        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
+        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
+        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
+        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
+        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
+        parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode));
 
 #ifdef ITD_PARAMETERS
-            parameterChanged(paramITDActive, tempPannerSettings.itdActive));
-            parameterChanged(paramDelayTime, tempPannerSettings.delayTime));
-            parameterChanged(paramDelayDistance, tempPannerSettings.delayDistance));
+        parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
+        parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
+        parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
 #endif
 
-            // if the plugin was 4ch input then set the quadmode
-            if (getTotalNumInputChannels() == 4)
-            {
-                parameterChanged(paramInputMode, tempPannerSettings.m1Encode.getInputMode());
-            }
+        // Extras
+        osc_colour.red = (int)getParameterIntFromXmlElement(root.get(), "trackColor_r", osc_colour.red);
+        osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
+        osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
+        osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
+        parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
 
-            // set the output mode
-            if (getTotalNumOutputChannels() == 4)
-            {
-                parameterChanged(paramOutputMode, Mach1EncodeOutputMode::M1Spatial_4);
-            }
-            else if (getTotalNumOutputChannels() == 8)
-            {
-                parameterChanged(paramOutputMode, Mach1EncodeOutputMode::M1Spatial_8);
-            }
-            else
-            {
-                DBG("Unexpected channel count for output for a legacy recalled plugin: " + juce::String(getTotalNumOutputChannels()));
-            }
-        }
-        else
-        {
-            // update local parameters first
-            parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
-            parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
-            parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
-            parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
-            parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
-            parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
-            parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
-            parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
-            parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
-            parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
-            parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode));
-
-#ifdef ITD_PARAMETERS
-            parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
-            parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
-            parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
-#endif
-
-            // Extras
-            osc_colour.red = (int)getParameterIntFromXmlElement(root.get(), "trackColor_r", osc_colour.red);
-            osc_colour.green = (int)getParameterIntFromXmlElement(root.get(), "trackColor_g", osc_colour.green);
-            osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
-            osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
-            parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
-
-            // if the parsed input from xml is not the default value
-            parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-            parameterChanged(paramOutputMode, Mach1EncodeOutputMode(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
-            params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-            params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
-        }
+        // if the parsed input from xml is not the default value
+        parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+        parameterChanged(paramOutputMode, Mach1EncodeOutputMode(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
+        params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
+        params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
 
         // Update all parameters through the value tree
         params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1(pannerSettings.azimuth));

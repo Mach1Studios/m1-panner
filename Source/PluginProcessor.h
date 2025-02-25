@@ -15,7 +15,6 @@
 #include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
-#include "LegacyParameters.h"
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"

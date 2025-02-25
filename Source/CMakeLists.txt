@@ -5,7 +5,6 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     PluginEditor.h
                                     PluginProcessor.cpp
                                     PluginProcessor.h
-                                    LegacyParameters.h
                                     Overlay.h
                                     Overlay.cpp
                                     PannerOSC.h
