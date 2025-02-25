@@ -66,13 +66,19 @@ void Overlay::setDialogWindow(juce::DialogWindow* dialogWindow)
 
 OverlayDialogWindow::OverlayDialogWindow(LaunchOptions& options) : DialogWindow(options.dialogTitle, options.dialogBackgroundColour, options.escapeKeyTriggersCloseButton, true)
 {
-    setUsingNativeTitleBar(options.useNativeTitleBar);
+    // Set window style to have a visible border
+    int styleFlags = DocumentWindow::closeButton | DocumentWindow::minimiseButton;
+
+    setUsingNativeTitleBar(true);
     setTopLeftPosition(0, 0);
     setSize(200, 200);
-    setTitleBarButtonsRequired(7, true);
-    setTitleBarHeight(15);
+    setTitleBarButtonsRequired(styleFlags, false);
+    setTitleBarHeight(12); // Standard macOS title bar height
     setDropShadowEnabled(false);
     setAlwaysOnTop(true);
+
+    // Enable resizing
+    setResizable(true, true); // Allow resizing from any edge
 
     if (options.content.willDeleteObject())
     {
@@ -84,7 +90,6 @@ OverlayDialogWindow::OverlayDialogWindow(LaunchOptions& options) : DialogWindow(
     }
 
     centreAroundComponent(options.componentToCentreAround, getWidth(), getHeight());
-    setResizable(options.resizable, options.useBottomRightCornerResizer);
 }
 
 void OverlayDialogWindow::closeButtonPressed()

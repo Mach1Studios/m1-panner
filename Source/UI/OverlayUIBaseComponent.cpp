@@ -218,6 +218,25 @@ void OverlayUIBaseComponent::draw()
         dLabel.alignment = TEXT_CENTER;
     }
 
+    // Draw a border around the window
+    m.setColor(255, 255, 255, 100); // Semi-transparent white
+    m.setLineWidth(2);
+    m.disableFill();
+    m.drawRectangle(0, 0, m.getSize().width(), m.getSize().height());
+
+    // Draw corner markers for easier resizing
+    int cornerSize = 10;
+    m.setColor(255, 255, 255, 100); // More visible white for corners
+    m.setLineWidth(2);
+
+    // Bottom-left corner
+    m.drawLine(0, m.getSize().height() - cornerSize, 0, m.getSize().height());
+    m.drawLine(0, m.getSize().height(), cornerSize, m.getSize().height());
+
+    // Bottom-right corner
+    m.drawLine(m.getSize().width() - cornerSize, m.getSize().height(), m.getSize().width(), m.getSize().height());
+    m.drawLine(m.getSize().width(), m.getSize().height() - cornerSize, m.getSize().width(), m.getSize().height());
+
     m.popStyle();
     m.popView();
 
