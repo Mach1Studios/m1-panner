@@ -33,28 +33,60 @@ PannerOSC::PannerOSC(M1PannerAudioProcessor* processor_)
     juce::OSCReceiver::addListener(this);
 }
 
-bool PannerOSC::init(int helperPort)
+bool PannerOSC::init(int helperPort_)
 {
-    // check port
+    helperPort = helperPort_;
+
+    // Try to find an available port for the receiver
+    bool receiverConnected = false;
+    int attempts = 0;
+    const int maxAttempts = 100;
+
     juce::DatagramSocket socket(false);
     socket.setEnablePortReuse(false);
-    this->helperPort = helperPort;
 
-    // find available port
-    for (port = 10001; port < 10200; port++)
-    {
-        if (socket.bindToPort(port))
-        {
-            socket.shutdown();
-            juce::OSCReceiver::connect(port);
-            break; // stops the incrementing on the first available port
+    while (!receiverConnected && attempts < maxAttempts) {
+        port = 10000 + juce::Random::getSystemRandom().nextInt(1000);
+        if (socket.bindToPort(port)) {
+            receiverConnected = juce::OSCReceiver::connect(port);
+        }
+        attempts++;
+    }
+
+    if (!receiverConnected) {
+        // Add alert for failed OSC receiver connection
+        if (processor) {
+            Mach1::AlertData alert;
+            alert.title = "Connection Error";
+            alert.message = "Failed to connect OSC receiver after multiple attempts. Network features may not work correctly.";
+            alert.buttonText = "OK";
+            processor->postAlert(alert);
+        }
+        return false;
+    }
+
+    juce::OSCReceiver::addListener(this);
+
+    // Try to connect to the helper application
+    if (helperPort > 0) {
+        if (juce::OSCSender::connect("127.0.0.1", helperPort)) {
+            juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
+            msg.addInt32(port);
+            is_connected = juce::OSCSender::send(msg);
+            DBG("[OSC] Registered: " + std::to_string(port));
+        } else {
+            // Add alert for failed helper connection
+            if (processor) {
+                Mach1::AlertData alert;
+                alert.title = "Connection Warning";
+                alert.message = "Could not connect to Mach1 Spatial Mixer. Some features may be limited.";
+                alert.buttonText = "OK";
+                processor->postAlert(alert);
+            }
         }
     }
 
-    if (port > 10000)
-    {
-        return true;
-    }
+    return true;
 }
 
 // finds the server port via the settings json file
@@ -80,7 +112,7 @@ bool PannerOSC::initFromSettings(const std::string& jsonSettingsFilePath)
         {
             if (processor)
             {
-                Mach1::AlertData data { "Warning", "There is a port conflict, please choose a new port", "OK" };
+                Mach1::AlertData data { "Warning", "Could not connect to the m1-system-helper!\nPlease reinstall Mach1 Spatial System", "OK" };
                 processor->postAlert(data);
             }
         }
@@ -175,13 +207,60 @@ bool PannerOSC::isConnected()
 
 bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
 {
-    if (isConnected() && port > 0)
-    {
-        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/setChannelConfigReq"));
-        m.addInt32(channel_count_for_config); // int of new layout
-        return juce::OSCSender::send(m); // check to update isConnected for error catching;
+    if (!is_connected) {
+        // Try to reconnect if needed
+        try {
+            if (!juce::OSCSender::connect("127.0.0.1", helperPort)) {
+                if (processor) {
+                    Mach1::AlertData alert;
+                    alert.title = "Connection Error";
+                    alert.message = "Failed to connect to Mach1 Spatial Mixer when changing channel configuration.";
+                    alert.buttonText = "OK";
+                    processor->postAlert(alert);
+                }
+                return false;
+            }
+        } catch (...) {
+            if (processor) {
+                Mach1::AlertData alert;
+                alert.title = "Connection Error";
+                alert.message = "Exception occurred when connecting to Mach1 Spatial Mixer.";
+                alert.buttonText = "OK";
+                processor->postAlert(alert);
+            }
+            return false;
+        }
     }
-    return false;
+
+    // Build message
+    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-request-channel-config"));
+    try {
+        m.addInt32(port);
+        m.addInt32(channel_count_for_config);
+
+        if (!juce::OSCSender::send(m)) {
+            is_connected = false;
+            if (processor) {
+                Mach1::AlertData alert;
+                alert.title = "Configuration Error";
+                alert.message = "Failed to send channel configuration request to Mach1 Spatial Mixer.";
+                alert.buttonText = "OK";
+                processor->postAlert(alert);
+            }
+            return false;
+        }
+        return true;
+    } catch (...) {
+        is_connected = false;
+        if (processor) {
+            Mach1::AlertData alert;
+            alert.title = "Configuration Error";
+            alert.message = "Exception occurred when sending channel configuration request.";
+            alert.buttonText = "OK";
+            processor->postAlert(alert);
+        }
+        return false;
+    }
 }
 
 bool PannerOSC::sendPannerSettings(int state)

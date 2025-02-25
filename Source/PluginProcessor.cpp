@@ -390,6 +390,18 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     mDelayBuffer.clear();
     mExpectedReadPos = -1;
 #endif
+
+    // Initialize OSC if not already done
+    if (!pannerOSC) {
+        pannerOSC = std::make_unique<PannerOSC>(this);
+        if (!pannerOSC->init(9001)) {
+            Mach1::AlertData alert;
+            alert.title = "Initialization Warning";
+            alert.message = "Could not initialize network communication. Some features may be limited.";
+            alert.buttonText = "OK";
+            postAlert(alert);
+        }
+    }
 }
 
 void M1PannerAudioProcessor::releaseResources()
@@ -566,6 +578,27 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
         DBG("Layout " + String(validInput && validOutput ? "ACCEPTED" : "REJECTED") +
             " - Input: " + layouts.getMainInputChannelSet().getDescription() +
             " Output: " + layouts.getMainOutputChannelSet().getDescription());
+
+        // If we get to this point and haven't returned true, the layout is not supported
+        if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::disabled() &&
+            layouts.getMainOutputChannelSet() != juce::AudioChannelSet::disabled()) {
+
+            // Store this information for potential alerts
+            juce::String inputDesc = layouts.getMainInputChannelSet().getDescription();
+            juce::String outputDesc = layouts.getMainOutputChannelSet().getDescription();
+
+            // We'll use a const_cast here since this method is const but we need to post an alert
+            // This is generally not ideal but acceptable for error reporting
+            auto* nonConstThis = const_cast<M1PannerAudioProcessor*>(this);
+
+            Mach1::AlertData alert;
+            alert.title = "Channel Configuration Error";
+            alert.message = "Unsupported channel configuration:\nInput: " + inputDesc.toStdString() +
+                            "\nOutput: " + outputDesc.toStdString() +
+                            "\n\nPlease select a supported configuration.";
+            alert.buttonText = "OK";
+            nonConstThis->postAlert(alert);
+        }
 
         return validInput && validOutput;
     }

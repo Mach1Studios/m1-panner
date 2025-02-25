@@ -15,7 +15,7 @@ Overlay::Overlay(M1PannerAudioProcessor* processor_, M1PannerAudioProcessorEdito
 
     addOpenGLComponent();
 
-    startTimer(50);
+    startTimer(200);
 }
 
 Overlay::~Overlay()
@@ -49,6 +49,19 @@ void Overlay::timerCallback()
     {
         WindowUtil::isFound = false;
     }
+
+    // Check if the dialog window is still valid
+    if (dialogWindow != nullptr && !dialogWindow->isOnDesktop()) {
+        // Dialog was closed unexpectedly
+        processor->pannerSettings.overlay = false;
+        editor->isOverlayShow = false;
+
+        Mach1::AlertData alert;
+        alert.title = "Overlay Closed";
+        alert.message = "The overlay window was closed unexpectedly.";
+        alert.buttonText = "OK";
+        processor->postAlert(alert);
+    }
 }
 
 void Overlay::resized()
@@ -59,9 +72,17 @@ void Overlay::resized()
     }
 }
 
-void Overlay::setDialogWindow(juce::DialogWindow* dialogWindow)
+void Overlay::setDialogWindow(juce::DialogWindow* dialogWindow_)
 {
-    this->dialogWindow = dialogWindow;
+    dialogWindow = dialogWindow_;
+
+    if (dialogWindow == nullptr) {
+        Mach1::AlertData alert;
+        alert.title = "Overlay Error";
+        alert.message = "Failed to create overlay window.";
+        alert.buttonText = "OK";
+        processor->postAlert(alert);
+    }
 }
 
 OverlayDialogWindow::OverlayDialogWindow(LaunchOptions& options) : DialogWindow(options.dialogTitle, options.dialogBackgroundColour, options.escapeKeyTriggersCloseButton, true)
