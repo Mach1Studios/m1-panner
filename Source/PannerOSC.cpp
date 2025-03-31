@@ -48,6 +48,7 @@ bool PannerOSC::init(int helperPort_)
     while (!receiverConnected && attempts < maxAttempts) {
         port = 10000 + juce::Random::getSystemRandom().nextInt(1000);
         if (socket.bindToPort(port)) {
+            socket.shutdown(); // shutdown port to not block the juce::OSCReceiver::connect return
             receiverConnected = juce::OSCReceiver::connect(port);
         }
         attempts++;
@@ -63,30 +64,28 @@ bool PannerOSC::init(int helperPort_)
             processor->postAlert(alert);
         }
         return false;
-    }
-
-    juce::OSCReceiver::addListener(this);
-
-    // Try to connect to the helper application
-    if (helperPort > 0) {
-        if (juce::OSCSender::connect("127.0.0.1", helperPort)) {
-            juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
-            msg.addInt32(port);
-            is_connected = juce::OSCSender::send(msg);
-            DBG("[OSC] Registered: " + std::to_string(port));
-        } else {
-            // Add alert for failed helper connection
-            if (processor) {
-                Mach1::AlertData alert;
-                alert.title = "Connection Warning";
-                alert.message = "Could not connect to Mach1 Spatial Mixer. Some features may be limited.";
-                alert.buttonText = "OK";
-                processor->postAlert(alert);
+    } else {
+        // Try to connect to the helper application
+        if (helperPort > 0) {
+            if (juce::OSCSender::connect("127.0.0.1", helperPort)) {
+                juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
+                msg.addInt32(port);
+                is_connected = juce::OSCSender::send(msg);
+                DBG("[OSC] Registered: " + std::to_string(port));
+            } else {
+                // Add alert for failed helper connection
+                if (processor) {
+                    Mach1::AlertData alert;
+                    alert.title = "Connection Warning";
+                    alert.message = "Could not connect to Mach1 Spatial Mixer. Some features may be limited.";
+                    alert.buttonText = "OK";
+                    processor->postAlert(alert);
+                }
             }
         }
+        juce::OSCReceiver::addListener(this);
+        return true;
     }
-
-    return true;
 }
 
 // finds the server port via the settings json file
