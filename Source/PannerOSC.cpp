@@ -33,6 +33,21 @@ PannerOSC::PannerOSC(M1PannerAudioProcessor* processor_)
     juce::OSCReceiver::addListener(this);
 }
 
+PannerOSC::~PannerOSC()
+{
+    if (is_connected && port > 0)
+    {
+        // send a "remove panner" message to helper
+        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
+        m.addInt32(port); // used for id
+        m.addInt32(-1); // sending a -1 to indicate a disconnect command via the state
+        juce::OSCSender::send(m);
+    }
+
+    juce::OSCSender::disconnect();
+    juce::OSCReceiver::disconnect();
+}
+
 bool PannerOSC::init(int helperPort_)
 {
     helperPort = helperPort_;
@@ -77,7 +92,7 @@ bool PannerOSC::init(int helperPort_)
                 if (processor) {
                     Mach1::AlertData alert;
                     alert.title = "Connection Warning";
-                    alert.message = "Could not connect to Mach1 Spatial Mixer. Some features may be limited.";
+                    alert.message = "Could not connect to m1-system-helper. Some features may be limited.";
                     alert.buttonText = "OK";
                     processor->postAlert(alert);
                 }
@@ -177,21 +192,6 @@ void PannerOSC::update()
 void PannerOSC::AddListener(std::function<void(juce::OSCMessage msg)> messageReceived)
 {
     this->messageReceived = messageReceived;
-}
-
-PannerOSC::~PannerOSC()
-{
-    if (is_connected && port > 0)
-    {
-        // send a "remove panner" message to helper
-        juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
-        m.addInt32(port); // used for id
-        m.addInt32(-1); // sending a -1 to indicate a disconnect command via the state
-        juce::OSCSender::send(m);
-    }
-
-    juce::OSCSender::disconnect();
-    juce::OSCReceiver::disconnect();
 }
 
 bool PannerOSC::Send(const juce::OSCMessage& msg)
