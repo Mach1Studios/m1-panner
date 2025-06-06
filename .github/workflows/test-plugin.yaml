@@ -89,11 +89,11 @@ jobs:
 
       - name: Configure
         if: ${{ matrix.name != 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON -DJUCE_VST3_CAN_REPLACE_VST2=OFF ${{ matrix.extra-flags }} .
 
       - name: Configure (Windows)
         if: ${{ matrix.name == 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=ON -DJUCE_VST3_CAN_REPLACE_VST2=OFF ${{ matrix.extra-flags }} .
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} ${{ matrix.extra-build-flags }}
@@ -102,6 +102,11 @@ jobs:
         run: |
           ARTIFACTS_PATH=${{ env.BUILD_DIR }}/M1-Panner_artefacts/${{ env.BUILD_TYPE }}
           echo "ARTIFACTS_PATH=$ARTIFACTS_PATH" >> $GITHUB_ENV
+          if [[ "${{ matrix.name }}" == "macOS" ]]; then
+            echo "TEST_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
+          else
+            echo "TEST_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
+          fi
           echo "VST3_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
           echo "AU_PATH=$ARTIFACTS_PATH/AU/M1-Panner.component" >> $GITHUB_ENV
           echo "STANDALONE_PATH=$ARTIFACTS_PATH/Standalone/M1-Panner.app" >> $GITHUB_ENV
@@ -110,4 +115,4 @@ jobs:
         run: |
           curl -LO "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_${{ matrix.name }}.zip"
           7z x pluginval_${{ matrix.name }}.zip
-          ${{ matrix.pluginval-binary }} --strictness-level 10 --verbose --validate "${{ env.VST3_PATH }}"
+          ${{ matrix.pluginval-binary }} --strictness-level 10 --verbose --validate "${{ env.TEST_PATH }}"
