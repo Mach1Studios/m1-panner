@@ -14,7 +14,6 @@ env:
   BUILD_DIR: build
   DISPLAY: :0 # linux pluginval needs this
   HOMEBREW_NO_INSTALL_CLEANUP: 1
-  SCCACHE_GHA_ENABLED: true
 
 defaults:
   run:
@@ -88,13 +87,9 @@ jobs:
           git submodule update --init --recursive docs/doxygen-awesome-css
           cd ../..
 
-      - name: Cache the build
-        if: ${{ matrix.name != 'Windows' }}
-        uses: mozilla-actions/sccache-action@v0.0.4
-
       - name: Configure
         if: ${{ matrix.name != 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AAX=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON ${{ matrix.extra-flags }} .
 
       - name: Configure (Windows)
         if: ${{ matrix.name == 'Windows' }}
