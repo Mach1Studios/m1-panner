@@ -62,9 +62,26 @@ jobs:
       - name: Checkout entire project
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
           lfs: true
           fetch-depth: 1
+
+      - name: Initialize essential submodules
+        run: |
+          # Initialize top-level submodules required for build
+          git submodule update --init --recursive JUCE
+          git submodule update --init --recursive Modules/juce_murka
+          git submodule update --init Modules/m1-sdk
+
+          # Initialize only core m1-sdk dependencies (skip all examples)
+          cd Modules/m1-sdk
+          git submodule update --init --recursive libmach1spatial/deps/glm
+          git submodule update --init --recursive libmach1spatial/deps/pugixml
+          git submodule update --init --recursive libmach1spatial/deps/yaml
+          git submodule update --init --recursive libmach1spatial/deps/acutest
+          git submodule update --init --recursive libmach1spatial/deps/nlohmann
+          git submodule update --init --recursive libmach1spatial/cmake/ios-cmake
+          git submodule update --init --recursive docs/doxygen-awesome-css
+          cd ../..
 
       - name: Cache the build
         if: ${{ matrix.name != 'Windows' }}
