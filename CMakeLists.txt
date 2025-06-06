@@ -48,6 +48,7 @@ option(BUILD_AU "Compile AU plugin type" OFF)
 option(BUILD_AUV3 "Compile AUv3 plugin type" OFF)
 option(BUILD_UNITY "Compile Unity plugin type" OFF)
 option(BUILD_STANDALONE "Compile Standalone app of plugin" OFF)
+option(ENABLE_VST2_COMPATIBILITY "Enable VST2 compatibility in VST3 builds (requires VST2 SDK)" ON)
 
 # These are used to re-apply brackets for the JucePlugin_PreferredChannelConfigurations
 set(LBRACKET_LITERAL "{")
@@ -99,6 +100,12 @@ endif()
 
 message(STATUS "Plugin targets: ${FORMATS}")
 
+if(ENABLE_VST2_COMPATIBILITY)
+    message(STATUS "VST2 compatibility: ENABLED (requires VST2 SDK)")
+else()
+    message(STATUS "VST2 compatibility: DISABLED")
+endif()
+
 # add the plugin targets
 juce_add_plugin(${PLUGIN_NAME}
                 VERSION ${CURRENT_VERSION}
@@ -121,7 +128,7 @@ target_compile_definitions(${PLUGIN_NAME}
     PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_VST3_CAN_REPLACE_VST2=1
+    JUCE_VST3_CAN_REPLACE_VST2=$<IF:$<BOOL:${ENABLE_VST2_COMPATIBILITY}>,1,0>
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.

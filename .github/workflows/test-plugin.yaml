@@ -34,7 +34,7 @@ jobs:
           - name: macOS
             os: macos-14
             pluginval-binary: pluginval.app/Contents/MacOS/pluginval
-            extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DJUCE_VST3_CAN_REPLACE_VST2=OFF
+            extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DENABLE_VST2_COMPATIBILITY=OFF
             extra-build-flags: --parallel 4
           - name: Windows
             os: windows-latest
