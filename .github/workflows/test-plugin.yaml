@@ -65,6 +65,11 @@ jobs:
           lfs: true
           fetch-depth: 1
 
+      - name: Configure Git to use HTTPS instead of SSH
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://".insteadOf "git://"
+
       - name: Initialize essential submodules
         run: |
           # Initialize top-level submodules required for build
