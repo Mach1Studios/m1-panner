@@ -34,7 +34,7 @@ jobs:
           - name: macOS
             os: macos-14
             pluginval-binary: pluginval.app/Contents/MacOS/pluginval
-            extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+            extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DJUCE_VST3_CAN_REPLACE_VST2=OFF
             extra-build-flags: --parallel 4
           - name: Windows
             os: windows-latest
@@ -83,17 +83,15 @@ jobs:
           git submodule update --init --recursive libmach1spatial/deps/yaml
           git submodule update --init --recursive libmach1spatial/deps/acutest
           git submodule update --init --recursive libmach1spatial/deps/nlohmann
-          git submodule update --init --recursive libmach1spatial/cmake/ios-cmake
-          git submodule update --init --recursive docs/doxygen-awesome-css
           cd ../..
 
       - name: Configure
         if: ${{ matrix.name != 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=ON -DBUILD_AU=ON -DJUCE_VST3_CAN_REPLACE_VST2=OFF ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AU=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
 
       - name: Configure (Windows)
         if: ${{ matrix.name == 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=ON -DJUCE_VST3_CAN_REPLACE_VST2=OFF ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} ${{ matrix.extra-build-flags }}
