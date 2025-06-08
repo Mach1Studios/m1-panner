@@ -31,9 +31,6 @@ Enables the Interaural Time Difference processing parameters for the M1-Panner f
 #### CMake
 - Add as a preprocess definition via `-DITD_PARAMETERS`
 
-#### JUCE
-- Add `ITD_PARAMETERS` in the .jucer's Exporters->[Target]->Extra Preprocessor Definitions
-
 ### Examples
 
 - MacOS setup M1-Panner
