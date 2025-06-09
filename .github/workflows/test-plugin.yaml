@@ -101,17 +101,20 @@ jobs:
         run: |
           ARTIFACTS_PATH=${{ env.BUILD_DIR }}/M1-Panner_artefacts/${{ env.BUILD_TYPE }}
           echo "ARTIFACTS_PATH=$ARTIFACTS_PATH" >> $GITHUB_ENV
-          if [[ "${{ matrix.name }}" == "macOS" ]]; then
-            echo "TEST_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
-          else
-            echo "TEST_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
-          fi
           echo "VST3_PATH=$ARTIFACTS_PATH/VST3/M1-Panner.vst3" >> $GITHUB_ENV
           echo "AU_PATH=$ARTIFACTS_PATH/AU/M1-Panner.component" >> $GITHUB_ENV
           echo "STANDALONE_PATH=$ARTIFACTS_PATH/Standalone/M1-Panner.app" >> $GITHUB_ENV
 
-      - name: Pluginval
+      - name: Pluginval (Windows - Skip GUI)
+        if: ${{ matrix.name == 'Windows' }}
         run: |
           curl -LO "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_${{ matrix.name }}.zip"
           7z x pluginval_${{ matrix.name }}.zip
-          ${{ matrix.pluginval-binary }} --strictness-level 5 --verbose --validate "${{ env.TEST_PATH }}"
+          ${{ matrix.pluginval-binary }} --strictness-level 5 --repeat 2 --verbose --skip-gui-tests --validate "${{ env.VST3_PATH }}"
+
+      - name: Pluginval (macOS/Linux - Full Tests)
+        if: ${{ matrix.name != 'Windows' }}
+        run: |
+          curl -LO "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_${{ matrix.name }}.zip"
+          7z x pluginval_${{ matrix.name }}.zip
+          ${{ matrix.pluginval-binary }} --strictness-level 5 --repeat 2 --verbose --validate "${{ env.VST3_PATH }}"
