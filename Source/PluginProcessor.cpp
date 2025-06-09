@@ -604,7 +604,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     }
 
     // For standalone, only allow stereo in/out
-    if (JUCEApplicationBase::isStandaloneApp() || hostType.isPluginVal())
+    if (JUCEApplicationBase::isStandaloneApp() || hostType.isPluginval())
     {
         auto inputLayout = layouts.getMainInputChannelSet();
         auto outputLayout = layouts.getMainOutputChannelSet();
