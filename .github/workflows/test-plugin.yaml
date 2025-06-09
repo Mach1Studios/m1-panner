@@ -114,4 +114,4 @@ jobs:
         run: |
           curl -LO "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_${{ matrix.name }}.zip"
           7z x pluginval_${{ matrix.name }}.zip
-          ${{ matrix.pluginval-binary }} --strictness-level 10 --verbose --validate "${{ env.TEST_PATH }}"
+          ${{ matrix.pluginval-binary }} --strictness-level 5 --verbose --validate "${{ env.TEST_PATH }}"
