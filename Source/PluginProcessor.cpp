@@ -575,7 +575,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
                             layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(6) ||
                             layouts.getMainOutputChannelSet() == juce::AudioChannelSet::ambisonic(7));
 
-        DBG("Layout " + String(validInput && validOutput ? "ACCEPTED" : "REJECTED") +
+        DBG("Layout " + juce::String(validInput && validOutput ? "ACCEPTED" : "REJECTED") +
             " - Input: " + layouts.getMainInputChannelSet().getDescription() +
             " Output: " + layouts.getMainOutputChannelSet().getDescription());
 
@@ -604,16 +604,16 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
     }
 
     // For standalone, only allow stereo in/out
-    if (JUCEApplicationBase::isStandaloneApp())
+    if (JUCEApplicationBase::isStandaloneApp() || hostType.isPluginVal())
     {
         auto inputLayout = layouts.getMainInputChannelSet();
         auto outputLayout = layouts.getMainOutputChannelSet();
 
-        bool isValid = (inputLayout == juce::AudioChannelSet::mono() ||
-                        inputLayout == juce::AudioChannelSet::stereo() &&
+        bool isValid = ((inputLayout == juce::AudioChannelSet::mono() ||
+                        inputLayout == juce::AudioChannelSet::stereo()) &&
                        outputLayout == juce::AudioChannelSet::stereo());
 
-        DBG("Standalone Layout " + String(isValid ? "ACCEPTED" : "REJECTED") +
+        DBG("Standalone Layout " + juce::String(isValid ? "ACCEPTED" : "REJECTED") +
             " - Input: " + inputLayout.getDescription() +
             " Output: " + outputLayout.getDescription());
 

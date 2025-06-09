@@ -39,6 +39,7 @@ jobs:
           - name: Windows
             os: windows-latest
             pluginval-binary: ./pluginval.exe
+            extra-flags: -DENABLE_VST2_COMPATIBILITY=OFF
 
     steps:
       # Use clang on Linux so we don't introduce a 3rd compiler (Windows and macOS use MSVC and Clang)
@@ -91,7 +92,7 @@ jobs:
 
       - name: Configure (Windows)
         if: ${{ matrix.name == 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022"  -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} ${{ matrix.extra-build-flags }}
