@@ -584,7 +584,7 @@ void PannerUIBaseComponent::draw()
             int output_channel_reordered = processor->output_channel_indices[channelIndex];
 
             // Determine if this is an external meter (processed internally but not output to host)
-            bool isExternal = processor->external_spatialmixer_active && (channelIndex >= processor->getMainBusNumOutputChannels());
+            bool isExternal = (channelIndex >= processor->getMainBusNumOutputChannels());
 
             auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 })
                 .withVolume(processor->outputMeterValuedB[output_channel_reordered])
