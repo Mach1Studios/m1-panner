@@ -275,20 +275,20 @@ void M1PannerAudioProcessor::createLayout()
     {
         /// EXTERNAL MULTICHANNEL PROCESSING
 
-        // Set appropriate input/output modes for external mixer
-        if (inputChannels == 1)
+        // In external mixer mode, respect user's input mode choice
+        // but ensure bus layout is compatible (mono/stereo only)
+        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Mono)
         {
-            pannerSettings.m1Encode.setInputMode(Mach1EncodeInputMode::Mono);
             getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
         }
-        else if (inputChannels == 2)
+        else
         {
-            pannerSettings.m1Encode.setInputMode(Mach1EncodeInputMode::Stereo);
+            // Default to stereo for all other modes (stereo processing)
             getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
         }
 
-        // For external mixer, we still process internally but output stereo
-        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8); // Use 8-channel for processing
+        // For external mixer, respect user's output mode choice but output stereo to host
+        // (Internal processing uses user's chosen output mode: 4, 8, or 14 channels)
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo()); // But output stereo to host
 
         // CRITICAL: Initialize coefficients for external mixer mode
