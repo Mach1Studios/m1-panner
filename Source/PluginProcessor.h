@@ -174,16 +174,15 @@ public:
 
     // External spatial mixer mode management
     bool external_spatialmixer_active = false; // global detect spatialmixer
-    
-    // Global functions for external mixer mode  
+
+    // Global functions for external mixer mode
     static bool getExternalSpatialMixerActive() { return s_globalExternalMixerActive; }
     static void setExternalSpatialMixerActive(bool active) { s_globalExternalMixerActive = active; }
     bool isExternalSpatialMixerActive() const { return external_spatialmixer_active; }
     void setInstanceExternalMixerActive(bool active) { external_spatialmixer_active = active; }
-    
+
     // IPC Memory sharing for external spatial mixer
     std::unique_ptr<M1MemoryShare> m_memoryShare;
-    std::unique_ptr<M1MemoryShare> m_controlMemoryShare;
     bool m_memoryShareInitialized = false;
     juce::String m_instanceBaseName;
     void initializeMemorySharing();
@@ -240,7 +239,7 @@ public:
 private:
     TrackProperties track_properties;
     void createLayout();
-    
+
     // Static variable for global external mixer state
     static bool s_globalExternalMixerActive;
 

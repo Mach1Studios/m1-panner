@@ -252,16 +252,18 @@ void M1PannerAudioProcessor::createLayout()
         DBG("Invalid bus configuration in createLayout()");
         return;
     }
-    
+
     // Auto-detect external spatial mixer mode for supported configurations
     int inputChannels = getBus(true, 0)->getCurrentLayout().size();
     int outputChannels = getBus(false, 0)->getCurrentLayout().size();
-    
+
     // Activate external mixer for 1,2 (mono in, stereo out) or 2,2 (stereo in, stereo out) configurations
     if ((inputChannels == 1 && outputChannels == 2) || (inputChannels == 2 && outputChannels == 2))
     {
         external_spatialmixer_active = true;
+        setExternalSpatialMixerActive(true);  // Set global flag as well
         DBG("[PANNER] External spatial mixer activated for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
+        DBG("[PANNER] Memory sharing will be initialized for audio data with enhanced headers");
     }
     else
     {
@@ -284,11 +286,11 @@ void M1PannerAudioProcessor::createLayout()
             pannerSettings.m1Encode.setInputMode(Mach1EncodeInputMode::Stereo);
             getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
         }
-        
+
         // For external mixer, we still process internally but output stereo
         pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8); // Use 8-channel for processing
         getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo()); // But output stereo to host
-        
+
         // CRITICAL: Initialize coefficients for external mixer mode
         m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
     }
@@ -790,7 +792,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     {
         createLayout(); // this should only be called here after initialization to avoid threading issues
     }
-    
+
     // Initialize memory sharing if external spatial mixer is active
     if (external_spatialmixer_active && !m_memoryShareInitialized)
     {
@@ -831,7 +833,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             hostTimelineData.playheadPositionInSeconds = currentPlayHeadInfo.timeInSeconds;
         }
     }
-    
+
     // Safety check: Ensure coefficients are initialized before processing
     if (smoothedChannelCoeffs.empty() || smoothedChannelCoeffs.size() == 0)
     {
@@ -853,6 +855,16 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // vector of input channel buffers
     juce::AudioSampleBuffer mainInput = getBusBuffer(buffer, true, 0);
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
+
+    // Share input audio data BEFORE any processing (for external spatial mixer)
+    if (external_spatialmixer_active && m_memoryShareInitialized)
+    {
+        updateMemorySharing(mainInput);
+    }
+    else if (external_spatialmixer_active && !m_memoryShareInitialized)
+    {
+        DBG("[M1MemoryShare] Memory sharing active but not initialized yet");
+    }
 
     // output buffers
     juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
@@ -1036,12 +1048,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 }
             }
         }
-    }
-
-    // Handle external spatial mixer memory sharing (once per buffer)
-    if (external_spatialmixer_active && m_memoryShareInitialized)
-    {
-        updateMemorySharing(mainInput);
     }
 
     // update meters
@@ -1239,7 +1245,7 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     addXmlElement(root, "trackColor_b", juce::String(osc_colour.blue));
     addXmlElement(root, "trackColor_a", juce::String(osc_colour.alpha));
     addXmlElement(root, "output_layout_lock", juce::String(pannerSettings.lockOutputLayout ? 1 : 0));
-    
+
     // Memory sharing instance identifier
     if (m_instanceBaseName.isNotEmpty())
     {
@@ -1293,9 +1299,9 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
         osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
         parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
-        
+
         // Restore memory sharing instance identifier
-        if (root.get()->getChildByName("param_memory_instance_name") && 
+        if (root.get()->getChildByName("param_memory_instance_name") &&
             root.get()->getChildByName("param_memory_instance_name")->hasAttribute("value"))
         {
             m_instanceBaseName = root.get()->getChildByName("param_memory_instance_name")->getStringAttribute("value");
@@ -1350,7 +1356,7 @@ void M1PannerAudioProcessor::postAlert(const Mach1::AlertData& alert)
 juce::String M1PannerAudioProcessor::generateUniqueInstanceName() const
 {
     // Create unique name based on process ID, plugin instance, and timestamp
-    
+
     // Get process ID using platform-specific system calls
     uint32_t processId = 0;
 #if JUCE_WINDOWS
@@ -1361,12 +1367,12 @@ juce::String M1PannerAudioProcessor::generateUniqueInstanceName() const
     // Fallback for unknown platforms - use a hash of the instance pointer
     processId = static_cast<uint32_t>(std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(this)) & 0xFFFF);
 #endif
-    
+
     auto instancePtr = reinterpret_cast<uintptr_t>(this);
     auto timestamp = juce::Time::currentTimeMillis();
-    
+
     // Create filesystem-safe unique identifier
-    return "M1Panner_PID" + juce::String(processId) + 
+    return "M1Panner_PID" + juce::String(processId) +
            "_PTR" + juce::String::toHexString(static_cast<int64>(instancePtr)) +
            "_T" + juce::String(timestamp);
 }
@@ -1385,18 +1391,14 @@ void M1PannerAudioProcessor::initializeMemorySharing()
         {
             DBG("[M1MemoryShare] Using restored memory instance name: " + m_instanceBaseName);
         }
-        
-        // Calculate memory size needed (roughly 1MB for audio + control data)
+
+        // Calculate memory size needed (roughly 1MB for audio data with enhanced headers)
         size_t memorySize = 1024 * 1024; // 1MB
-        
-        // Create shared memory instance for audio data
+
+        // Create shared memory instance for audio data (with enhanced headers containing panner settings)
         m_memoryShare = std::make_unique<M1MemoryShare>(m_instanceBaseName, memorySize, true, true);
-        
-        // Create shared memory instance for control data
-        juce::String controlName = m_instanceBaseName + "_Control";
-        m_controlMemoryShare = std::make_unique<M1MemoryShare>(controlName, 4096, true, true);
-        
-        if (m_memoryShare->isValid() && m_controlMemoryShare->isValid())
+
+        if (m_memoryShare->isValid())
         {
             // Initialize for audio with current settings
             m_memoryShare->initializeForAudio(
@@ -1404,23 +1406,22 @@ void M1PannerAudioProcessor::initializeMemorySharing()
                 static_cast<uint32_t>(getMainBusNumInputChannels()),
                 512 // Default block size, will be updated in prepareToPlay
             );
-            
+
             m_memoryShareInitialized = true;
-            
+
             DBG("[M1MemoryShare] Initialized successfully: " + m_instanceBaseName);
+            DBG("[M1MemoryShare] Audio buffer headers now include panner settings and DAW timestamp");
         }
         else
         {
             DBG("[M1MemoryShare] Failed to initialize");
             m_memoryShare.reset();
-            m_controlMemoryShare.reset();
         }
     }
     catch (const std::exception& e)
     {
         DBG("[M1MemoryShare] Exception during initialization: " + juce::String(e.what()));
         m_memoryShare.reset();
-        m_controlMemoryShare.reset();
     }
 }
 
@@ -1431,36 +1432,78 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
         DBG("[M1MemoryShare] updateMemorySharing called but m_memoryShare is null");
         return;
     }
-    
+
     if (!m_memoryShare->isValid())
     {
         DBG("[M1MemoryShare] updateMemorySharing called but m_memoryShare is not valid");
         return;
     }
-    
+
     // Only share audio data for 1-channel (mono) or 2-channel (stereo) inputs
     int numInputChannels = inputBuffer.getNumChannels();
+    int numSamples = inputBuffer.getNumSamples();
+
     if (numInputChannels == 1 || numInputChannels == 2)
     {
-        // Write audio buffer to shared memory
-        if (!m_memoryShare->writeAudioBuffer(inputBuffer))
+        // Debug: Check if the buffer actually contains audio data
+        float maxLevel = 0.0f;
+        float rmsLevel = 0.0f;
+        float sumSquares = 0.0f;
+        int totalSamples = numSamples * numInputChannels;
+
+        for (int channel = 0; channel < numInputChannels; ++channel)
         {
-            DBG("[M1MemoryShare] Failed to write audio buffer to shared memory");
+            const float* channelData = inputBuffer.getReadPointer(channel);
+            for (int sample = 0; sample < numSamples; ++sample)
+            {
+                float sampleValue = channelData[sample];
+                maxLevel = std::max(maxLevel, std::abs(sampleValue));
+                sumSquares += sampleValue * sampleValue;
+            }
         }
-        
-        // Also write control data as JSON
-        juce::String controlData = "{ \"azimuth\": " + juce::String(pannerSettings.azimuth) + 
-                                  ", \"elevation\": " + juce::String(pannerSettings.elevation) + 
-                                  ", \"diverge\": " + juce::String(pannerSettings.diverge) + 
-                                  ", \"gain\": " + juce::String(pannerSettings.gain) + 
-                                  ", \"channels\": " + juce::String(numInputChannels) + 
-                                  ", \"sampleRate\": " + juce::String(processorSampleRate) + 
-                                  ", \"timestamp\": " + juce::String(juce::Time::currentTimeMillis()) + " }";
-        
-        // Write to the dedicated control data memory segment
-        if (m_controlMemoryShare && m_controlMemoryShare->isValid())
+
+        if (totalSamples > 0)
         {
-            m_controlMemoryShare->writeString(controlData);
+            rmsLevel = std::sqrt(sumSquares / totalSamples);
         }
+
+        DBG("[M1MemoryShare] Audio buffer analysis: channels=" + juce::String(numInputChannels) +
+            ", samples=" + juce::String(numSamples) +
+            ", maxLevel=" + juce::String(maxLevel, 6) +
+            ", rmsLevel=" + juce::String(rmsLevel, 6));
+
+        // Get DAW timestamp and playhead information
+        uint64_t dawTimestamp = juce::Time::currentTimeMillis();
+        double playheadPosition = 0.0;
+        bool isPlaying = false;
+
+        // Get playhead info from DAW
+        if (getPlayHead() != nullptr)
+        {
+            juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
+            if (getPlayHead()->getCurrentPosition(currentPlayHeadInfo))
+            {
+                isPlaying = currentPlayHeadInfo.isPlaying;
+                playheadPosition = currentPlayHeadInfo.timeInSeconds;
+            }
+        }
+
+        // Only share if there's actually audio data or if we want to share silence as well
+        // Write audio buffer with enhanced header containing panner settings and DAW timestamp
+        if (!m_memoryShare->writeAudioBufferWithSettings(inputBuffer, pannerSettings, dawTimestamp, playheadPosition, isPlaying))
+        {
+            DBG("[M1MemoryShare] Failed to write audio buffer with settings to shared memory");
+        }
+        else
+        {
+            DBG("[M1MemoryShare] Successfully wrote audio buffer with settings - channels: " +
+                juce::String(numInputChannels) + ", samples: " + juce::String(numSamples) +
+                ", maxLevel: " + juce::String(maxLevel, 6) +
+                ", azimuth: " + juce::String(pannerSettings.azimuth) + ", elevation: " + juce::String(pannerSettings.elevation));
+        }
+    }
+    else
+    {
+        DBG("[M1MemoryShare] Not sharing audio data - unsupported channel count: " + juce::String(numInputChannels));
     }
 }
