@@ -69,7 +69,7 @@ public:
             if (isExternalMeter)
                 m.setColor(METER_RED_DIM);
             else
-            m.setColor(METER_RED);
+                m.setColor(METER_RED);
             m.drawRectangle(shape.size.x / 2 - 2,
                 shape.size.y - v * shape.size.y,
                 4,
@@ -85,7 +85,7 @@ public:
             if (isExternalMeter)
                 m.setColor(METER_YELLOW_DIM);
             else
-            m.setColor(METER_YELLOW);
+                m.setColor(METER_YELLOW);
             m.drawRectangle(shape.size.x / 2 - 2,
                 shape.size.y - f * shape.size.y,
                 4,
@@ -99,7 +99,7 @@ public:
         if (isExternalMeter)
             m.setColor(METER_GREEN_DIM);
         else
-        m.setColor(METER_GREEN);
+            m.setColor(METER_GREEN);
         m.drawRectangle(shape.size.x / 2 - 2,
             shape.size.y - g * shape.size.y,
             4,
