@@ -323,6 +323,41 @@ bool M1MemoryShare::readAudioBufferWithSettings(juce::AudioBuffer<float>& audioB
     return true;
 }
 
+bool M1MemoryShare::readHeaderSettings(AudioBufferHeader& bufferHeader)
+{
+    if (!isValid() || !m_header->hasData)
+    {
+        return false;
+    }
+
+    if (m_header->dataSize < sizeof(AudioBufferHeader))
+    {
+        DBG("[M1MemoryShare] Data size too small for enhanced header in readHeaderSettingsOnly");
+        return false;
+    }
+
+    const uint8_t* readPtr = m_dataBuffer;
+
+    // Read only the enhanced header (no audio data)
+    const AudioBufferHeader* header = reinterpret_cast<const AudioBufferHeader*>(readPtr);
+    bufferHeader = *header;  // Copy the header data
+
+    // Basic validation of header data
+    if (bufferHeader.channels > 256 || bufferHeader.samples > 65536)  // Reasonable limits
+    {
+        DBG("[M1MemoryShare] Invalid header data in readHeaderSettingsOnly: " +
+            juce::String(bufferHeader.channels) + " channels, " + juce::String(bufferHeader.samples) + " samples");
+        return false;
+    }
+
+    DBG("[M1MemoryShare] Successfully read header settings: azimuth=" + juce::String(bufferHeader.azimuth) +
+        ", elevation=" + juce::String(bufferHeader.elevation) + ", diverge=" + juce::String(bufferHeader.diverge) +
+        ", inputMode=" + juce::String(bufferHeader.inputMode) + ", outputMode=" + juce::String(bufferHeader.outputMode));
+
+    ++m_readCount;
+    return true;
+}
+
 bool M1MemoryShare::writeAudioBuffer(const juce::AudioBuffer<float>& audioBuffer)
 {
     if (!isValid())

@@ -138,6 +138,13 @@ public:
     bool readAudioBufferWithSettings(juce::AudioBuffer<float>& audioBuffer, AudioBufferHeader& bufferHeader);
 
     /**
+     * Read only the header settings from shared memory (without audio data)
+     * @param bufferHeader Output parameter to store the buffer header info
+     * @return true if read was successful and header data was available
+     */
+    bool readHeaderSettings(AudioBufferHeader& bufferHeader);
+
+    /**
      * Read audio buffer from shared memory (legacy method)
      * @param audioBuffer JUCE AudioBuffer to store the read data
      * @return true if read was successful and data was available
