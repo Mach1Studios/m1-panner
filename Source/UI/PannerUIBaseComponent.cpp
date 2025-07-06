@@ -583,7 +583,13 @@ void PannerUIBaseComponent::draw()
             // get the index order from the host
             int output_channel_reordered = processor->output_channel_indices[channelIndex];
 
-            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 }).withVolume(processor->outputMeterValuedB[output_channel_reordered]).draw();
+            // Determine if this is an external meter (processed internally but not output to host)
+            bool isExternal = processor->external_spatialmixer_active && (channelIndex >= processor->getMainBusNumOutputChannels());
+
+            auto& volumeDisplayLine = m.prepare<M1VolumeDisplayLine>({ 555 + 15 * cursorX, 30 + cursorY * lineHeight, 10, lineHeight - 33 })
+                .withVolume(processor->outputMeterValuedB[output_channel_reordered])
+                .withExternalMeter(isExternal)
+                .draw();
             m.setColor(LABEL_TEXT_COLOR);
             auto font = m.getCurrentFont();
             double singleDigitOffset = 0;

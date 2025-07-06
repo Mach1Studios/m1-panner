@@ -700,7 +700,26 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels)
     chan_types.resize(numM1OutputChannels);
     output_channel_indices.resize(numM1OutputChannels);
 
-    if (!chanset.isDiscreteLayout())
+    if (external_spatialmixer_active)
+    {
+        // In external mixer mode, we process all channels internally
+        // but only output the first few to the host
+        for (int i = 0; i < numM1OutputChannels; ++i)
+        {
+            if (i < numHostOutputChannels)
+            {
+                // These channels are output to host
+                output_channel_indices[i] = i;
+            }
+            else
+            {
+                // These channels are internal processing only
+                // Use the channel index directly for internal processing
+                output_channel_indices[i] = i;
+            }
+        }
+    }
+    else if (!chanset.isDiscreteLayout())
     { // Check for DAW specific instructions
         if (hostType.isProTools() && chanset.size() == 8 && chanset.getDescription().contains(juce::String("7.1 Surround")))
         {
@@ -980,33 +999,17 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 // Apply to each of the output channels per input channel
                 for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++)
                 {
-                    // break if expected output channel num size does not match current output channel num size from host
-
                     // Output channel reordering from fillChannelOrder()
                     int output_channel_reordered = output_channel_indices[output_channel];
 
-                    // process via temp buffer that will also be used for meters
-                    if (output_channel_reordered >= 0)
-                    {
-                        // Get the next Mach1Encode coeff
+                    // Get the next Mach1Encode coeff and process to internal buffer
                         float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
                         buf.addSample(output_channel_reordered, sample, inValue * spatialGainCoeff);
-                    }
 
-                    // Handle external spatial mixer memory sharing
-                    // This should be done once per buffer, not per sample/channel
-                    // We'll move this outside the inner loops
-                    else
+                    // Copy processed sample to host output buffer if channel exists in host
+                    if (!external_spatialmixer_active && output_channel_reordered < mainOutput.getNumChannels())
                     {
-                        /// ANYTHING THAT IS ONLY FOR INTERNAL MULTICHANNEL PROCESSING GOES HERE
-                        if (output_channel > mainOutput.getNumChannels() - 1)
-                        {
-                            // TODO: Test for external_mixer?
-                            break;
-                        }
-                        else
-                        {
-                            // apply processed output samples to become the output buffers
+                        // Normal mode: apply processed output samples to host output buffers
                             outBuffer[output_channel_reordered][sample] += buf.getSample(output_channel_reordered, sample);
 
 #ifdef ITD_PARAMETERS
@@ -1048,13 +1051,26 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 }
             }
         }
+
+    // In external mixer mode, copy processed samples to host output (stereo only)
+    if (external_spatialmixer_active)
+    {
+        for (int output_channel = 0; output_channel < mainOutput.getNumChannels(); output_channel++)
+        {
+            for (int sample = 0; sample < buffer.getNumSamples(); sample++)
+            {
+                outBuffer[output_channel][sample] = buf.getSample(output_channel, sample);
+            }
+        }
     }
 
-    // update meters
+    // update meters - always show all m1Encode processing channels
     outputMeterValuedB.resize(buf.getNumChannels()); // expand meter UI number
     for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++)
     {
-        outputMeterValuedB.set(output_channel, output_channel < buf.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144);
+        int output_channel_reordered = output_channel_indices[output_channel];
+        // All channels should now have valid indices (0-7 for 8-channel processing)
+        outputMeterValuedB.set(output_channel, juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel_reordered, 0, buf.getNumSamples())));
     }
 }
 

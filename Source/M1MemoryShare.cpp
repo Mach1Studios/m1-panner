@@ -174,7 +174,7 @@ bool M1MemoryShare::initializeForAudio(uint32_t sampleRate, uint32_t numChannels
 }
 
 bool M1MemoryShare::writeAudioBufferWithSettings(const juce::AudioBuffer<float>& audioBuffer,
-                                                const PannerSettings& pannerSettings,
+                                                PannerSettings& pannerSettings,
                                                 uint64_t dawTimestamp,
                                                 double playheadPositionInSeconds,
                                                 bool isPlaying)
@@ -216,15 +216,15 @@ bool M1MemoryShare::writeAudioBufferWithSettings(const juce::AudioBuffer<float>&
     bufferHeader->elevation = pannerSettings.elevation;
     bufferHeader->diverge = pannerSettings.diverge;
     bufferHeader->gain = pannerSettings.gain;
+    bufferHeader->autoOrbit = pannerSettings.autoOrbit ? 1 : 0;
     bufferHeader->stereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
     bufferHeader->stereoSpread = pannerSettings.stereoSpread;
     bufferHeader->stereoInputBalance = pannerSettings.stereoInputBalance;
-    bufferHeader->autoOrbit = pannerSettings.autoOrbit ? 1 : 0;
     bufferHeader->isotropicMode = pannerSettings.isotropicMode ? 1 : 0;
     bufferHeader->equalpowerMode = pannerSettings.equalpowerMode ? 1 : 0;
     bufferHeader->gainCompensationMode = pannerSettings.gainCompensationMode ? 1 : 0;
-    //bufferHeader->inputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getInputMode());
-    //bufferHeader->outputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getOutputMode());
+    bufferHeader->inputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getInputMode());
+    bufferHeader->outputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getOutputMode());
 
     writePtr += sizeof(AudioBufferHeader);
 

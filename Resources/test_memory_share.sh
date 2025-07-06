@@ -192,10 +192,10 @@ struct AudioBufferHeader {
     float elevation;
     float diverge;
     float gain;
+    uint32_t autoOrbit;
     float stereoOrbitAzimuth;
     float stereoSpread;
     float stereoInputBalance;
-    uint32_t autoOrbit;
     uint32_t isotropicMode;
     uint32_t equalpowerMode;
     uint32_t gainCompensationMode;
@@ -261,10 +261,10 @@ int main(int argc, char* argv[]) {
         printf("Elevation: %.2f degrees\n", audioHeader->elevation);
         printf("Diverge: %.2f\n", audioHeader->diverge);
         printf("Gain: %.2f dB\n", audioHeader->gain);
+        printf("Auto Orbit: %s\n", audioHeader->autoOrbit ? "On" : "Off");
         printf("Stereo Orbit Azimuth: %.2f degrees\n", audioHeader->stereoOrbitAzimuth);
         printf("Stereo Spread: %.2f\n", audioHeader->stereoSpread);
         printf("Stereo Input Balance: %.2f\n", audioHeader->stereoInputBalance);
-        printf("Auto Orbit: %s\n", audioHeader->autoOrbit ? "On" : "Off");
         printf("Isotropic Mode: %s\n", audioHeader->isotropicMode ? "On" : "Off");
         printf("Equal Power Mode: %s\n", audioHeader->equalpowerMode ? "On" : "Off");
         printf("Gain Compensation: %s\n", audioHeader->gainCompensationMode ? "On" : "Off");

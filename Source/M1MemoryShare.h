@@ -117,7 +117,7 @@ public:
      * @return true if write was successful
      */
     bool writeAudioBufferWithSettings(const juce::AudioBuffer<float>& audioBuffer,
-                                    const struct PannerSettings& pannerSettings,
+                                    struct PannerSettings& pannerSettings,
                                     uint64_t dawTimestamp,
                                     double playheadPositionInSeconds,
                                     bool isPlaying);
