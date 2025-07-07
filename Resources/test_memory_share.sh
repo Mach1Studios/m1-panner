@@ -23,8 +23,8 @@ for dir in "${TEMP_DIRS[@]}"; do
     echo "  - $dir"
 done
 echo "Expected file patterns:"
-echo "  - Audio data with enhanced headers: $MEMORY_FILE_PATTERN"
-echo "  - (Headers now include panner settings and DAW timestamp)"
+echo "  - Audio data with generic parameter headers: $MEMORY_FILE_PATTERN"
+echo "  - (Headers now include generic parameter system and DAW timestamp)"
 echo ""
 
 # Function to cleanup on exit
@@ -58,7 +58,7 @@ monitor_memory_files() {
         return 1
     fi
 
-    echo "Found ${#audio_files[@]} audio memory file(s) with enhanced headers"
+    echo "Found ${#audio_files[@]} audio memory file(s) with generic parameter headers"
 
     return 0
 }
@@ -180,31 +180,48 @@ struct SharedMemoryHeader {
     char name[64];
 };
 
-struct AudioBufferHeader {
+struct GenericAudioBufferHeader {
+    uint32_t version;
     uint32_t channels;
     uint32_t samples;
     uint64_t dawTimestamp;
     double playheadPositionInSeconds;
     uint32_t isPlaying;
-
-    // Panner settings
-    float azimuth;
-    float elevation;
-    float diverge;
-    float gain;
-    uint32_t autoOrbit;
-    float stereoOrbitAzimuth;
-    float stereoSpread;
-    float stereoInputBalance;
-    uint32_t isotropicMode;
-    uint32_t equalpowerMode;
-    uint32_t gainCompensationMode;
-    uint32_t inputMode;
-    uint32_t outputMode;
-
-    // Reserved
-    uint32_t reserved[8];
+    uint32_t parameterCount;
+    uint32_t headerSize;
+    uint32_t updateSource;
+    uint32_t isUpdatingFromExternal;
+    uint32_t reserved[4];
 };
+
+struct GenericParameter {
+    uint32_t parameterID;
+    uint32_t parameterType;  // 0=FLOAT, 1=INT, 2=BOOL, 3=STRING, 4=DOUBLE, 5=UINT32, 6=UINT64
+    uint32_t dataSize;
+};
+
+// M1 Panner Parameter IDs (from TypesForDataExchange.h)
+#define M1_AZIMUTH 0x1A2B3C4D
+#define M1_ELEVATION 0x2B3C4D5E
+#define M1_DIVERGE 0x3C4D5E6F
+#define M1_GAIN 0x4D5E6F70
+#define M1_STEREO_ORBIT_AZIMUTH 0x5E6F7081
+#define M1_STEREO_SPREAD 0x6F708192
+#define M1_STEREO_INPUT_BALANCE 0x708192A3
+#define M1_AUTO_ORBIT 0x8192A3B4
+#define M1_ISOTROPIC_MODE 0x92A3B4C5
+#define M1_EQUALPOWER_MODE 0xA3B4C5D6
+#define M1_GAIN_COMPENSATION_MODE 0xB4C5D6E7
+#define M1_LOCK_OUTPUT_LAYOUT 0xC5D6E7F8
+#define M1_INPUT_MODE 0xD6E7F809
+#define M1_OUTPUT_MODE 0xE7F8091A
+#define M1_PORT 0xF8091A2B
+#define M1_STATE 0x091A2B3C
+#define M1_COLOR_R 0x1A2B3C4E
+#define M1_COLOR_G 0x2B3C4E5F
+#define M1_COLOR_B 0x3C4E5F60
+#define M1_COLOR_A 0x4E5F6071
+#define M1_DISPLAY_NAME 0x5F607182
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -245,34 +262,92 @@ int main(int argc, char* argv[]) {
     printf("Write Index: %u\n", header->writeIndex);
     printf("Read Index: %u\n", header->readIndex);
 
-    if (header->hasData && header->dataSize > sizeof(struct AudioBufferHeader)) {
+    if (header->hasData && header->dataSize > sizeof(struct GenericAudioBufferHeader)) {
         uint8_t* dataBuffer = (uint8_t*)mapped + sizeof(struct SharedMemoryHeader);
-        struct AudioBufferHeader* audioHeader = (struct AudioBufferHeader*)dataBuffer;
+        struct GenericAudioBufferHeader* audioHeader = (struct GenericAudioBufferHeader*)dataBuffer;
 
-        printf("\n=== Enhanced Audio Data Info ===\n");
+        printf("\n=== Generic Audio Data Info ===\n");
+        printf("Version: %u\n", audioHeader->version);
         printf("Audio Channels: %u\n", audioHeader->channels);
         printf("Audio Samples: %u\n", audioHeader->samples);
         printf("DAW Timestamp: %llu ms\n", audioHeader->dawTimestamp);
         printf("Playhead Position: %.6f seconds\n", audioHeader->playheadPositionInSeconds);
         printf("Is Playing: %s\n", audioHeader->isPlaying ? "Yes" : "No");
+        printf("Parameter Count: %u\n", audioHeader->parameterCount);
+        printf("Header Size: %u bytes\n", audioHeader->headerSize);
+        printf("Update Source: %u (0=HOST, 1=UI, 2=MEMORYSHARE)\n", audioHeader->updateSource);
+        printf("Is Updating From External: %s\n", audioHeader->isUpdatingFromExternal ? "Yes" : "No");
 
-        printf("\n=== Panner Settings ===\n");
-        printf("Azimuth: %.2f degrees\n", audioHeader->azimuth);
-        printf("Elevation: %.2f degrees\n", audioHeader->elevation);
-        printf("Diverge: %.2f\n", audioHeader->diverge);
-        printf("Gain: %.2f dB\n", audioHeader->gain);
-        printf("Auto Orbit: %s\n", audioHeader->autoOrbit ? "On" : "Off");
-        printf("Stereo Orbit Azimuth: %.2f degrees\n", audioHeader->stereoOrbitAzimuth);
-        printf("Stereo Spread: %.2f\n", audioHeader->stereoSpread);
-        printf("Stereo Input Balance: %.2f\n", audioHeader->stereoInputBalance);
-        printf("Isotropic Mode: %s\n", audioHeader->isotropicMode ? "On" : "Off");
-        printf("Equal Power Mode: %s\n", audioHeader->equalpowerMode ? "On" : "Off");
-        printf("Gain Compensation: %s\n", audioHeader->gainCompensationMode ? "On" : "Off");
-        printf("Input Mode: %u\n", audioHeader->inputMode);
-        printf("Output Mode: %u\n", audioHeader->outputMode);
+        printf("\n=== Generic Parameters ===\n");
+        uint8_t* paramPtr = dataBuffer + sizeof(struct GenericAudioBufferHeader);
+
+        for (uint32_t p = 0; p < audioHeader->parameterCount; p++) {
+            struct GenericParameter* param = (struct GenericParameter*)paramPtr;
+            paramPtr += sizeof(struct GenericParameter);
+
+            printf("Parameter #%u: ", p + 1);
+
+            // Identify parameter by ID
+            const char* paramName = "UNKNOWN";
+            if (param->parameterID == M1_AZIMUTH) paramName = "AZIMUTH";
+            else if (param->parameterID == M1_ELEVATION) paramName = "ELEVATION";
+            else if (param->parameterID == M1_DIVERGE) paramName = "DIVERGE";
+            else if (param->parameterID == M1_GAIN) paramName = "GAIN";
+            else if (param->parameterID == M1_STEREO_ORBIT_AZIMUTH) paramName = "STEREO_ORBIT_AZIMUTH";
+            else if (param->parameterID == M1_STEREO_SPREAD) paramName = "STEREO_SPREAD";
+            else if (param->parameterID == M1_STEREO_INPUT_BALANCE) paramName = "STEREO_INPUT_BALANCE";
+            else if (param->parameterID == M1_AUTO_ORBIT) paramName = "AUTO_ORBIT";
+            else if (param->parameterID == M1_ISOTROPIC_MODE) paramName = "ISOTROPIC_MODE";
+            else if (param->parameterID == M1_EQUALPOWER_MODE) paramName = "EQUALPOWER_MODE";
+            else if (param->parameterID == M1_GAIN_COMPENSATION_MODE) paramName = "GAIN_COMPENSATION_MODE";
+            else if (param->parameterID == M1_LOCK_OUTPUT_LAYOUT) paramName = "LOCK_OUTPUT_LAYOUT";
+            else if (param->parameterID == M1_INPUT_MODE) paramName = "INPUT_MODE";
+            else if (param->parameterID == M1_OUTPUT_MODE) paramName = "OUTPUT_MODE";
+            else if (param->parameterID == M1_PORT) paramName = "PORT";
+            else if (param->parameterID == M1_STATE) paramName = "STATE";
+            else if (param->parameterID == M1_COLOR_R) paramName = "COLOR_R";
+            else if (param->parameterID == M1_COLOR_G) paramName = "COLOR_G";
+            else if (param->parameterID == M1_COLOR_B) paramName = "COLOR_B";
+            else if (param->parameterID == M1_COLOR_A) paramName = "COLOR_A";
+            else if (param->parameterID == M1_DISPLAY_NAME) paramName = "DISPLAY_NAME";
+
+            printf("%s (ID: 0x%08X) = ", paramName, param->parameterID);
+
+            switch (param->parameterType) {
+                case 0: // FLOAT
+                    printf("%.6f (float)\n", *(float*)paramPtr);
+                    break;
+                case 1: // INT
+                    printf("%d (int)\n", *(int32_t*)paramPtr);
+                    break;
+                case 2: // BOOL
+                    printf("%s (bool)\n", *(uint8_t*)paramPtr ? "true" : "false");
+                    break;
+                case 3: // STRING
+                    printf("'%s' (string)\n", (char*)paramPtr);
+                    break;
+                case 4: // DOUBLE
+                    printf("%.6f (double)\n", *(double*)paramPtr);
+                    break;
+                case 5: // UINT32
+                    printf("%u (uint32)\n", *(uint32_t*)paramPtr);
+                    break;
+                case 6: // UINT64
+                    printf("%llu (uint64)\n", *(uint64_t*)paramPtr);
+                    break;
+                default:
+                    printf("(unknown type %u)\n", param->parameterType);
+                    break;
+            }
+
+            paramPtr += param->dataSize;
+        }
+
+        // Calculate audio data position
+        uint8_t* audioDataPos = dataBuffer + audioHeader->headerSize;
 
         if (audioHeader->channels > 0 && audioHeader->samples > 0 && audioHeader->channels <= 8 && audioHeader->samples <= 8192) {
-            float* audioData = (float*)(dataBuffer + sizeof(struct AudioBufferHeader));
+            float* audioData = (float*)audioDataPos;
             printf("\nFirst few audio samples:\n");
             for (int i = 0; i < 10 && i < (audioHeader->samples * audioHeader->channels); i++) {
                 printf("  Sample %d: %.6f\n", i, audioData[i]);
@@ -387,13 +462,13 @@ while true; do
 
             # Process first audio file for detailed analysis
             if [ ${#audio_files[@]} -gt 0 ]; then
-                echo "Analyzing most recent audio file with enhanced headers..."
-                display_file_info "${audio_files[0]}" "AUDIO_WITH_ENHANCED_HEADERS"
+                echo "Analyzing most recent audio file with generic parameter headers..."
+                display_file_info "${audio_files[0]}" "AUDIO_WITH_GENERIC_PARAMETERS"
                 read_audio_data "${audio_files[0]}"
             fi
         else
             echo "Memory sharing is active! Audio data should be changing if audio is playing."
-            echo "Found ${#audio_files[@]} audio file(s) with enhanced headers containing panner settings and DAW timestamp"
+            echo "Found ${#audio_files[@]} audio file(s) with generic parameter headers containing all plugin parameters and DAW timestamp"
             echo "(Detailed waveform analysis shown every 3rd check)"
         fi
     else

@@ -4,6 +4,7 @@
 #include <memory>
 #include <atomic>
 #include <cstring>
+#include "TypesForDataExchange.h"
 
 // Platform-specific includes for process ID
 #if JUCE_WINDOWS
@@ -12,44 +13,7 @@
     #include <unistd.h>
 #endif
 
-/**
- * Structure for each audio buffer header containing panner settings and DAW timestamp
- */
-struct AudioBufferHeader
-{
-    uint32_t channels;                      // Number of audio channels
-    uint32_t samples;                       // Number of samples per channel
-    uint64_t dawTimestamp;                  // DAW/host timestamp in milliseconds
-    double playheadPositionInSeconds;       // DAW playhead position
-    uint32_t isPlaying;                     // Is DAW playing (1) or stopped (0)
-
-    // Panner settings - matching PannerSettings structure
-    float azimuth;                          // Azimuth angle in degrees
-    float elevation;                        // Elevation angle in degrees
-    float diverge;                          // Divergence value
-    float gain;                             // Gain in dB
-    float stereoOrbitAzimuth;               // Stereo orbit azimuth
-    float stereoSpread;                     // Stereo spread
-    float stereoInputBalance;               // Stereo input balance
-    uint32_t autoOrbit;                     // Auto orbit flag (1 = true, 0 = false)
-    uint32_t isotropicMode;                 // Isotropic mode flag
-    uint32_t equalpowerMode;                // Equal power mode flag
-    uint32_t gainCompensationMode;          // Gain compensation mode flag
-    uint32_t inputMode;                     // Mach1EncodeInputMode
-    uint32_t outputMode;                    // Mach1EncodeOutputMode
-
-    // Reserved for future expansion
-    uint32_t reserved[8];
-
-    AudioBufferHeader() : channels(0), samples(0), dawTimestamp(0), playheadPositionInSeconds(0.0),
-                         isPlaying(0), azimuth(0.0f), elevation(0.0f), diverge(50.0f), gain(0.0f),
-                         stereoOrbitAzimuth(0.0f), stereoSpread(50.0f), stereoInputBalance(0.0f),
-                         autoOrbit(1), isotropicMode(0), equalpowerMode(0), gainCompensationMode(1),
-                         inputMode(0), outputMode(0)
-    {
-        std::memset(reserved, 0, sizeof(reserved));
-    }
-};
+// Generic structures are now defined in TypesForDataExchange.h
 
 /**
  * M1MemoryShare provides IPC (Inter-Process Communication) memory sharing functionality
@@ -107,42 +71,56 @@ public:
      */
     bool initializeForAudio(uint32_t sampleRate, uint32_t numChannels, uint32_t samplesPerBlock);
 
+    // ParameterMap is now defined in TypesForDataExchange.h
+
     /**
-     * Write audio buffer to shared memory with enhanced header containing panner settings and DAW timestamp
+     * Write audio buffer to shared memory with generic parameter system
      * @param audioBuffer JUCE AudioBuffer containing the audio data
-     * @param pannerSettings Current panner settings to include in header
+     * @param parameters Generic parameter map containing all settings
      * @param dawTimestamp DAW/host timestamp
      * @param playheadPositionInSeconds DAW playhead position
      * @param isPlaying Whether DAW is currently playing
+     * @param updateSource Source of the update (HOST, UI, MEMORYSHARE)
      * @return true if write was successful
      */
-    bool writeAudioBufferWithSettings(const juce::AudioBuffer<float>& audioBuffer,
-                                    struct PannerSettings& pannerSettings,
-                                    uint64_t dawTimestamp,
-                                    double playheadPositionInSeconds,
-                                    bool isPlaying);
+    bool writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
+                                             const ParameterMap& parameters,
+                                             uint64_t dawTimestamp,
+                                             double playheadPositionInSeconds,
+                                             bool isPlaying,
+                                             uint32_t updateSource = 1);
 
     /**
-     * Write audio buffer to shared memory (legacy method for backward compatibility)
-     * @param audioBuffer JUCE AudioBuffer containing the audio data
-     * @return true if write was successful
-     */
-    bool writeAudioBuffer(const juce::AudioBuffer<float>& audioBuffer);
-
-    /**
-     * Read audio buffer from shared memory with enhanced header
+     * Read audio buffer from shared memory with generic parameter system
      * @param audioBuffer JUCE AudioBuffer to store the read data
-     * @param bufferHeader Output parameter to store the buffer header info
+     * @param parameters Output parameter map to store all parameters
+     * @param dawTimestamp Output DAW timestamp
+     * @param playheadPositionInSeconds Output DAW playhead position
+     * @param isPlaying Output playing state
+     * @param updateSource Output update source
      * @return true if read was successful and data was available
      */
-    bool readAudioBufferWithSettings(juce::AudioBuffer<float>& audioBuffer, AudioBufferHeader& bufferHeader);
+    bool readAudioBufferWithGenericParameters(juce::AudioBuffer<float>& audioBuffer,
+                                            ParameterMap& parameters,
+                                            uint64_t& dawTimestamp,
+                                            double& playheadPositionInSeconds,
+                                            bool& isPlaying,
+                                            uint32_t& updateSource);
 
     /**
-     * Read only the header settings from shared memory (without audio data)
-     * @param bufferHeader Output parameter to store the buffer header info
+     * Read only the generic parameters from shared memory (without audio data)
+     * @param parameters Output parameter map to store all parameters
+     * @param dawTimestamp Output DAW timestamp
+     * @param playheadPositionInSeconds Output DAW playhead position
+     * @param isPlaying Output playing state
+     * @param updateSource Output update source
      * @return true if read was successful and header data was available
      */
-    bool readHeaderSettings(AudioBufferHeader& bufferHeader);
+    bool readGenericParameters(ParameterMap& parameters,
+                             uint64_t& dawTimestamp,
+                             double& playheadPositionInSeconds,
+                             bool& isPlaying,
+                             uint32_t& updateSource);
 
     /**
      * Read audio buffer from shared memory (legacy method)

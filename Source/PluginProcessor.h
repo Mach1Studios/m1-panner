@@ -187,6 +187,15 @@ public:
     juce::String m_instanceBaseName;
     void initializeMemorySharing();
     void updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer);
+
+    /**
+     * Apply external settings updates from memory share with priority handling
+     * @param parameters Generic parameter map containing external settings
+     * @param updateSource Source of the update (HOST, UI, MEMORYSHARE)
+     * @return true if settings were applied
+     */
+    bool applyExternalSettingsUpdate(const ParameterMap& parameters, ParameterUpdateSource updateSource);
+
     juce::String generateUniqueInstanceName() const;
     juce::String getMemoryInstanceName() const { return m_instanceBaseName; }
 

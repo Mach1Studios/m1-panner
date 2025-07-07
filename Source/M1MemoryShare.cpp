@@ -173,238 +173,311 @@ bool M1MemoryShare::initializeForAudio(uint32_t sampleRate, uint32_t numChannels
     return true;
 }
 
-bool M1MemoryShare::writeAudioBufferWithSettings(const juce::AudioBuffer<float>& audioBuffer,
-                                                PannerSettings& pannerSettings,
-                                                uint64_t dawTimestamp,
-                                                double playheadPositionInSeconds,
-                                                bool isPlaying)
+bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
+                                                         const ParameterMap& parameters,
+                                                         uint64_t dawTimestamp,
+                                                         double playheadPositionInSeconds,
+                                                         bool isPlaying,
+                                                         uint32_t updateSource)
 {
     if (!isValid())
     {
-        DBG("[M1MemoryShare] writeAudioBufferWithSettings: Not valid");
+        DBG("[M1MemoryShare] writeAudioBufferWithGenericParameters: Not valid");
         return false;
     }
 
-    // Calculate required size for the enhanced audio data
-    size_t samplesCount = audioBuffer.getNumSamples();
-    size_t channelsCount = audioBuffer.getNumChannels();
-    size_t audioDataSize = samplesCount * channelsCount * sizeof(float);
+    // Calculate header size with all parameters
+    size_t headerSize = sizeof(GenericAudioBufferHeader);
 
-    // Add enhanced header info: AudioBufferHeader + audio data
-    size_t totalSize = sizeof(AudioBufferHeader) + audioDataSize;
+    // Add size for each parameter type
+    for (const auto& pair : parameters.floatParams)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(float);
+    }
+    for (const auto& pair : parameters.intParams)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(int32_t);
+    }
+    for (const auto& pair : parameters.boolParams)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(bool);
+    }
+    for (const auto& pair : parameters.stringParams)
+    {
+        headerSize += sizeof(GenericParameter) + pair.second.length() + 1; // +1 for null terminator
+    }
+    for (const auto& pair : parameters.doubleParams)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(double);
+    }
+    for (const auto& pair : parameters.uint32Params)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(uint32_t);
+    }
+    for (const auto& pair : parameters.uint64Params)
+    {
+        headerSize += sizeof(GenericParameter) + sizeof(uint64_t);
+    }
+
+    // Calculate audio data size
+    size_t audioDataSize = audioBuffer.getNumSamples() * audioBuffer.getNumChannels() * sizeof(float);
+    size_t totalSize = headerSize + audioDataSize;
 
     if (totalSize > m_dataBufferSize)
     {
-        DBG("[M1MemoryShare] Audio buffer with settings too large for shared memory: " +
-            juce::String(totalSize) + " > " + juce::String(m_dataBufferSize));
+        DBG("[M1MemoryShare] Generic buffer too large: " + juce::String(totalSize) + " > " + juce::String(m_dataBufferSize));
         return false;
     }
 
-    // Write the enhanced header
+    // Write header
     uint8_t* writePtr = m_dataBuffer;
-    AudioBufferHeader* bufferHeader = reinterpret_cast<AudioBufferHeader*>(writePtr);
+    GenericAudioBufferHeader* header = reinterpret_cast<GenericAudioBufferHeader*>(writePtr);
 
-    // Fill in the enhanced header
-    bufferHeader->channels = static_cast<uint32_t>(channelsCount);
-    bufferHeader->samples = static_cast<uint32_t>(samplesCount);
-    bufferHeader->dawTimestamp = dawTimestamp;
-    bufferHeader->playheadPositionInSeconds = playheadPositionInSeconds;
-    bufferHeader->isPlaying = isPlaying ? 1 : 0;
+    header->version = 1;
+    header->channels = audioBuffer.getNumChannels();
+    header->samples = audioBuffer.getNumSamples();
+    header->dawTimestamp = dawTimestamp;
+    header->playheadPositionInSeconds = playheadPositionInSeconds;
+    header->isPlaying = isPlaying ? 1 : 0;
+    header->updateSource = updateSource;
+    header->isUpdatingFromExternal = 0;
+    header->headerSize = static_cast<uint32_t>(headerSize);
 
-    // Copy panner settings
-    bufferHeader->azimuth = pannerSettings.azimuth;
-    bufferHeader->elevation = pannerSettings.elevation;
-    bufferHeader->diverge = pannerSettings.diverge;
-    bufferHeader->gain = pannerSettings.gain;
-    bufferHeader->autoOrbit = pannerSettings.autoOrbit ? 1 : 0;
-    bufferHeader->stereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
-    bufferHeader->stereoSpread = pannerSettings.stereoSpread;
-    bufferHeader->stereoInputBalance = pannerSettings.stereoInputBalance;
-    bufferHeader->isotropicMode = pannerSettings.isotropicMode ? 1 : 0;
-    bufferHeader->equalpowerMode = pannerSettings.equalpowerMode ? 1 : 0;
-    bufferHeader->gainCompensationMode = pannerSettings.gainCompensationMode ? 1 : 0;
-    bufferHeader->inputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getInputMode());
-    bufferHeader->outputMode = static_cast<uint32_t>(pannerSettings.m1Encode.getOutputMode());
+    // Count total parameters
+    header->parameterCount = parameters.floatParams.size() + parameters.intParams.size() +
+                           parameters.boolParams.size() + parameters.stringParams.size() +
+                           parameters.doubleParams.size() + parameters.uint32Params.size() +
+                           parameters.uint64Params.size();
 
-    writePtr += sizeof(AudioBufferHeader);
+    writePtr += sizeof(GenericAudioBufferHeader);
 
-    // Write audio data (interleaved) using efficient getReadPointer access
+    // Write float parameters
+    for (const auto& pair : parameters.floatParams)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::FLOAT;
+        param->dataSize = sizeof(float);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<float*>(writePtr) = pair.second;
+        writePtr += sizeof(float);
+    }
+
+    // Write int parameters
+    for (const auto& pair : parameters.intParams)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::INT;
+        param->dataSize = sizeof(int32_t);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<int32_t*>(writePtr) = pair.second;
+        writePtr += sizeof(int32_t);
+    }
+
+    // Write bool parameters
+    for (const auto& pair : parameters.boolParams)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::BOOL;
+        param->dataSize = sizeof(bool);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<bool*>(writePtr) = pair.second;
+        writePtr += sizeof(bool);
+    }
+
+    // Write string parameters
+    for (const auto& pair : parameters.stringParams)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::STRING;
+        param->dataSize = pair.second.length() + 1;
+        writePtr += sizeof(GenericParameter);
+
+        strcpy(reinterpret_cast<char*>(writePtr), pair.second.c_str());
+        writePtr += pair.second.length() + 1;
+    }
+
+    // Write audio data
     float* audioDataPtr = reinterpret_cast<float*>(writePtr);
-
-    // Get read pointers for each channel once (more efficient)
-    const float* channelPointers[2];  // Max 2 channels should be enough
-    for (int channel = 0; channel < channelsCount; ++channel)
+    for (int sample = 0; sample < audioBuffer.getNumSamples(); ++sample)
     {
-        channelPointers[channel] = audioBuffer.getReadPointer(channel);
-    }
-
-    // Write interleaved audio data
-    for (int sample = 0; sample < samplesCount; ++sample)
-    {
-        for (int channel = 0; channel < channelsCount; ++channel)
+        for (int channel = 0; channel < audioBuffer.getNumChannels(); ++channel)
         {
-            audioDataPtr[sample * channelsCount + channel] = channelPointers[channel][sample];
+            audioDataPtr[sample * audioBuffer.getNumChannels() + channel] = audioBuffer.getSample(channel, sample);
         }
     }
-
-    // Calculate audio levels for debugging
-    float maxLevel = 0.0f;
-    float sumSquares = 0.0f;
-    for (int sample = 0; sample < samplesCount; ++sample)
-    {
-        for (int channel = 0; channel < channelsCount; ++channel)
-        {
-            float sampleValue = audioDataPtr[sample * channelsCount + channel];
-            maxLevel = std::max(maxLevel, std::abs(sampleValue));
-            sumSquares += sampleValue * sampleValue;
-        }
-    }
-    float rmsLevel = std::sqrt(sumSquares / (samplesCount * channelsCount));
 
     // Update main header
     m_header->dataSize = static_cast<uint32_t>(totalSize);
     m_header->hasData = true;
     ++m_writeCount;
 
-    DBG("[M1MemoryShare] Successfully wrote audio buffer with settings: " +
-        juce::String(channelsCount) + " channels, " + juce::String(samplesCount) + " samples, " +
-        "maxLevel=" + juce::String(maxLevel, 6) + ", rmsLevel=" + juce::String(rmsLevel, 6) + ", " +
-        "azimuth=" + juce::String(pannerSettings.azimuth) + ", elevation=" + juce::String(pannerSettings.elevation));
-
+    DBG("[M1MemoryShare] Wrote generic buffer with " + juce::String(header->parameterCount) + " parameters");
     return true;
 }
 
-bool M1MemoryShare::readAudioBufferWithSettings(juce::AudioBuffer<float>& audioBuffer, AudioBufferHeader& bufferHeader)
+bool M1MemoryShare::readGenericParameters(ParameterMap& parameters,
+                                        uint64_t& dawTimestamp,
+                                        double& playheadPositionInSeconds,
+                                        bool& isPlaying,
+                                        uint32_t& updateSource)
 {
     if (!isValid() || !m_header->hasData)
     {
         return false;
     }
 
-    if (m_header->dataSize < sizeof(AudioBufferHeader))
+    if (m_header->dataSize < sizeof(GenericAudioBufferHeader))
     {
-        DBG("[M1MemoryShare] Data size too small for enhanced header");
+        DBG("[M1MemoryShare] Data too small for generic header");
         return false;
     }
 
     const uint8_t* readPtr = m_dataBuffer;
+    const GenericAudioBufferHeader* header = reinterpret_cast<const GenericAudioBufferHeader*>(readPtr);
 
-    // Read the enhanced header
-    const AudioBufferHeader* header = reinterpret_cast<const AudioBufferHeader*>(readPtr);
-    bufferHeader = *header;  // Copy the header data
+    // Extract basic info
+    dawTimestamp = header->dawTimestamp;
+    playheadPositionInSeconds = header->playheadPositionInSeconds;
+    isPlaying = header->isPlaying != 0;
+    updateSource = header->updateSource;
 
-    uint32_t channelsCount = header->channels;
-    uint32_t samplesCount = header->samples;
+    readPtr += sizeof(GenericAudioBufferHeader);
 
-    // Validation
-    if (channelsCount > 32 || samplesCount > 65536)  // Reasonable limits
+    // Clear previous parameters
+    parameters.clear();
+
+    // Read all parameters
+    for (uint32_t i = 0; i < header->parameterCount; ++i)
     {
-        DBG("[M1MemoryShare] Invalid audio data dimensions: " +
-            juce::String(channelsCount) + " channels, " + juce::String(samplesCount) + " samples");
-        return false;
-    }
+        const GenericParameter* param = reinterpret_cast<const GenericParameter*>(readPtr);
+        readPtr += sizeof(GenericParameter);
 
-    readPtr += sizeof(AudioBufferHeader);
-
-    // Ensure audio buffer has correct size
-    audioBuffer.setSize(channelsCount, samplesCount, false, true, true);
-
-    // Read audio data (interleaved)
-    const float* audioDataPtr = reinterpret_cast<const float*>(readPtr);
-    for (int sample = 0; sample < samplesCount; ++sample)
-    {
-        for (int channel = 0; channel < channelsCount; ++channel)
+        switch (param->parameterType)
         {
-            audioBuffer.setSample(channel, sample, audioDataPtr[sample * channelsCount + channel]);
+            case ParameterType::FLOAT:
+                parameters.floatParams[param->parameterID] = *reinterpret_cast<const float*>(readPtr);
+                break;
+            case ParameterType::INT:
+                parameters.intParams[param->parameterID] = *reinterpret_cast<const int32_t*>(readPtr);
+                break;
+            case ParameterType::BOOL:
+                parameters.boolParams[param->parameterID] = *reinterpret_cast<const bool*>(readPtr);
+                break;
+            case ParameterType::STRING:
+                parameters.stringParams[param->parameterID] = std::string(reinterpret_cast<const char*>(readPtr));
+                break;
+            case ParameterType::DOUBLE:
+                parameters.doubleParams[param->parameterID] = *reinterpret_cast<const double*>(readPtr);
+                break;
+            case ParameterType::UINT32:
+                parameters.uint32Params[param->parameterID] = *reinterpret_cast<const uint32_t*>(readPtr);
+                break;
+            case ParameterType::UINT64:
+                parameters.uint64Params[param->parameterID] = *reinterpret_cast<const uint64_t*>(readPtr);
+                break;
         }
+
+        readPtr += param->dataSize;
     }
 
     ++m_readCount;
+    DBG("[M1MemoryShare] Read " + juce::String(header->parameterCount) + " generic parameters");
     return true;
 }
 
-bool M1MemoryShare::readHeaderSettings(AudioBufferHeader& bufferHeader)
+bool M1MemoryShare::readAudioBufferWithGenericParameters(juce::AudioBuffer<float>& audioBuffer,
+                                                        ParameterMap& parameters,
+                                                        uint64_t& dawTimestamp,
+                                                        double& playheadPositionInSeconds,
+                                                        bool& isPlaying,
+                                                        uint32_t& updateSource)
 {
     if (!isValid() || !m_header->hasData)
     {
         return false;
     }
 
-    if (m_header->dataSize < sizeof(AudioBufferHeader))
+    if (m_header->dataSize < sizeof(GenericAudioBufferHeader))
     {
-        DBG("[M1MemoryShare] Data size too small for enhanced header in readHeaderSettingsOnly");
+        DBG("[M1MemoryShare] Data too small for generic header with audio");
         return false;
     }
 
     const uint8_t* readPtr = m_dataBuffer;
+    const GenericAudioBufferHeader* header = reinterpret_cast<const GenericAudioBufferHeader*>(readPtr);
 
-    // Read only the enhanced header (no audio data)
-    const AudioBufferHeader* header = reinterpret_cast<const AudioBufferHeader*>(readPtr);
-    bufferHeader = *header;  // Copy the header data
+    // Extract basic info
+    dawTimestamp = header->dawTimestamp;
+    playheadPositionInSeconds = header->playheadPositionInSeconds;
+    isPlaying = header->isPlaying != 0;
+    updateSource = header->updateSource;
 
-    // Basic validation of header data
-    if (bufferHeader.channels > 256 || bufferHeader.samples > 65536)  // Reasonable limits
+    readPtr += sizeof(GenericAudioBufferHeader);
+
+    // Clear previous parameters
+    parameters.clear();
+
+    // Read all parameters
+    for (uint32_t i = 0; i < header->parameterCount; ++i)
     {
-        DBG("[M1MemoryShare] Invalid header data in readHeaderSettingsOnly: " +
-            juce::String(bufferHeader.channels) + " channels, " + juce::String(bufferHeader.samples) + " samples");
-        return false;
-    }
+        const GenericParameter* param = reinterpret_cast<const GenericParameter*>(readPtr);
+        readPtr += sizeof(GenericParameter);
 
-    DBG("[M1MemoryShare] Successfully read header settings: azimuth=" + juce::String(bufferHeader.azimuth) +
-        ", elevation=" + juce::String(bufferHeader.elevation) + ", diverge=" + juce::String(bufferHeader.diverge) +
-        ", inputMode=" + juce::String(bufferHeader.inputMode) + ", outputMode=" + juce::String(bufferHeader.outputMode));
-
-    ++m_readCount;
-    return true;
-}
-
-bool M1MemoryShare::writeAudioBuffer(const juce::AudioBuffer<float>& audioBuffer)
-{
-    if (!isValid())
-    {
-        return false;
-    }
-
-    // Calculate required size for the audio data
-    size_t samplesCount = audioBuffer.getNumSamples();
-    size_t channelsCount = audioBuffer.getNumChannels();
-    size_t audioDataSize = samplesCount * channelsCount * sizeof(float);
-
-    // Add header info: channels, samples, data
-    size_t totalSize = sizeof(uint32_t) * 2 + audioDataSize; // channels + samples + audio data
-
-    if (totalSize > m_dataBufferSize)
-    {
-        DBG("[M1MemoryShare] Audio buffer too large for shared memory");
-        return false;
-    }
-
-    // Write the data
-    uint8_t* writePtr = m_dataBuffer;
-
-    // Write number of channels
-    *reinterpret_cast<uint32_t*>(writePtr) = static_cast<uint32_t>(channelsCount);
-    writePtr += sizeof(uint32_t);
-
-    // Write number of samples
-    *reinterpret_cast<uint32_t*>(writePtr) = static_cast<uint32_t>(samplesCount);
-    writePtr += sizeof(uint32_t);
-
-    // Write audio data (interleaved)
-    for (int sample = 0; sample < samplesCount; ++sample)
-    {
-        for (int channel = 0; channel < channelsCount; ++channel)
+        switch (param->parameterType)
         {
-            *reinterpret_cast<float*>(writePtr) = audioBuffer.getSample(channel, sample);
-            writePtr += sizeof(float);
+            case ParameterType::FLOAT:
+                parameters.floatParams[param->parameterID] = *reinterpret_cast<const float*>(readPtr);
+                break;
+            case ParameterType::INT:
+                parameters.intParams[param->parameterID] = *reinterpret_cast<const int32_t*>(readPtr);
+                break;
+            case ParameterType::BOOL:
+                parameters.boolParams[param->parameterID] = *reinterpret_cast<const bool*>(readPtr);
+                break;
+            case ParameterType::STRING:
+                parameters.stringParams[param->parameterID] = std::string(reinterpret_cast<const char*>(readPtr));
+                break;
+            case ParameterType::DOUBLE:
+                parameters.doubleParams[param->parameterID] = *reinterpret_cast<const double*>(readPtr);
+                break;
+            case ParameterType::UINT32:
+                parameters.uint32Params[param->parameterID] = *reinterpret_cast<const uint32_t*>(readPtr);
+                break;
+            case ParameterType::UINT64:
+                parameters.uint64Params[param->parameterID] = *reinterpret_cast<const uint64_t*>(readPtr);
+                break;
+        }
+
+        readPtr += param->dataSize;
+    }
+
+    // Calculate audio data position
+    const uint8_t* audioDataPos = m_dataBuffer + header->headerSize;
+
+    // Read audio data
+    if (header->channels > 0 && header->samples > 0 && header->channels <= 32 && header->samples <= 65536)
+    {
+        audioBuffer.setSize(header->channels, header->samples, false, true, true);
+
+        const float* audioData = reinterpret_cast<const float*>(audioDataPos);
+        for (int sample = 0; sample < header->samples; ++sample)
+        {
+            for (int channel = 0; channel < header->channels; ++channel)
+            {
+                audioBuffer.setSample(channel, sample, audioData[sample * header->channels + channel]);
+            }
         }
     }
 
-    // Update header
-    m_header->dataSize = static_cast<uint32_t>(totalSize);
-    m_header->hasData = true;
-    ++m_writeCount;
-
+    ++m_readCount;
+    DBG("[M1MemoryShare] Read audio buffer with " + juce::String(header->parameterCount) + " generic parameters");
     return true;
 }
 

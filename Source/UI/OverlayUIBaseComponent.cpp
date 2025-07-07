@@ -145,11 +145,37 @@ void OverlayUIBaseComponent::draw()
 
     m.setColor(BACKGROUND_GREY);
 
+    // Read atomic values once for consistency during UI rendering
+    float currentX = pannerState->x.load();
+    float currentY = pannerState->y.load();
+    float currentAzimuth = pannerState->azimuth.load();
+    float currentDiverge = pannerState->diverge.load();
+    float currentElevation = pannerState->elevation.load();
+    float currentGain = pannerState->gain.load();
+    float currentStereoOrbitAzimuth = pannerState->stereoOrbitAzimuth.load();
+    float currentStereoSpread = pannerState->stereoSpread.load();
+    float currentStereoInputBalance = pannerState->stereoInputBalance.load();
+    bool currentOverlay = pannerState->overlay.load();
+    bool currentIsotropicMode = pannerState->isotropicMode.load();
+    bool currentEqualpowerMode = pannerState->equalpowerMode.load();
+    bool currentGainCompensationMode = pannerState->gainCompensationMode.load();
+    bool currentAutoOrbit = pannerState->autoOrbit.load();
+    bool currentLockOutputLayout = pannerState->lockOutputLayout.load();
+
     float knobSpeed = 250; // TODO: if shift pressed, lower speed
 
     if (pannerState)
     {
-        XYRZ xyrz = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->elevation };
+        // Read atomic values once for consistency
+        float currentX = pannerState->x.load();
+        float currentY = pannerState->y.load();
+        float currentAzimuth = pannerState->azimuth.load();
+        float currentElevation = pannerState->elevation.load();
+        float currentDiverge = pannerState->diverge.load();
+        float currentStereoOrbitAzimuth = pannerState->stereoOrbitAzimuth.load();
+        float currentStereoSpread = pannerState->stereoSpread.load();
+
+        XYRZ xyrz = { currentX, currentY, currentAzimuth, currentElevation };
         auto& overlayReticleField = m.prepare<OverlayReticleField>({ 0, 0, m.getSize().width(), m.getSize().height() }).controlling(&xyrz);
         overlayReticleField.cursorHide = cursorHide;
         overlayReticleField.cursorShow = cursorShow;
@@ -157,8 +183,8 @@ void OverlayUIBaseComponent::draw()
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
         overlayReticleField.m1Encode = &pannerState->m1Encode;
-        overlayReticleField.sRotate = pannerState->stereoOrbitAzimuth;
-        overlayReticleField.sSpread = pannerState->stereoSpread;
+        overlayReticleField.sRotate = currentStereoOrbitAzimuth;
+        overlayReticleField.sSpread = currentStereoSpread;
         overlayReticleField.isConnected = processor->pannerOSC->isConnected();
         overlayReticleField.track_color = processor->osc_colour;
         overlayReticleField.monitorState = monitorState;
@@ -167,12 +193,22 @@ void OverlayUIBaseComponent::draw()
 
         if (overlayReticleField.changed)
         {
-            convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+            // Update atomic values from UI changes
+            pannerState->x.store(std::get<0>(xyrz));
+            pannerState->y.store(std::get<1>(xyrz));
+            pannerState->azimuth.store(std::get<2>(xyrz));
+            pannerState->elevation.store(std::get<3>(xyrz));
+
+            float newX, newY;
+            convertRCtoXYRaw(std::get<2>(xyrz), currentDiverge, newX, newY);
+            pannerState->x.store(newX);
+            pannerState->y.store(newY);
+
             auto& params = processor->getValueTreeState();
             auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-            paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+            paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(std::get<2>(xyrz)));
             auto* paramElevation = params.getParameter(processor->paramElevation);
-            paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(pannerState->elevation));
+            paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(std::get<3>(xyrz)));
         }
         reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
     }
@@ -191,8 +227,9 @@ void OverlayUIBaseComponent::draw()
     // Diverge
     if (pannerState)
     {
+        float localDiverge = currentDiverge;
         auto& divergeKnob = m.prepare<M1Knob>({ xOffset, m.getWindowHeight() - knobHeight - 20, knobWidth, knobHeight })
-                                .controlling(&pannerState->diverge);
+                                .controlling(&localDiverge);
         divergeKnob.rangeFrom = -100;
         divergeKnob.rangeTo = 100;
         divergeKnob.floatingPointPrecision = 1;
@@ -205,10 +242,14 @@ void OverlayUIBaseComponent::draw()
         if (divergeKnob.changed)
         {
             // update this parameter here, notifying host
-            convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+            pannerState->diverge.store(localDiverge);
+            float newX, newY;
+            convertRCtoXYRaw(pannerState->azimuth.load(), localDiverge, newX, newY);
+            pannerState->x.store(newX);
+            pannerState->y.store(newY);
             auto& params = processor->getValueTreeState();
             auto* param = params.getParameter(processor->paramDiverge);
-            param->setValueNotifyingHost(param->convertTo0to1(pannerState->diverge));
+            param->setValueNotifyingHost(param->convertTo0to1(localDiverge));
         }
 
         labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);

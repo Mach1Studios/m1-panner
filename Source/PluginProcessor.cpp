@@ -51,26 +51,26 @@ juce::String M1PannerAudioProcessor::paramDelayDistance("ITDDistance");
 M1PannerAudioProcessor::M1PannerAudioProcessor()
     : AudioProcessor(getHostSpecificLayout()),
       parameters(*this, &mUndoManager, juce::Identifier("M1-Panner"), {
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramAzimuth, 1), TRANS("Azimuth"), juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), pannerSettings.azimuth, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramElevation, 1), TRANS("Elevation"), juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), pannerSettings.elevation, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDiverge, 1), TRANS("Diverge"), juce::NormalisableRange<float>(-100.0f, 100.0f, 0.01f), pannerSettings.diverge, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramGain, 1), TRANS("Input Gain"), juce::NormalisableRange<float>(-90.0, 24.0f, 0.1f, std::log(0.5f) / std::log(100.0f / 106.0f)), pannerSettings.gain, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + " dB"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramAutoOrbit, 1), TRANS("Auto Orbit"), pannerSettings.autoOrbit),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoOrbitAzimuth, 1), TRANS("Stereo Orbit Azimuth"), juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), pannerSettings.stereoOrbitAzimuth, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoSpread, 1), TRANS("Stereo Spread"), juce::NormalisableRange<float>(0.0f, 100.0f, 0.01f), pannerSettings.stereoSpread, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoInputBalance, 1), TRANS("Stereo Input Balance"), juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), pannerSettings.stereoInputBalance, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramIsotropicEncodeMode, 1), TRANS("Isotropic Encode Mode"), pannerSettings.isotropicMode),
-          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramEqualPowerEncodeMode, 1), TRANS("Equal Power Encode Mode"), pannerSettings.equalpowerMode),
-          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramGainCompensationMode, 1), TRANS("Gain Compensation Mode"), pannerSettings.gainCompensationMode),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramAzimuth, 1), TRANS("Azimuth"), juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramElevation, 1), TRANS("Elevation"), juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDiverge, 1), TRANS("Diverge"), juce::NormalisableRange<float>(-100.0f, 100.0f, 0.01f), 50.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramGain, 1), TRANS("Input Gain"), juce::NormalisableRange<float>(-90.0, 24.0f, 0.1f, std::log(0.5f) / std::log(100.0f / 106.0f)), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + " dB"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramAutoOrbit, 1), TRANS("Auto Orbit"), false),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoOrbitAzimuth, 1), TRANS("Stereo Orbit Azimuth"), juce::NormalisableRange<float>(-180.0f, 180.0f, 0.01f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "°"; }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoSpread, 1), TRANS("Stereo Spread"), juce::NormalisableRange<float>(0.0f, 100.0f, 0.01f), 50.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramStereoInputBalance, 1), TRANS("Stereo Input Balance"), juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1); }, [](const juce::String& t) { return t.dropLastCharacters(3).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramIsotropicEncodeMode, 1), TRANS("Isotropic Encode Mode"), true),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramEqualPowerEncodeMode, 1), TRANS("Equal Power Encode Mode"), true),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramGainCompensationMode, 1), TRANS("Gain Compensation Mode"), true),
 #ifndef CUSTOM_CHANNEL_LAYOUT
           std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputMode::BFOAACN, Mach1EncodeInputMode::Mono),
           // Note: Change init output to max bus size when new formats are introduced
           std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputMode::M1Spatial_14, Mach1EncodeOutputMode::M1Spatial_8),
 #endif
 #ifdef ITD_PARAMETERS
-          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramITDActive, 1), TRANS("ITD"), pannerSettings.itdActive),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDelayTime, 1), TRANS("Delay Time (max)"), juce::NormalisableRange<float>(0.0f, 10000.0f, 1.0f), pannerSettings.delayTime, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "μS"; }, [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
-          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDelayDistance, 1), TRANS("Delay Distance"), juce::NormalisableRange<float>(0.0f, 10000.0f, 0.01f), pannerSettings.delayDistance, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + ""; }, [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramITDActive, 1), TRANS("ITD"), false),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDelayTime, 1), TRANS("Delay Time (max)"), juce::NormalisableRange<float>(0.0f, 10000.0f, 1.0f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "μS"; }, [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
+          std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDelayDistance, 1), TRANS("Delay Distance"), juce::NormalisableRange<float>(0.0f, 10000.0f, 0.01f), 0.0f, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + ""; }, [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
 #endif
                                                                       })
 {
@@ -178,7 +178,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
-    pannerSettings.state = -1;
+            pannerSettings.state.store(-1);
     stopTimer();
 }
 
@@ -454,35 +454,46 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     if (parameterID == paramAzimuth)
     {
         // Update internal state
-        pannerSettings.azimuth = newValue;
-        // Update dependent values
-        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
-                        pannerSettings.x, pannerSettings.y);
+        pannerSettings.azimuth.store(newValue);
+        // Update dependent values using atomic loads
+        float azimuth = pannerSettings.azimuth.load();
+        float diverge = pannerSettings.diverge.load();
+        float newX, newY;
+        convertRCtoXYRaw(azimuth, diverge, newX, newY);
+        pannerSettings.x.store(newX);
+        pannerSettings.y.store(newY);
     }
     else if (parameterID == paramElevation)
     {
-        pannerSettings.elevation = newValue; // update pannerSettings value from host
+        pannerSettings.elevation.store(newValue); // update pannerSettings value from host
         parameters.getParameter(paramElevation)->setValue(newValue);
     }
     else if (parameterID == paramDiverge)
     {
-        pannerSettings.diverge = newValue; // update pannerSettings value from host
+        pannerSettings.diverge.store(newValue); // update pannerSettings value from host
         parameters.getParameter(paramDiverge)->setValue(newValue);
-        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+
+        // Convert atomic values to local variables for function call
+        float azimuth = pannerSettings.azimuth.load();
+        float diverge = pannerSettings.diverge.load();
+        float newX, newY;
+        convertRCtoXYRaw(azimuth, diverge, newX, newY);
+        pannerSettings.x.store(newX);
+        pannerSettings.y.store(newY);
     }
     else if (parameterID == paramGain)
     {
-        pannerSettings.gain = newValue; // update pannerSettings value from host
+        pannerSettings.gain.store(newValue); // update pannerSettings value from host
         parameters.getParameter(paramGain)->setValue(newValue);
     }
     else if (parameterID == paramAutoOrbit)
     {
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode
-            pannerSettings.autoOrbit = (bool)newValue; // update pannerSettings value from host
+            pannerSettings.autoOrbit.store((bool)newValue); // update pannerSettings value from host
             parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
             // reset stereo params when auto orbit is disabled
-            if (!pannerSettings.autoOrbit)
+            if (!pannerSettings.autoOrbit.load())
             {
                 parameters.getParameter(paramStereoOrbitAzimuth)->setValue(0.0f);
                 parameters.getParameter(paramStereoSpread)->setValue(0.0f);
@@ -494,7 +505,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
-            pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
+            pannerSettings.stereoOrbitAzimuth.store(newValue); // update pannerSettings value from host
             parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
         }
     }
@@ -502,7 +513,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
-            pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
+            pannerSettings.stereoSpread.store(newValue); // update pannerSettings value from host
             parameters.getParameter(paramStereoSpread)->setValue(newValue);
         }
     }
@@ -510,18 +521,18 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode and auto orbit is off
-            pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
+            pannerSettings.stereoInputBalance.store(newValue); // update pannerSettings value from host
             parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
         }
     }
     else if (parameterID == paramIsotropicEncodeMode)
     {
-        pannerSettings.isotropicMode = (bool)newValue; // update pannerSettings value from host
+        pannerSettings.isotropicMode.store((bool)newValue); // update pannerSettings value from host
         parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
     }
     else if (parameterID == paramEqualPowerEncodeMode)
     {
-        pannerSettings.equalpowerMode = (bool)newValue; // update pannerSettings value from host
+        pannerSettings.equalpowerMode.store((bool)newValue); // update pannerSettings value from host
         parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
     }
     else if (parameterID == paramInputMode)
@@ -549,19 +560,19 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramGainCompensationMode)
     {
-        pannerSettings.gainCompensationMode = newValue;
+        pannerSettings.gainCompensationMode.store(newValue);
         parameters.getParameter(paramGainCompensationMode)->setValue(newValue);
     }
     else if (parameterID == "output_layout_lock")
     {
-        pannerSettings.lockOutputLayout = (bool)newValue;
+        pannerSettings.lockOutputLayout.store((bool)newValue);
         lockOutputLayout = (bool)newValue;
     }
     // send a pannersettings update to helper since a parameter changed
     try {
         if (pannerOSC->isConnected())
         {
-            pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+            pannerOSC->sendPannerSettings(pannerSettings.state.load(), track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth.load(), pannerSettings.elevation.load(), pannerSettings.diverge.load(), pannerSettings.gain.load(), (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode.load(), pannerSettings.autoOrbit.load(), pannerSettings.stereoOrbitAzimuth.load(), pannerSettings.stereoSpread.load());
         }
     }
     catch (...) {
@@ -1237,16 +1248,16 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     stream.writeString("M1-Panner");
 
     juce::XmlElement root("Root");
-    addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
-    addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation));
-    addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge));
-    addXmlElement(root, paramGain, juce::String(pannerSettings.gain));
-    addXmlElement(root, paramStereoOrbitAzimuth, juce::String(pannerSettings.stereoOrbitAzimuth));
-    addXmlElement(root, paramStereoSpread, juce::String(pannerSettings.stereoSpread));
-    addXmlElement(root, paramStereoInputBalance, juce::String(pannerSettings.stereoInputBalance));
-    addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit ? 1 : 0));
-    addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode ? 1 : 0));
-    addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode ? 1 : 0));
+    addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth.load()));
+    addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation.load()));
+    addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge.load()));
+    addXmlElement(root, paramGain, juce::String(pannerSettings.gain.load()));
+    addXmlElement(root, paramStereoOrbitAzimuth, juce::String(pannerSettings.stereoOrbitAzimuth.load()));
+    addXmlElement(root, paramStereoSpread, juce::String(pannerSettings.stereoSpread.load()));
+    addXmlElement(root, paramStereoInputBalance, juce::String(pannerSettings.stereoInputBalance.load()));
+    addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit.load() ? 1 : 0));
+    addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode.load() ? 1 : 0));
+    addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode.load() ? 1 : 0));
     addXmlElement(root, paramInputMode, juce::String(pannerSettings.m1Encode.getInputMode()));
     addXmlElement(root, paramOutputMode, juce::String(pannerSettings.m1Encode.getOutputMode()));
 #ifdef ITD_PARAMETERS
@@ -1291,17 +1302,17 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         auto& params = getValueTreeState();
 
         // update local parameters first
-        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
-        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
-        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
-        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
-        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
-        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
-        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
-        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
-        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
-        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
-        parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode));
+        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth.load()));
+        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation.load()));
+        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge.load()));
+        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain.load()));
+        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth.load()));
+        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread.load()));
+        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance.load()));
+        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit.load()));
+        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode.load()));
+        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode.load()));
+        parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode.load()));
 
 #ifdef ITD_PARAMETERS
         parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
@@ -1505,17 +1516,32 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
         }
 
         // Only share if there's actually audio data or if we want to share silence as well
-        // Write audio buffer with enhanced header containing panner settings and DAW timestamp
-        if (!m_memoryShare->writeAudioBufferWithSettings(inputBuffer, pannerSettings, dawTimestamp, playheadPosition, isPlaying))
+        // Create parameter map with current panner settings
+        ParameterMap parameters;
+        parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
+        parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
+        parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
+        parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
+        parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
+        parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
+        parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
+        parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
+        parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
+        parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
+        parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
+        parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
+
+        // Write audio buffer with generic parameters (timing info passed as separate parameters)
+        if (!m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying))
         {
-            DBG("[M1MemoryShare] Failed to write audio buffer with settings to shared memory");
+            DBG("[M1MemoryShare] Failed to write audio buffer with generic parameters to shared memory");
         }
         else
         {
-            DBG("[M1MemoryShare] Successfully wrote audio buffer with settings - channels: " +
+            DBG("[M1MemoryShare] Successfully wrote audio buffer with generic parameters - channels: " +
                 juce::String(numInputChannels) + ", samples: " + juce::String(numSamples) +
                 ", maxLevel: " + juce::String(maxLevel, 6) +
-                ", azimuth: " + juce::String(pannerSettings.azimuth) + ", elevation: " + juce::String(pannerSettings.elevation));
+                ", azimuth: " + juce::String(pannerSettings.azimuth.load()) + ", elevation: " + juce::String(pannerSettings.elevation.load()));
         }
     }
     else

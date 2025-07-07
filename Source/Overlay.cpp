@@ -53,7 +53,7 @@ void Overlay::timerCallback()
     // Check if the dialog window is still valid
     if (dialogWindow != nullptr && !dialogWindow->isOnDesktop()) {
         // Dialog was closed unexpectedly
-        processor->pannerSettings.overlay = false;
+        processor->pannerSettings.overlay.store(false);
         editor->isOverlayShow = false;
 
         Mach1::AlertData alert;
@@ -115,6 +115,6 @@ OverlayDialogWindow::OverlayDialogWindow(LaunchOptions& options) : DialogWindow(
 
 void OverlayDialogWindow::closeButtonPressed()
 {
-    processor->pannerSettings.overlay = false;
+    processor->pannerSettings.overlay.store(false);
     editor->isOverlayShow = false;
 }

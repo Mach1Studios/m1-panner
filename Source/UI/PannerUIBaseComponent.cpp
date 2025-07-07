@@ -57,7 +57,24 @@ void PannerUIBaseComponent::draw()
     m.clear();
     m.setLineWidth(2);
 
-    XYRD xyrd = { pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge };
+    // Read atomic values once for consistency during UI rendering
+    float currentX = pannerState->x.load();
+    float currentY = pannerState->y.load();
+    float currentAzimuth = pannerState->azimuth.load();
+    float currentDiverge = pannerState->diverge.load();
+    float currentElevation = pannerState->elevation.load();
+    float currentGain = pannerState->gain.load();
+    float currentStereoOrbitAzimuth = pannerState->stereoOrbitAzimuth.load();
+    float currentStereoSpread = pannerState->stereoSpread.load();
+    float currentStereoInputBalance = pannerState->stereoInputBalance.load();
+    bool currentOverlay = pannerState->overlay.load();
+    bool currentIsotropicMode = pannerState->isotropicMode.load();
+    bool currentEqualpowerMode = pannerState->equalpowerMode.load();
+    bool currentGainCompensationMode = pannerState->gainCompensationMode.load();
+    bool currentAutoOrbit = pannerState->autoOrbit.load();
+    bool currentLockOutputLayout = pannerState->lockOutputLayout.load();
+
+    XYRD xyrd = { currentX, currentY, currentAzimuth, currentDiverge };
     auto& reticleField = m.prepare<PannerReticleField>(MurkaShape(25, 30, 400, 400));
     reticleField.controlling(&xyrd);
 
@@ -85,12 +102,23 @@ void PannerUIBaseComponent::draw()
 
     if (reticleField.results)
     {
-        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        // Update atomic values from UI changes
+        pannerState->x.store(std::get<0>(xyrd));
+        pannerState->y.store(std::get<1>(xyrd));
+
+        float newX = std::get<0>(xyrd);
+        float newY = std::get<1>(xyrd);
+        float newAzimuth, newDiverge;
+
+        processor->convertXYtoRCRaw(newX, newY, newAzimuth, newDiverge);
+        pannerState->azimuth.store(newAzimuth);
+        pannerState->diverge.store(newDiverge);
+
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -104,8 +132,9 @@ void PannerUIBaseComponent::draw()
     int M1LabelOffsetY = 25;
 
     // X
+    float localX = currentX;
     auto& xKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 10, yOffset, knobWidth, knobHeight))
-                      .controlling(&pannerState->x);
+                      .controlling(&localX);
     xKnob.rangeFrom = -100;
     xKnob.rangeTo = 100;
     xKnob.floatingPointPrecision = 1;
@@ -120,12 +149,16 @@ void PannerUIBaseComponent::draw()
 
     if (xKnob.changed)
     {
-        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        pannerState->x.store(localX);
+        float newAzimuth, newDiverge;
+        processor->convertXYtoRCRaw(localX, pannerState->y.load(), newAzimuth, newDiverge);
+        pannerState->azimuth.store(newAzimuth);
+        pannerState->diverge.store(newDiverge);
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -137,8 +170,9 @@ void PannerUIBaseComponent::draw()
     xLabel.draw();
 
     // Y
+    float localY = currentY;
     auto& yKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 100, yOffset, knobWidth, knobHeight))
-                      .controlling(&pannerState->y);
+                      .controlling(&localY);
     yKnob.rangeFrom = -100;
     yKnob.rangeTo = 100;
     yKnob.floatingPointPrecision = 1;
@@ -153,12 +187,16 @@ void PannerUIBaseComponent::draw()
 
     if (yKnob.changed)
     {
-        processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        pannerState->y.store(localY);
+        float newAzimuth, newDiverge;
+        processor->convertXYtoRCRaw(pannerState->x.load(), localY, newAzimuth, newDiverge);
+        pannerState->azimuth.store(newAzimuth);
+        pannerState->diverge.store(newDiverge);
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -170,8 +208,9 @@ void PannerUIBaseComponent::draw()
     yLabel.draw();
 
     // Azimuth / Rotation
+    float localAzimuth = currentAzimuth;
     auto& azKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
-                       .controlling(&pannerState->azimuth);
+                       .controlling(&localAzimuth);
     azKnob.rangeFrom = -180;
     azKnob.rangeTo = 180;
     azKnob.floatingPointPrecision = 1;
@@ -187,12 +226,21 @@ void PannerUIBaseComponent::draw()
 
     if (azKnob.changed)
     {
-        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        // Store the new value back to the atomic
+        pannerState->azimuth.store(localAzimuth);
+
+        // Update other related values
+        float newX, newY;
+        processor->convertRCtoXYRaw(localAzimuth, pannerState->diverge.load(), newX, newY);
+        pannerState->x.store(newX);
+        pannerState->y.store(newY);
+
+        // Notify JUCE parameter system
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(localAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge.load()));
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -205,8 +253,9 @@ void PannerUIBaseComponent::draw()
     azLabel.draw();
 
     // Diverge
+    float localDiverge = currentDiverge;
     auto& dKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
-                      .controlling(&pannerState->diverge);
+                      .controlling(&localDiverge);
     dKnob.rangeFrom = -100;
     dKnob.rangeTo = 100;
     dKnob.floatingPointPrecision = 1;
@@ -221,12 +270,20 @@ void PannerUIBaseComponent::draw()
 
     if (dKnob.changed)
     {
-        processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        // Store the new value back to the atomic
+        pannerState->diverge.store(localDiverge);
+
+        // Update other related values
+        float newX, newY;
+        processor->convertRCtoXYRaw(pannerState->azimuth.load(), localDiverge, newX, newY);
+        pannerState->x.store(newX);
+        pannerState->y.store(newY);
+
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth.load()));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(localDiverge));
     }
 
     divergeKnobDraggingNow = dKnob.draggingNow;
@@ -239,12 +296,13 @@ void PannerUIBaseComponent::draw()
     dLabel.draw();
 
     // Gain
+    float localGain = currentGain;
     auto& gKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
-                      .controlling(&pannerState->gain);
+                      .controlling(&localGain);
     gKnob.rangeFrom = -90;
     gKnob.rangeTo = 24;
     gKnob.postfix = "dB";
-    gKnob.prefix = std::string(pannerState->gain > 0 ? "+" : "");
+    gKnob.prefix = std::string(localGain > 0 ? "+" : "");
     gKnob.floatingPointPrecision = 1;
     gKnob.speed = knobSpeed;
     gKnob.defaultValue = 0;
@@ -253,7 +311,7 @@ void PannerUIBaseComponent::draw()
     gKnob.externalHover = false;
     gKnob.cursorHide = cursorHide;
     gKnob.cursorShow = cursorShowAndTeleportBack;
-    if (pannerState->gainCompensationMode)
+    if (currentGainCompensationMode)
     {
         gKnob.useSecondaryIndicator = true;
         gKnob.secondaryIndicatorColor = MurkaColor(GRID_LINES_4_RGB);
@@ -305,9 +363,10 @@ void PannerUIBaseComponent::draw()
 
     if (gKnob.changed)
     {
+        pannerState->gain.store(localGain);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramGain);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->gain));
+        param->setValueNotifyingHost(param->convertTo0to1(localGain));
     }
 
     // Reset font size
@@ -322,8 +381,9 @@ void PannerUIBaseComponent::draw()
     gLabel.draw();
 
     // Z
+    float localElevation = currentElevation;
     auto& zKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 450, yOffset, knobWidth, knobHeight))
-                      .controlling(&pannerState->elevation);
+                      .controlling(&localElevation);
     zKnob.rangeFrom = -90;
     zKnob.rangeTo = 90;
     zKnob.prefix = "";
@@ -340,9 +400,10 @@ void PannerUIBaseComponent::draw()
 
     if (zKnob.changed)
     {
+        pannerState->elevation.store(localElevation);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramElevation);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->elevation));
+        param->setValueNotifyingHost(param->convertTo0to1(localElevation));
     }
 
     bool zHovered = zKnob.hovered;
@@ -377,8 +438,9 @@ void PannerUIBaseComponent::draw()
 #endif
 
     // S Rotation
+    float localStereoOrbitAzimuth = currentStereoOrbitAzimuth;
     auto& srKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 190, yOffset, knobWidth, knobHeight))
-                       .controlling(&pannerState->stereoOrbitAzimuth);
+                       .controlling(&localStereoOrbitAzimuth);
     srKnob.rangeFrom = -180;
     srKnob.rangeTo = 180;
     srKnob.prefix = "";
@@ -387,7 +449,7 @@ void PannerUIBaseComponent::draw()
     srKnob.speed = knobSpeed;
     srKnob.defaultValue = 0;
     srKnob.isEndlessRotary = true;
-    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo) && !pannerState->autoOrbit);
+    srKnob.enabled = ((pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo) && !currentAutoOrbit);
     srKnob.externalHover = false;
     srKnob.cursorHide = cursorHide;
     srKnob.cursorShow = cursorShowAndTeleportBack;
@@ -395,9 +457,10 @@ void PannerUIBaseComponent::draw()
 
     if (srKnob.changed)
     {
+        pannerState->stereoOrbitAzimuth.store(localStereoOrbitAzimuth);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramStereoOrbitAzimuth);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoOrbitAzimuth));
+        param->setValueNotifyingHost(param->convertTo0to1(localStereoOrbitAzimuth));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -410,9 +473,10 @@ void PannerUIBaseComponent::draw()
 
     // S Spread
 
-    // TODO didChangeOutsideThisThread ???
+    // S Spread
+    float localStereoSpread = currentStereoSpread;
     auto& ssKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 280, yOffset, knobWidth, knobHeight))
-                       .controlling(&pannerState->stereoSpread);
+                       .controlling(&localStereoSpread);
     ssKnob.rangeFrom = 0.0;
     ssKnob.rangeTo = 100.0;
     ssKnob.prefix = "";
@@ -429,9 +493,10 @@ void PannerUIBaseComponent::draw()
 
     if (ssKnob.changed)
     {
+        pannerState->stereoSpread.store(localStereoSpread);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramStereoSpread);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoSpread));
+        param->setValueNotifyingHost(param->convertTo0to1(localStereoSpread));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -443,9 +508,9 @@ void PannerUIBaseComponent::draw()
     ssLabel.draw();
 
     // S Pan
-
+    float localStereoInputBalance = currentStereoInputBalance;
     auto& spKnob = m.prepare<M1Knob>(MurkaShape(xOffset + 370, yOffset, knobWidth, knobHeight))
-                       .controlling(&pannerState->stereoInputBalance);
+                       .controlling(&localStereoInputBalance);
     spKnob.rangeFrom = -1;
     spKnob.rangeTo = 1;
     spKnob.prefix = "";
@@ -462,9 +527,10 @@ void PannerUIBaseComponent::draw()
 
     if (spKnob.changed)
     {
+        pannerState->stereoInputBalance.store(localStereoInputBalance);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramStereoInputBalance);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->stereoInputBalance));
+        param->setValueNotifyingHost(param->convertTo0to1(localStereoInputBalance));
     }
 
     m.setColor(ENABLED_PARAM);
@@ -478,39 +544,46 @@ void PannerUIBaseComponent::draw()
     /// CHECKBOXES
     float checkboxSlotHeight = 28;
 
+    bool localOverlay = currentOverlay;
     auto& overlayCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 0, 200, 20 })
-                                .controlling(&pannerState->overlay)
+                                .controlling(&localOverlay)
                                 .withLabel("OVERLAY");
     overlayCheckbox.enabled = true;
     overlayCheckbox.draw();
 
     if (overlayCheckbox.changed)
     {
-        setOverlayVisible(pannerState->overlay);
+        pannerState->overlay.store(localOverlay);
+        setOverlayVisible(localOverlay);
     }
 
+    bool localIsotropicMode = currentIsotropicMode;
     auto& isotropicCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 1, 200, 20 })
-                                  .controlling(&pannerState->isotropicMode)
+                                  .controlling(&localIsotropicMode)
                                   .withLabel("ISOTROPIC");
     isotropicCheckbox.enabled = true;
     isotropicCheckbox.draw();
 
+    bool localEqualpowerMode = currentEqualpowerMode;
     auto& equalPowerCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 2, 200, 20 })
-                                   .controlling(&pannerState->equalpowerMode)
+                                   .controlling(&localEqualpowerMode)
                                    .withLabel("EQUALPOWER");
-    equalPowerCheckbox.enabled = (pannerState->isotropicMode);
+    equalPowerCheckbox.enabled = (localIsotropicMode);
     equalPowerCheckbox.draw();
 
     if (isotropicCheckbox.changed || equalPowerCheckbox.changed)
     {
+        pannerState->isotropicMode.store(localIsotropicMode);
+        pannerState->equalpowerMode.store(localEqualpowerMode);
+
         auto& params = processor->getValueTreeState();
         auto* param_isotropicCheckbox = params.getParameter(processor->paramIsotropicEncodeMode);
-        param_isotropicCheckbox->setValueNotifyingHost(isotropicCheckbox.checked ? true : false);
+        param_isotropicCheckbox->setValueNotifyingHost(localIsotropicMode ? true : false);
 
-        if (isotropicCheckbox.checked)
+        if (localIsotropicMode)
         {
             auto* param_equalPowerCheckbox = params.getParameter(processor->paramEqualPowerEncodeMode);
-            param_equalPowerCheckbox->setValueNotifyingHost(equalPowerCheckbox.checked ? true : false);
+            param_equalPowerCheckbox->setValueNotifyingHost(localEqualpowerMode ? true : false);
         }
         else
         {
@@ -519,33 +592,38 @@ void PannerUIBaseComponent::draw()
         }
     }
 
+    bool localGainCompensationMode = currentGainCompensationMode;
     auto& gainCompensationCheckbox = m.prepare<M1Checkbox>({ 557, 475 + checkboxSlotHeight * 3, 200, 20 })
-                                  .controlling(&pannerState->gainCompensationMode)
+                                  .controlling(&localGainCompensationMode)
                                   .withLabel("AUTO GAIN");
     gainCompensationCheckbox.enabled = true;
     gainCompensationCheckbox.draw();
 
     if (gainCompensationCheckbox.changed)
     {
+        pannerState->gainCompensationMode.store(localGainCompensationMode);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramGainCompensationMode);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->gainCompensationMode));
+        param->setValueNotifyingHost(param->convertTo0to1(localGainCompensationMode));
     }
 
+    bool localAutoOrbit = currentAutoOrbit;
     auto& autoOrbitCheckbox = m.prepare<M1Checkbox>({ 557, yOffset - M1LabelOffsetY, 200, 20 })
-                                  .controlling(&pannerState->autoOrbit)
+                                  .controlling(&localAutoOrbit)
                                   .withLabel("AUTO ORBIT");
     autoOrbitCheckbox.enabled = (pannerState->m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo);
     autoOrbitCheckbox.draw();
 
     if (autoOrbitCheckbox.changed)
     {
+        pannerState->autoOrbit.store(localAutoOrbit);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramAutoOrbit);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->autoOrbit));
+        param->setValueNotifyingHost(param->convertTo0to1(localAutoOrbit));
     }
 
     // Note: pitchwheel range in inverted to draw top down
+    float localElevationForPitchWheel = currentElevation;
     auto& pitchWheel = m.prepare<M1PitchWheel>({ 445, 30 - 10, 80, 400 + 20 });
     pitchWheel.cursorHide = cursorHide;
     pitchWheel.cursorShow = cursorShow;
@@ -556,14 +634,15 @@ void PannerUIBaseComponent::draw()
     pitchWheel.externalHovered = zHovered;
     pitchWheel.isConnected = processor->pannerOSC->isConnected();
     pitchWheel.monitorState = monitorState;
-    pitchWheel.dataToControl = &pannerState->elevation;
+    pitchWheel.dataToControl = &localElevationForPitchWheel;
     pitchWheel.draw();
 
     if (pitchWheel.changed)
     {
+        pannerState->elevation.store(localElevationForPitchWheel);
         auto& params = processor->getValueTreeState();
         auto* param = params.getParameter(processor->paramElevation);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerState->elevation));
+        param->setValueNotifyingHost(param->convertTo0to1(localElevationForPitchWheel));
     }
 
     pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
@@ -924,8 +1003,9 @@ void PannerUIBaseComponent::draw()
             outputLabel.highlighted = false;
             outputLabel.draw();
 
+            bool localLockOutputLayout = currentLockOutputLayout;
             auto& outputLayoutLockCheckbox = m.prepare<M1Checkbox>(MurkaShape(m.getSize().width() / 2 + 95 + 65, m.getSize().height() - 27, 140, 15))
-                                                 .controlling(&pannerState->lockOutputLayout)
+                                                 .controlling(&localLockOutputLayout)
                                                  .withLabel("LOCK");
             outputLayoutLockCheckbox.enabled = true;
             outputLayoutLockCheckbox.labelPadding_x = 17;
@@ -934,6 +1014,7 @@ void PannerUIBaseComponent::draw()
 
             if (outputLayoutLockCheckbox.changed)
             {
+                pannerState->lockOutputLayout.store(localLockOutputLayout);
                 processor->parameterChanged(juce::String("output_layout_lock"), pannerState->lockOutputLayout);
             }
 
