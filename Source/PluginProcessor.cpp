@@ -579,27 +579,6 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
             " - Input: " + layouts.getMainInputChannelSet().getDescription() +
             " Output: " + layouts.getMainOutputChannelSet().getDescription());
 
-        // If we get to this point and haven't returned true, the layout is not supported
-        if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::disabled() &&
-            layouts.getMainOutputChannelSet() != juce::AudioChannelSet::disabled()) {
-
-            // Store this information for potential alerts
-            juce::String inputDesc = layouts.getMainInputChannelSet().getDescription();
-            juce::String outputDesc = layouts.getMainOutputChannelSet().getDescription();
-
-            // We'll use a const_cast here since this method is const but we need to post an alert
-            // This is generally not ideal but acceptable for error reporting
-            auto* nonConstThis = const_cast<M1PannerAudioProcessor*>(this);
-
-            Mach1::AlertData alert;
-            alert.title = "Channel Configuration Error";
-            alert.message = "Unsupported channel configuration:\nInput: " + inputDesc.toStdString() +
-                            "\nOutput: " + outputDesc.toStdString() +
-                            "\n\nPlease select a supported configuration.";
-            alert.buttonText = "OK";
-            nonConstThis->postAlert(alert);
-        }
-
         return validInput && validOutput;
     }
 
@@ -692,6 +671,17 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels)
         {
             output_channel_indices[i] = chanset.getChannelIndexForType(chan_types[i]);
         }
+
+        // Debug output for channel ordering
+        if (hostType.isProTools() && chanset.size() == 8)
+        {
+            juce::String debugStr = "Channel mapping: ";
+            for (int i = 0; i < numM1OutputChannels; i++)
+            {
+                debugStr += "M1[" + juce::String(i) + "]->Host[" + juce::String(output_channel_indices[i]) + "] ";
+            }
+            DBG(debugStr);
+        }
     }
     else
     { // is a discrete channel layout
@@ -722,12 +712,20 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
     pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
     pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
     pannerSettings.m1Encode.setOutputGain(pannerSettings.gain, true);
+    float old_gain_comp = gain_comp_in_db;
     gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
 
     pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
     pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
     pannerSettings.m1Encode.setStereoSpread(pannerSettings.stereoSpread / 100.0); // Mach1Encode expects an unsigned normalized input
     pannerSettings.m1Encode.setGainCompensationActive(pannerSettings.gainCompensationMode);
+
+    // Debug output for gain compensation changes
+    if (std::abs(old_gain_comp - gain_comp_in_db) > 0.1f)
+    {
+        DBG("Gain compensation changed: " + juce::String(old_gain_comp, 2) + " -> " + juce::String(gain_comp_in_db, 2) +
+            " dB (Az: " + juce::String(pannerSettings.azimuth, 1) + "°, Div: " + juce::String(pannerSettings.diverge, 1) + "%)");
+    }
 
     if (pannerSettings.isotropicMode)
     {
@@ -811,9 +809,13 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // input pan balance for stereo input
     if (mainInput.getNumChannels() > 1 && pannerSettings.m1Encode.getInputChannelsCount() == 2)
     {
-        float p = juce::MathConstants<float>::pi * (pannerSettings.stereoInputBalance + 1) / 4;
-        mainInput.applyGain(0, 0, buffer.getNumSamples(), std::cos(p)); // gain for Left
-        mainInput.applyGain(1, 0, buffer.getNumSamples(), std::sin(p)); // gain for Right
+        // Only apply stereo input balance if it's not at default (0)
+        if (std::abs(pannerSettings.stereoInputBalance) > 0.001f)
+        {
+            float p = juce::MathConstants<float>::pi * (pannerSettings.stereoInputBalance + 1) / 4;
+            mainInput.applyGain(0, 0, buffer.getNumSamples(), std::cos(p)); // gain for Left
+            mainInput.applyGain(1, 0, buffer.getNumSamples(), std::sin(p)); // gain for Right
+        }
     }
 
     // resize the processing buffer and zero it out so it works despite how many of the expected channels actually exist host side
