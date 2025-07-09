@@ -458,21 +458,21 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     else if (parameterID == paramStereoOrbitAzimuth)
     {
         // Always update stereo orbit azimuth parameter regardless of input mode
-            pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
-            parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
-        }
+        pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
+    }
     else if (parameterID == paramStereoSpread)
     {
         // Always update stereo spread parameter regardless of input mode
-            pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
-            parameters.getParameter(paramStereoSpread)->setValue(newValue);
-        }
+        pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramStereoSpread)->setValue(newValue);
+    }
     else if (parameterID == paramStereoInputBalance)
     {
         // Always update stereo input balance parameter regardless of input mode
-            pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
-            parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
-        }
+        pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
+        parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
+    }
     else if (parameterID == paramIsotropicEncodeMode)
     {
         pannerSettings.isotropicMode = (bool)newValue; // update pannerSettings value from host
@@ -804,7 +804,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 #endif
 
     // input pan balance for stereo input
-    if (mainInput.getNumChannels() > 1 && pannerSettings.m1Encode.getInputChannelsCount() == 2)
+    if (mainInput.getNumChannels() > 1 && pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
     {
         // Only apply stereo input balance if it's not at default (0)
         if (std::abs(pannerSettings.stereoInputBalance) > 0.001f)
@@ -831,11 +831,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             // Input channel is missing, set its gains to zero
             for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
             {
-                int output_channel_reordered = output_channel_indices[output_channel];
-                if (output_channel_reordered >= 0)
-                {
-                    smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(0.0f);
-                }
+                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(0.0f);
             }
         }
         else
@@ -846,13 +842,8 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             // output channel setup loop
             for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
             {
-                // We apply a channel re-ordering for DAW canonical specific output channel configrations via fillChannelOrder() and `output_channel_reordered`
-                // Output channel reordering from fillChannelOrder()
-                int output_channel_reordered = output_channel_indices[output_channel];
-                if (output_channel_reordered >= 0)
-                {
-                    smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel]);
-                }
+                // Set coefficients using M1 channel order (reordering applied later)
+                smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel]);
             }
         }
     }
@@ -908,8 +899,8 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     if (output_channel_reordered >= 0)
                     {
                         // Get the next Mach1Encode coeff
-                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel_reordered].getNextValue();
-                        buf.addSample(output_channel_reordered, sample, inValue * spatialGainCoeff);
+                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                        buf.addSample(output_channel, sample, inValue * spatialGainCoeff);
                     }
 
                     if (external_spatialmixer_active || mainOutput.getNumChannels() <= 2)
@@ -970,12 +961,25 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         }
     }
 
-    // update meters
-    outputMeterValuedB.resize(buf.getNumChannels()); // expand meter UI number
+    // Apply channel reordering to the output buffer
     for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++)
     {
-        outputMeterValuedB.set(output_channel, output_channel < buf.getNumChannels() ? juce::Decibels::gainToDecibels(buf.getRMSLevel(output_channel, 0, buf.getNumSamples())) : -144);
+        int output_channel_reordered = output_channel_indices[output_channel];
+        if (output_channel_reordered >= 0)
+        {
+            for (int sample = 0; sample < buffer.getNumSamples(); sample++)
+            {
+                mainOutput.addSample(output_channel_reordered, sample, buf.getSample(output_channel, sample));
+            }
+        }
     }
+
+    // update meters
+         outputMeterValuedB.resize(mainOutput.getNumChannels()); // expand meter UI number
+     for (int output_channel = 0; output_channel < mainOutput.getNumChannels(); output_channel++)
+     {
+         outputMeterValuedB.set(output_channel, output_channel < mainOutput.getNumChannels() ? juce::Decibels::gainToDecibels(mainOutput.getRMSLevel(output_channel, 0, buffer.getNumSamples())) : -144);
+     }
 }
 
 void M1PannerAudioProcessor::timerCallback()
@@ -1077,6 +1081,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
     // Initialize all channels as unmuted
     channelMuteStates.resize(inputChannelsCount, false);
 
+    // Size smoothedChannelCoeffs to M1 canonical channel count
     smoothedChannelCoeffs = std::vector<std::vector<juce::LinearSmoothedValue<float>>>(inputChannelsCount, std::vector<juce::LinearSmoothedValue<float>>(outputChannelsCount));
     for (int in = 0; in < inputChannelsCount; ++in)
     {
@@ -1094,7 +1099,7 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
     {
         smoothedChannelCoeffs[input_channel] = std::vector<juce::LinearSmoothedValue<float>>();
         smoothedChannelCoeffs[input_channel].resize(outputChannelsCount);
-        for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
+        for (int output_channel = 0; output_channel < outputChannelsCount; output_channel++)
         {
             smoothedChannelCoeffs[input_channel][output_channel].reset(processorSampleRate, (double)0.01);
         }
