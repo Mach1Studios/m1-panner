@@ -457,28 +457,22 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     }
     else if (parameterID == paramStereoOrbitAzimuth)
     {
-        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
-        { // if stereo mode and auto orbit is off
+        // Always update stereo orbit azimuth parameter regardless of input mode
             pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
         }
-    }
     else if (parameterID == paramStereoSpread)
     {
-        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
-        { // if stereo mode and auto orbit is off
+        // Always update stereo spread parameter regardless of input mode
             pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoSpread)->setValue(newValue);
         }
-    }
     else if (parameterID == paramStereoInputBalance)
     {
-        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
-        { // if stereo mode and auto orbit is off
+        // Always update stereo input balance parameter regardless of input mode
             pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
             parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
         }
-    }
     else if (parameterID == paramIsotropicEncodeMode)
     {
         pannerSettings.isotropicMode = (bool)newValue; // update pannerSettings value from host
@@ -623,11 +617,14 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
                     configTester.setOutputMode(static_cast<Mach1EncodeOutputMode>(outputEnum));
                     if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount())
                     {
+                        DBG("Layout ACCEPTED - Input: " + layouts.getMainInputChannelSet().getDescription() +
+                            " Output: " + layouts.getMainOutputChannelSet().getDescription());
                         return true;
                     }
                 }
             }
         }
+        DBG("Layout REJECTED - No matching configuration found");
         return false;
     }
 }
@@ -854,7 +851,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 int output_channel_reordered = output_channel_indices[output_channel];
                 if (output_channel_reordered >= 0)
                 {
-                    smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel_reordered]);
+                    smoothedChannelCoeffs[input_channel][output_channel_reordered].setTargetValue(gainCoeffs[input_channel][output_channel]);
                 }
             }
         }
@@ -867,24 +864,8 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // multichannel output buffer (if internal processing is active this will have the above copy into it)
     float* const* outBuffer = mainOutput.getArrayOfWritePointers();
 
-    // prepare the output buffer
-    for (int output_channel = 0; output_channel < buf.getNumChannels(); output_channel++)
-    {
-        // break if expected output channel num size does not match current output channel num size from host
-        if (output_channel > mainOutput.getNumChannels() - 1)
-        {
-            // TODO: Test for external_mixer because we are not seeing the expected multichannel output?
-            break;
-        }
-        else
-        {
-            // clear the output buffer
-            for (int sample = 0; sample < buffer.getNumSamples(); sample++)
-            {
-                outBuffer[output_channel][sample] = 0;
-            }
-        }
-    }
+    // prepare the output buffer - clear all channels efficiently
+    mainOutput.clear();
 
     // processing loop
     for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++)
@@ -892,12 +873,14 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         if (input_channel > mainInput.getNumChannels() - 1)
         {
             // Skip processing for missing input channels
+            DBG("SKIPPING Input[" + juce::String(input_channel) + "] - missing input channel");
             continue;
         }
 
         // Skip processing if channel is muted
         if (channelMuteStates[input_channel])
         {
+            DBG("SKIPPING Input[" + juce::String(input_channel) + "] - channel muted");
             continue;
         }
 
@@ -925,7 +908,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     if (output_channel_reordered >= 0)
                     {
                         // Get the next Mach1Encode coeff
-                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel].getNextValue();
+                        float spatialGainCoeff = smoothedChannelCoeffs[input_channel][output_channel_reordered].getNextValue();
                         buf.addSample(output_channel_reordered, sample, inValue * spatialGainCoeff);
                     }
 
