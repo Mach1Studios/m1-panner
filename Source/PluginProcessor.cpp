@@ -420,9 +420,12 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         // Update internal state
         pannerSettings.azimuth = newValue;
-        // Update dependent values
-        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
-                        pannerSettings.x, pannerSettings.y);
+        // Update dependent values only if not updating from UI coordinate controls
+        if (!updatingCoordinatesFromUI)
+        {
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
+                            pannerSettings.x, pannerSettings.y);
+        }
     }
     else if (parameterID == paramElevation)
     {
@@ -432,8 +435,13 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     else if (parameterID == paramDiverge)
     {
         pannerSettings.diverge = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramDiverge)->setValue(newValue);
-        convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        // Remove setValue call to prevent potential recursion
+        // parameters.getParameter(paramDiverge)->setValue(newValue);
+        // Update dependent values only if not updating from UI coordinate controls
+        if (!updatingCoordinatesFromUI)
+        {
+            convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        }
     }
     else if (parameterID == paramGain)
     {
@@ -511,6 +519,23 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         pannerSettings.gainCompensationMode = newValue;
         parameters.getParameter(paramGainCompensationMode)->setValue(newValue);
     }
+#ifdef ITD_PARAMETERS
+    else if (parameterID == paramITDActive)
+    {
+        pannerSettings.itdActive = (bool)newValue;
+        parameters.getParameter(paramITDActive)->setValue((bool)newValue);
+    }
+    else if (parameterID == paramDelayTime)
+    {
+        pannerSettings.delayTime = newValue;
+        parameters.getParameter(paramDelayTime)->setValue(newValue);
+    }
+    else if (parameterID == paramDelayDistance)
+    {
+        pannerSettings.delayDistance = newValue;
+        parameters.getParameter(paramDelayDistance)->setValue(newValue);
+    }
+#endif
     else if (parameterID == "output_layout_lock")
     {
         pannerSettings.lockOutputLayout = (bool)newValue;

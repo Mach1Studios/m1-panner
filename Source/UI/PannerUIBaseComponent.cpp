@@ -83,14 +83,46 @@ void PannerUIBaseComponent::draw()
     reticleField.track_color = processor->osc_colour;
     reticleField.draw();
 
+    // Manage gesture state for reticle movement
+    static bool reticleGestureActive = false;
+
     if (reticleField.results)
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        
+        // Set flag to prevent recursive conversion during UI coordinate updates
+        processor->updatingCoordinatesFromUI = true;
+        
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        // Begin gesture when dragging starts
+        if (reticleField.draggingNow && !reticleGestureActive)
+        {
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            reticleGestureActive = true;
+        }
+        
+        // Update both parameters while gesture is active
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        
+        // Clear flag after parameter updates
+        processor->updatingCoordinatesFromUI = false;
+    }
+    
+    // End gesture when dragging stops (check outside of reticleField.results)
+    if (!reticleField.draggingNow && reticleGestureActive)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        reticleGestureActive = false;
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -118,14 +150,34 @@ void PannerUIBaseComponent::draw()
     xKnob.cursorShow = cursorShowAndTeleportBack;
     xKnob.draw();
 
-    if (xKnob.changed)
+    // Shared gesture tracking for coordinate parameters across X/Y knobs
+    static bool coordinateGestureActive = false;
+    
+    if (xKnob.changed && xKnob.draggingNow)  // Only when actively dragging X knob
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        
+        // Set flag to prevent recursive conversion during X knob movement
+        processor->updatingCoordinatesFromUI = true;
+        
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        // Begin gesture when X knob starts dragging (only if no coordinate gesture is active)
+        if (!coordinateGestureActive)
+        {
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            coordinateGestureActive = true;
+        }
+        
+        // Update both parameters as they both can change with X coordinate
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        
+        // Clear flag after parameter updates
+        processor->updatingCoordinatesFromUI = false;
     }
 
     m.setColor(ENABLED_PARAM);
@@ -151,14 +203,43 @@ void PannerUIBaseComponent::draw()
     yKnob.cursorShow = cursorShowAndTeleportBack;
     yKnob.draw();
 
-    if (yKnob.changed)
+    if (yKnob.changed && yKnob.draggingNow)  // Only when actively dragging Y knob
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
+        
+        // Set flag to prevent recursive conversion during Y knob movement
+        processor->updatingCoordinatesFromUI = true;
+        
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        // Begin gesture when Y knob starts dragging (only if no coordinate gesture is active)
+        if (!coordinateGestureActive)
+        {
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            coordinateGestureActive = true;
+        }
+        
+        // Update both parameters as they both can change with Y coordinate
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        
+        // Clear flag after parameter updates
+        processor->updatingCoordinatesFromUI = false;
+    }
+    
+    // End coordinate gesture when both X and Y knobs are no longer dragging
+    if (!xKnob.draggingNow && !yKnob.draggingNow && coordinateGestureActive)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        coordinateGestureActive = false;
     }
 
     m.setColor(ENABLED_PARAM);
@@ -188,11 +269,17 @@ void PannerUIBaseComponent::draw()
     if (azKnob.changed)
     {
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+        
+        // Set flag to prevent recursive conversion during azimuth knob movement
+        processor->updatingCoordinatesFromUI = true;
+        
         auto& params = processor->getValueTreeState();
+        // Only update azimuth parameter when azimuth knob is moved - prevents touch mode fighting
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
         paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        
+        // Clear flag after parameter updates
+        processor->updatingCoordinatesFromUI = false;
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -222,11 +309,17 @@ void PannerUIBaseComponent::draw()
     if (dKnob.changed)
     {
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+
+        // Set flag to prevent recursive conversion during diverge knob movement
+        processor->updatingCoordinatesFromUI = true;
+        
         auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+        // Only update diverge parameter when diverge knob is moved - prevents touch mode fighting
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+        
+        // Clear flag after parameter updates
+        processor->updatingCoordinatesFromUI = false;
     }
 
     divergeKnobDraggingNow = dKnob.draggingNow;

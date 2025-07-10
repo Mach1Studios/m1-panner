@@ -220,6 +220,9 @@ public:
     void postAlert(const Mach1::AlertData& alert);
     std::vector<Mach1::AlertData> pendingAlerts;
 
+    // Flag to prevent recursive parameter conversion during UI coordinate updates
+    bool updatingCoordinatesFromUI = false;
+
 private:
     TrackProperties track_properties;
     void createLayout();
