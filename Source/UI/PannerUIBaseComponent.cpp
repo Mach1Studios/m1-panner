@@ -41,6 +41,14 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::draw()
 {
+    // *** GESTURE TRACKING FLAGS ***
+    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
+    static bool reticleGestureActive = false;
+    static bool azKnobGestureActive = false;
+    static bool dKnobGestureActive = false;
+    static bool xKnobGestureActive = false;
+    static bool yKnobGestureActive = false;
+    
     // TODO: Remove this and rescale all sizing and positions
     float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
@@ -84,7 +92,6 @@ void PannerUIBaseComponent::draw()
     reticleField.draw();
 
     // Manage gesture state for reticle movement
-    static bool reticleGestureActive = false;
 
     if (reticleField.results)
     {
@@ -151,7 +158,6 @@ void PannerUIBaseComponent::draw()
     xKnob.draw();
 
     // Handle X knob gesture management
-    static bool xKnobGestureActive = false;
     
     // Only process X knob changes if user is actively dragging it
     if (xKnob.changed && xKnob.draggingNow && !processor->updatingCoordinatesFromUI)
@@ -216,7 +222,6 @@ void PannerUIBaseComponent::draw()
     yKnob.draw();
 
     // Handle Y knob gesture management
-    static bool yKnobGestureActive = false;
     
     // Only process Y knob changes if user is actively dragging it
     if (yKnob.changed && yKnob.draggingNow && !processor->updatingCoordinatesFromUI)
@@ -283,7 +288,6 @@ void PannerUIBaseComponent::draw()
 
     if (azKnob.changed)
     {
-        static bool azKnobGestureActive = false;
         
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
         
@@ -340,7 +344,6 @@ void PannerUIBaseComponent::draw()
 
     if (dKnob.changed)
     {
-        static bool dKnobGestureActive = false;
         
         processor->convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
 
@@ -1210,6 +1213,50 @@ void PannerUIBaseComponent::draw()
         };
         alertModal.draw();
     }
+
+    // *** GESTURE CLEANUP - Safety net for orphaned gestures ***
+    // This handles cases where beginChangeGesture() was called but endChangeGesture() was missed
+    // Uses proper gesture tracking flags that are set/cleared by actual gesture calls
+    
+    // Check for orphaned reticle gesture
+    if (reticleGestureActive && !reticleField.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        DBG("CLEANUP: Ending orphaned reticle gesture");
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        reticleGestureActive = false;
+    }
+    
+    // Check for orphaned azimuth knob gesture
+    if (azKnobGestureActive && !rotateKnobDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        
+        DBG("CLEANUP: Ending orphaned azimuth knob gesture");
+        paramAzimuth->endChangeGesture();
+        azKnobGestureActive = false;
+    }
+    
+    // Check for orphaned diverge knob gesture
+    if (dKnobGestureActive && !divergeKnobDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+        
+        DBG("CLEANUP: Ending orphaned diverge knob gesture");
+        paramDiverge->endChangeGesture();
+        dKnobGestureActive = false;
+    }
+    
+    // Note: X and Y knobs are local variables within the draw method, so we can't access their
+    // dragging states from here. However, their improved gesture management should prevent
+    // most orphaned gesture issues. If needed, we could add dragging state tracking variables
+    // for X and Y knobs similar to rotateKnobDraggingNow and divergeKnobDraggingNow.
 }
 
 //==============================================================================
