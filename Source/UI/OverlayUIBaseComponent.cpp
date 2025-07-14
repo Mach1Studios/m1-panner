@@ -126,6 +126,15 @@ void OverlayUIBaseComponent::initialise()
 
 void OverlayUIBaseComponent::draw()
 {
+    // *** GESTURE TRACKING FLAGS ***
+    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
+    static bool overlayReticleGestureActive = false;
+    static bool overlayDivergeKnobGestureActive = false;
+
+    // Track dragging states for cleanup
+    bool overlayReticleDraggingNow = false;
+    bool overlayDivergeDraggingNow = false;
+
     // TODO: Remove this and rescale all sizing and positions
     float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
@@ -165,15 +174,57 @@ void OverlayUIBaseComponent::draw()
         overlayReticleField.pannerState = pannerState;
         overlayReticleField.draw();
 
+        // Manage gesture state for overlay reticle movement
         if (overlayReticleField.changed)
         {
             convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+
             auto& params = processor->getValueTreeState();
             auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-            paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
             auto* paramElevation = params.getParameter(processor->paramElevation);
-            paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(pannerState->elevation));
+
+            // Begin gesture when dragging starts
+            if (overlayReticleField.draggingNow && !overlayReticleGestureActive)
+            {
+                // Claim ownership of azimuth and elevation parameters
+                processor->azimuthOwnedByUI = true;
+                processor->elevationOwnedByUI = true;
+
+                paramAzimuth->beginChangeGesture();
+                paramElevation->beginChangeGesture();
+                overlayReticleGestureActive = true;
+                DBG("OVERLAY RETICLE: beginChangeGesture() - Azimuth & Elevation");
+            }
+
+            // Set parameter values during drag
+            if (overlayReticleField.draggingNow)
+            {
+                paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
+                paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(pannerState->elevation));
+                DBG("OVERLAY RETICLE: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth << ", Elevation = " << pannerState->elevation);
+            }
         }
+
+        // End gesture when dragging stops
+        if (overlayReticleGestureActive && !overlayReticleField.draggingNow)
+        {
+            auto& params = processor->getValueTreeState();
+            auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+            auto* paramElevation = params.getParameter(processor->paramElevation);
+
+            paramAzimuth->endChangeGesture();
+            paramElevation->endChangeGesture();
+            overlayReticleGestureActive = false;
+
+            // Release ownership of azimuth and elevation parameters
+            processor->azimuthOwnedByUI = false;
+            processor->elevationOwnedByUI = false;
+
+            DBG("OVERLAY RETICLE: endChangeGesture() - Azimuth & Elevation");
+        }
+
+        // Track dragging state for cleanup
+        overlayReticleDraggingNow = overlayReticleField.draggingNow;
         reticleHoveredLastFrame = overlayReticleField.reticleHoveredLastFrame;
     }
 
@@ -202,17 +253,47 @@ void OverlayUIBaseComponent::draw()
         divergeKnob.cursorShow = cursorShowAndTeleportBack;
         divergeKnob.draw();
 
-        if (divergeKnob.changed)
+        // Manage gesture state for overlay diverge knob
+        if (divergeKnob.changed && divergeKnob.draggingNow)
         {
-            // update this parameter here, notifying host
             convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
+
             auto& params = processor->getValueTreeState();
-            auto* param = params.getParameter(processor->paramDiverge);
-            param->setValueNotifyingHost(param->convertTo0to1(pannerState->diverge));
+            auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+            // Begin gesture when diverge knob starts dragging
+            if (!overlayDivergeKnobGestureActive)
+            {
+                // Claim ownership of diverge parameter
+                processor->divergeOwnedByUI = true;
+
+                paramDiverge->beginChangeGesture();
+                overlayDivergeKnobGestureActive = true;
+                DBG("OVERLAY DIVERGE KNOB: beginChangeGesture() - Diverge");
+            }
+
+            paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
+            DBG("OVERLAY DIVERGE KNOB: setValueNotifyingHost() - Diverge = " << pannerState->diverge);
+        }
+
+        // End gesture when diverge knob stops dragging
+        if (overlayDivergeKnobGestureActive && !divergeKnob.draggingNow)
+        {
+            auto& params = processor->getValueTreeState();
+            auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+            paramDiverge->endChangeGesture();
+            overlayDivergeKnobGestureActive = false;
+
+            // Release ownership of diverge parameter
+            processor->divergeOwnedByUI = false;
+
+            DBG("OVERLAY DIVERGE KNOB: endChangeGesture() - Diverge");
         }
 
         labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);
         divergeKnobDraggingNow = divergeKnob.draggingNow;
+        overlayDivergeDraggingNow = divergeKnob.draggingNow;
         m.setColor(210 + 40 * labelAnimation, 255);
         auto& dLabel = m.prepare<M1Label>({ xOffset, m.getWindowHeight() - knobHeight - 20 - labelOffsetY, knobWidth, knobHeight }).text("DIVERGE");
         dLabel.alignment = TEXT_CENTER;
@@ -239,6 +320,34 @@ void OverlayUIBaseComponent::draw()
 
     m.popStyle();
     m.popView();
+
+    // *** GESTURE CLEANUP - Safety net for orphaned gestures ***
+    // This handles cases where beginChangeGesture() was called but endChangeGesture() was missed
+    // Uses proper gesture tracking flags that are set/cleared by actual gesture calls
+
+    // Check for orphaned overlay reticle gesture
+    if (overlayReticleGestureActive && !overlayReticleDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramElevation = params.getParameter(processor->paramElevation);
+
+        DBG("CLEANUP: Ending orphaned overlay reticle gesture");
+        paramAzimuth->endChangeGesture();
+        paramElevation->endChangeGesture();
+        overlayReticleGestureActive = false;
+    }
+
+    // Check for orphaned overlay diverge knob gesture
+    if (overlayDivergeKnobGestureActive && !overlayDivergeDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        DBG("CLEANUP: Ending orphaned overlay diverge knob gesture");
+        paramDiverge->endChangeGesture();
+        overlayDivergeKnobGestureActive = false;
+    }
 
     m.end();
 }

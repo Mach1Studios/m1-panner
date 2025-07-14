@@ -418,29 +418,47 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 
     if (parameterID == paramAzimuth)
     {
+        DBG("PROCESSOR: parameterChanged() - Azimuth = " << newValue << " (azimuthOwnedByUI = " << (azimuthOwnedByUI ? "true" : "false") << ")");
+
         // Update internal state
         pannerSettings.azimuth = newValue;
-        // Update dependent values only if not updating from UI coordinate controls
-        if (!updatingCoordinatesFromUI)
+
+        // Only do coordinate conversion if azimuth is NOT currently owned by a UI control
+        if (!azimuthOwnedByUI)
         {
+            DBG("PROCESSOR: Converting RC to XY from azimuth change");
             convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
                             pannerSettings.x, pannerSettings.y);
+        }
+        else
+        {
+            DBG("PROCESSOR: Skipping coordinate conversion - azimuth owned by UI");
         }
     }
     else if (parameterID == paramElevation)
     {
-        pannerSettings.elevation = newValue; // update pannerSettings value from host
+        DBG("PROCESSOR: parameterChanged() - Elevation = " << newValue << " (elevationOwnedByUI = " << (elevationOwnedByUI ? "true" : "false") << ")");
+
+        // Update internal state
+        pannerSettings.elevation = newValue;
         parameters.getParameter(paramElevation)->setValue(newValue);
     }
     else if (parameterID == paramDiverge)
     {
-        pannerSettings.diverge = newValue; // update pannerSettings value from host
-        // Remove setValue call to prevent potential recursion
-        // parameters.getParameter(paramDiverge)->setValue(newValue);
-        // Update dependent values only if not updating from UI coordinate controls
-        if (!updatingCoordinatesFromUI)
+        DBG("PROCESSOR: parameterChanged() - Diverge = " << newValue << " (divergeOwnedByUI = " << (divergeOwnedByUI ? "true" : "false") << ")");
+
+        // Update internal state
+        pannerSettings.diverge = newValue;
+
+        // Only do coordinate conversion if diverge is NOT currently owned by a UI control
+        if (!divergeOwnedByUI)
         {
+            DBG("PROCESSOR: Converting RC to XY from diverge change");
             convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
+        }
+        else
+        {
+            DBG("PROCESSOR: Skipping coordinate conversion - diverge owned by UI");
         }
     }
     else if (parameterID == paramGain)
