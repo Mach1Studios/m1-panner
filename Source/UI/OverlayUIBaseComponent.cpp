@@ -193,7 +193,6 @@ void OverlayUIBaseComponent::draw()
                 paramAzimuth->beginChangeGesture();
                 paramElevation->beginChangeGesture();
                 overlayReticleGestureActive = true;
-                DBG("OVERLAY RETICLE: beginChangeGesture() - Azimuth & Elevation");
             }
 
             // Set parameter values during drag
@@ -201,7 +200,6 @@ void OverlayUIBaseComponent::draw()
             {
                 paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
                 paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(pannerState->elevation));
-                DBG("OVERLAY RETICLE: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth << ", Elevation = " << pannerState->elevation);
             }
         }
 
@@ -219,8 +217,6 @@ void OverlayUIBaseComponent::draw()
             // Release ownership of azimuth and elevation parameters
             processor->azimuthOwnedByUI = false;
             processor->elevationOwnedByUI = false;
-
-            DBG("OVERLAY RETICLE: endChangeGesture() - Azimuth & Elevation");
         }
 
         // Track dragging state for cleanup
@@ -269,11 +265,9 @@ void OverlayUIBaseComponent::draw()
 
                 paramDiverge->beginChangeGesture();
                 overlayDivergeKnobGestureActive = true;
-                DBG("OVERLAY DIVERGE KNOB: beginChangeGesture() - Diverge");
             }
 
             paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
-            DBG("OVERLAY DIVERGE KNOB: setValueNotifyingHost() - Diverge = " << pannerState->diverge);
         }
 
         // End gesture when diverge knob stops dragging
@@ -287,8 +281,6 @@ void OverlayUIBaseComponent::draw()
 
             // Release ownership of diverge parameter
             processor->divergeOwnedByUI = false;
-
-            DBG("OVERLAY DIVERGE KNOB: endChangeGesture() - Diverge");
         }
 
         labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);

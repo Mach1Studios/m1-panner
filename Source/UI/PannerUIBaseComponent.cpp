@@ -112,7 +112,6 @@ void PannerUIBaseComponent::draw()
             paramAzimuth->beginChangeGesture();
             paramDiverge->beginChangeGesture();
             reticleGestureActive = true;
-            DBG("RETICLE: beginChangeGesture() - Azimuth & Diverge");
         }
 
         // Set parameter values during drag
@@ -120,7 +119,6 @@ void PannerUIBaseComponent::draw()
         {
             paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
             paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
-            DBG("RETICLE: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth << ", Diverge = " << pannerState->diverge);
         }
     }
 
@@ -138,8 +136,6 @@ void PannerUIBaseComponent::draw()
         // Release ownership of azimuth and diverge parameters
         processor->azimuthOwnedByUI = false;
         processor->divergeOwnedByUI = false;
-
-        DBG("RETICLE: endChangeGesture() - Azimuth & Diverge");
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -188,12 +184,10 @@ void PannerUIBaseComponent::draw()
             paramAzimuth->beginChangeGesture();
             paramDiverge->beginChangeGesture();
             xKnobGestureActive = true;
-            DBG("X KNOB: beginChangeGesture() - Azimuth & Diverge");
         }
 
         paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
-        DBG("X KNOB: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth << ", Diverge = " << pannerState->diverge);
     }
 
     // End gesture when X knob stops dragging
@@ -210,21 +204,6 @@ void PannerUIBaseComponent::draw()
         // Release ownership of azimuth and diverge parameters
         processor->azimuthOwnedByUI = false;
         processor->divergeOwnedByUI = false;
-
-        DBG("X KNOB: endChangeGesture() - Azimuth & Diverge");
-    }
-
-    // Cleanup for orphaned X knob gestures
-    if (xKnobGestureActive && !xKnob.draggingNow)
-    {
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
-        paramAzimuth->endChangeGesture();
-        paramDiverge->endChangeGesture();
-        xKnobGestureActive = false;
-        DBG("CLEANUP: Ending orphaned X knob gesture");
     }
 
     m.setColor(ENABLED_PARAM);
@@ -271,12 +250,10 @@ void PannerUIBaseComponent::draw()
             paramAzimuth->beginChangeGesture();
             paramDiverge->beginChangeGesture();
             yKnobGestureActive = true;
-            DBG("Y KNOB: beginChangeGesture() - Azimuth & Diverge");
         }
 
         paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
-        DBG("Y KNOB: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth << ", Diverge = " << pannerState->diverge);
     }
 
     // End gesture when Y knob stops dragging
@@ -293,21 +270,6 @@ void PannerUIBaseComponent::draw()
         // Release ownership of azimuth and diverge parameters
         processor->azimuthOwnedByUI = false;
         processor->divergeOwnedByUI = false;
-
-        DBG("Y KNOB: endChangeGesture() - Azimuth & Diverge");
-    }
-
-    // Cleanup for orphaned Y knob gestures
-    if (yKnobGestureActive && !yKnob.draggingNow)
-    {
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
-        paramAzimuth->endChangeGesture();
-        paramDiverge->endChangeGesture();
-        yKnobGestureActive = false;
-        DBG("CLEANUP: Ending orphaned Y knob gesture");
     }
 
     m.setColor(ENABLED_PARAM);
@@ -349,11 +311,9 @@ void PannerUIBaseComponent::draw()
 
             paramAzimuth->beginChangeGesture();
             azKnobGestureActive = true;
-            DBG("AZIMUTH KNOB: beginChangeGesture() - Azimuth");
         }
 
         paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth));
-        DBG("AZIMUTH KNOB: setValueNotifyingHost() - Azimuth = " << pannerState->azimuth);
     }
 
     // End gesture when azimuth knob stops dragging
@@ -367,8 +327,6 @@ void PannerUIBaseComponent::draw()
 
         // Release ownership of azimuth parameter
         processor->azimuthOwnedByUI = false;
-
-        DBG("AZIMUTH KNOB: endChangeGesture() - Azimuth");
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -417,14 +375,12 @@ void PannerUIBaseComponent::draw()
         {
             paramDiverge->beginChangeGesture();
             dKnobGestureActive = true;
-            DBG("DIVERGE KNOB: beginChangeGesture() - Diverge");
         }
 
         // Track the value we're setting for tolerance-based feedback prevention
         processor->lastUISetDiverge = pannerState->diverge;
 
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge));
-        DBG("DIVERGE KNOB: setValueNotifyingHost() - Diverge = " << pannerState->diverge);
     }
 
     // End gesture when diverge knob stops dragging
@@ -438,8 +394,6 @@ void PannerUIBaseComponent::draw()
 
         // Release ownership of diverge parameter
         processor->divergeOwnedByUI = false;
-
-        DBG("DIVERGE KNOB: endChangeGesture() - Diverge");
     }
 
 
@@ -565,11 +519,9 @@ void PannerUIBaseComponent::draw()
 
             paramElevation->beginChangeGesture();
             zKnobGestureActive = true;
-            DBG("Z KNOB: beginChangeGesture() - Elevation");
         }
 
         paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(pannerState->elevation));
-        DBG("Z KNOB: setValueNotifyingHost() - Elevation = " << pannerState->elevation);
     }
 
     // End gesture when elevation knob stops dragging
@@ -583,8 +535,6 @@ void PannerUIBaseComponent::draw()
 
         // Release ownership of elevation parameter
         processor->elevationOwnedByUI = false;
-
-        DBG("Z KNOB: endChangeGesture() - Elevation");
     }
 
     bool zHovered = zKnob.hovered;
@@ -1329,6 +1279,32 @@ void PannerUIBaseComponent::draw()
         reticleGestureActive = false;
     }
 
+    // Cleanup for orphaned X knob gestures
+    if (xKnobGestureActive && !xKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        xKnobGestureActive = false;
+        DBG("CLEANUP: Ending orphaned X knob gesture");
+    }
+
+    // Cleanup for orphaned Y knob gestures
+    if (yKnobGestureActive && !yKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        yKnobGestureActive = false;
+        DBG("CLEANUP: Ending orphaned Y knob gesture");
+    }
+
     // Check for orphaned azimuth knob gesture
     if (azKnobGestureActive && !azKnob.draggingNow)
     {
@@ -1364,11 +1340,6 @@ void PannerUIBaseComponent::draw()
         // Release ownership of elevation parameter
         processor->elevationOwnedByUI = false;
     }
-
-    // Note: X and Y knobs are local variables within the draw method, so we can't access their
-    // dragging states from here. However, their improved gesture management should prevent
-    // most orphaned gesture issues. If needed, we could add dragging state tracking variables
-    // for X and Y knobs similar to rotateKnobDraggingNow and divergeKnobDraggingNow.
 }
 
 //==============================================================================
