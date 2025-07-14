@@ -57,6 +57,7 @@ private:
     bool reticleHoveredLastFrame = false;
     bool divergeKnobDraggingNow = false;
     bool rotateKnobDraggingNow = false;
+    bool zKnobDraggingNow = false;
 
     std::function<void()> cursorHide = [&]() {
         setMouseCursor(juce::MouseCursor::NoCursor);

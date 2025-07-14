@@ -41,6 +41,15 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::draw()
 {
+    // *** GESTURE TRACKING FLAGS ***
+    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
+    static bool reticleGestureActive = false;
+    static bool azKnobGestureActive = false;
+    static bool dKnobGestureActive = false;
+    static bool xKnobGestureActive = false;
+    static bool yKnobGestureActive = false;
+    static bool zKnobGestureActive = false;
+
     // TODO: Remove this and rescale all sizing and positions
     float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
@@ -100,6 +109,8 @@ void PannerUIBaseComponent::draw()
     reticleField.track_color = processor->osc_colour;
     reticleField.draw();
 
+    // Manage gesture state for reticle movement
+
     if (reticleField.results)
     {
         // Update atomic values from UI changes
@@ -116,9 +127,42 @@ void PannerUIBaseComponent::draw()
 
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
+
+        // Begin gesture when dragging starts
+        if (reticleField.draggingNow && !reticleGestureActive)
+        {
+            // Claim ownership of azimuth and diverge parameters
+            processor->azimuthOwnedByUI = true;
+            processor->divergeOwnedByUI = true;
+
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            reticleGestureActive = true;
+        }
+
+        // Set parameter values during drag
+        if (reticleField.draggingNow)
+        {
+            paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
+            paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
+        }
+    }
+
+    // End gesture when dragging stops
+    if (reticleGestureActive && !reticleField.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        reticleGestureActive = false;
+
+        // Release ownership of azimuth and diverge parameters
+        processor->azimuthOwnedByUI = false;
+        processor->divergeOwnedByUI = false;
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -147,18 +191,51 @@ void PannerUIBaseComponent::draw()
     xKnob.cursorShow = cursorShowAndTeleportBack;
     xKnob.draw();
 
-    if (xKnob.changed)
+    // Handle X knob gesture management
+
+    // Only process X knob changes if user is actively dragging it
+    if (xKnob.changed && xKnob.draggingNow)
     {
         pannerState->x.store(localX);
         float newAzimuth, newDiverge;
         processor->convertXYtoRCRaw(localX, pannerState->y.load(), newAzimuth, newDiverge);
         pannerState->azimuth.store(newAzimuth);
         pannerState->diverge.store(newDiverge);
+
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        // Begin gesture when X knob starts dragging
+        if (!xKnobGestureActive)
+        {
+            // Claim ownership of azimuth and diverge parameters
+            processor->azimuthOwnedByUI = true;
+            processor->divergeOwnedByUI = true;
+
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            xKnobGestureActive = true;
+        }
+
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
+    }
+
+    // End gesture when X knob stops dragging
+    if (xKnobGestureActive && !xKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        xKnobGestureActive = false;
+
+        // Release ownership of azimuth and diverge parameters
+        processor->azimuthOwnedByUI = false;
+        processor->divergeOwnedByUI = false;
     }
 
     m.setColor(ENABLED_PARAM);
@@ -185,18 +262,51 @@ void PannerUIBaseComponent::draw()
     yKnob.cursorShow = cursorShowAndTeleportBack;
     yKnob.draw();
 
-    if (yKnob.changed)
+    // Handle Y knob gesture management
+
+    // Only process Y knob changes if user is actively dragging it
+    if (yKnob.changed && yKnob.draggingNow)
     {
         pannerState->y.store(localY);
         float newAzimuth, newDiverge;
         processor->convertXYtoRCRaw(pannerState->x.load(), localY, newAzimuth, newDiverge);
         pannerState->azimuth.store(newAzimuth);
         pannerState->diverge.store(newDiverge);
+
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        // Begin gesture when Y knob starts dragging
+        if (!yKnobGestureActive)
+        {
+            // Claim ownership of azimuth and diverge parameters
+            processor->azimuthOwnedByUI = true;
+            processor->divergeOwnedByUI = true;
+
+            paramAzimuth->beginChangeGesture();
+            paramDiverge->beginChangeGesture();
+            yKnobGestureActive = true;
+        }
+
+        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(newAzimuth));
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(newDiverge));
+    }
+
+    // End gesture when Y knob stops dragging
+    if (yKnobGestureActive && !yKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        yKnobGestureActive = false;
+
+        // Release ownership of azimuth and diverge parameters
+        processor->azimuthOwnedByUI = false;
+        processor->divergeOwnedByUI = false;
     }
 
     m.setColor(ENABLED_PARAM);
@@ -238,9 +348,31 @@ void PannerUIBaseComponent::draw()
         // Notify JUCE parameter system
         auto& params = processor->getValueTreeState();
         auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+
+        // Begin gesture when azimuth knob starts dragging
+        if (azKnob.draggingNow && !azKnobGestureActive)
+        {
+            // Claim ownership of azimuth parameter
+            processor->azimuthOwnedByUI = true;
+
+            paramAzimuth->beginChangeGesture();
+            azKnobGestureActive = true;
+        }
+
         paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(localAzimuth));
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-        paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(pannerState->diverge.load()));
+    }
+
+    // End gesture when azimuth knob stops dragging
+    if (azKnobGestureActive && !azKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+
+        paramAzimuth->endChangeGesture();
+        azKnobGestureActive = false;
+
+        // Release ownership of azimuth parameter
+        processor->azimuthOwnedByUI = false;
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -270,6 +402,13 @@ void PannerUIBaseComponent::draw()
 
     if (dKnob.changed)
     {
+        // Check if overlay reticle is active - if so, don't update parameters to avoid conflict
+        if (processor->overlayReticleActive)
+        {
+            // Overlay reticle has priority, don't update parameters
+            return;
+        }
+
         // Store the new value back to the atomic
         pannerState->diverge.store(localDiverge);
 
@@ -279,12 +418,38 @@ void PannerUIBaseComponent::draw()
         pannerState->x.store(newX);
         pannerState->y.store(newY);
 
+        // Set flag to prevent recursive conversion during diverge knob movement
+        processor->updatingCoordinatesFromUI = true;
+
         auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        paramAzimuth->setValueNotifyingHost(paramAzimuth->convertTo0to1(pannerState->azimuth.load()));
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        // Begin gesture when diverge knob starts dragging
+        if (dKnob.draggingNow && !dKnobGestureActive)
+        {
+            paramDiverge->beginChangeGesture();
+            dKnobGestureActive = true;
+        }
+
+        // Track the value we're setting for tolerance-based feedback prevention
+        processor->lastUISetDiverge = localDiverge;
+
         paramDiverge->setValueNotifyingHost(paramDiverge->convertTo0to1(localDiverge));
     }
+
+    // End gesture when diverge knob stops dragging
+    if (dKnobGestureActive && !dKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramDiverge->endChangeGesture();
+        dKnobGestureActive = false;
+
+        // Release ownership of diverge parameter
+        processor->divergeOwnedByUI = false;
+    }
+
 
     divergeKnobDraggingNow = dKnob.draggingNow;
     m.setColor(ENABLED_PARAM);
@@ -402,11 +567,36 @@ void PannerUIBaseComponent::draw()
     {
         pannerState->elevation.store(localElevation);
         auto& params = processor->getValueTreeState();
-        auto* param = params.getParameter(processor->paramElevation);
-        param->setValueNotifyingHost(param->convertTo0to1(localElevation));
+        auto* paramElevation = params.getParameter(processor->paramElevation);
+
+        // Begin gesture when elevation knob starts dragging
+        if (zKnob.draggingNow && !zKnobGestureActive)
+        {
+            // Claim ownership of elevation parameter
+            processor->elevationOwnedByUI = true;
+
+            paramElevation->beginChangeGesture();
+            zKnobGestureActive = true;
+        }
+
+        paramElevation->setValueNotifyingHost(paramElevation->convertTo0to1(localElevation));
+    }
+
+    // End gesture when elevation knob stops dragging
+    if (zKnobGestureActive && !zKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramElevation = params.getParameter(processor->paramElevation);
+
+        paramElevation->endChangeGesture();
+        zKnobGestureActive = false;
+
+        // Release ownership of elevation parameter
+        processor->elevationOwnedByUI = false;
     }
 
     bool zHovered = zKnob.hovered;
+    zKnobDraggingNow = zKnob.draggingNow;
 
     m.setColor(ENABLED_PARAM);
     auto& zLabel = m.prepare<M1Label>(MurkaShape(xOffset + 450, yOffset - M1LabelOffsetY, knobWidth, knobHeight));
@@ -1154,6 +1344,85 @@ void PannerUIBaseComponent::draw()
             hasActiveAlert = false;
         };
         alertModal.draw();
+    }
+
+    // *** GESTURE CLEANUP - Safety net for orphaned gestures ***
+    // This handles cases where beginChangeGesture() was called but endChangeGesture() was missed
+    // Uses proper gesture tracking flags that are set/cleared by actual gesture calls
+
+    // Check for orphaned reticle gesture
+    if (reticleGestureActive && !reticleField.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        DBG("CLEANUP: Ending orphaned reticle gesture");
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        reticleGestureActive = false;
+    }
+
+    // Cleanup for orphaned X knob gestures
+    if (xKnobGestureActive && !xKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        xKnobGestureActive = false;
+        DBG("CLEANUP: Ending orphaned X knob gesture");
+    }
+
+    // Cleanup for orphaned Y knob gestures
+    if (yKnobGestureActive && !yKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        paramAzimuth->endChangeGesture();
+        paramDiverge->endChangeGesture();
+        yKnobGestureActive = false;
+        DBG("CLEANUP: Ending orphaned Y knob gesture");
+    }
+
+    // Check for orphaned azimuth knob gesture
+    if (azKnobGestureActive && !azKnob.draggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+
+        DBG("CLEANUP: Ending orphaned azimuth knob gesture");
+        paramAzimuth->endChangeGesture();
+        azKnobGestureActive = false;
+    }
+
+    // Check for orphaned diverge knob gesture
+    if (dKnobGestureActive && !divergeKnobDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+        DBG("CLEANUP: Ending orphaned diverge knob gesture");
+        paramDiverge->endChangeGesture();
+        dKnobGestureActive = false;
+    }
+
+    // Check for orphaned Z knob gesture
+    if (zKnobGestureActive && !zKnobDraggingNow)
+    {
+        auto& params = processor->getValueTreeState();
+        auto* paramElevation = params.getParameter(processor->paramElevation);
+
+        DBG("CLEANUP: Ending orphaned Z knob gesture");
+        paramElevation->endChangeGesture();
+        zKnobGestureActive = false;
+
+        // Release ownership of elevation parameter
+        processor->elevationOwnedByUI = false;
     }
 }
 

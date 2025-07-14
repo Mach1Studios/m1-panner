@@ -245,6 +245,24 @@ public:
     void postAlert(const Mach1::AlertData& alert);
     std::vector<Mach1::AlertData> pendingAlerts;
 
+    // Flag to prevent recursive parameter conversion during UI coordinate updates
+    bool updatingCoordinatesFromUI = false;
+
+    // Parameter ownership flags - track which UI control is actively managing each parameter
+    bool azimuthOwnedByUI = false;
+    bool elevationOwnedByUI = false;
+    bool divergeOwnedByUI = false;
+
+    // Reticle priority flags to prevent main and overlay reticles from fighting over azimuth parameter
+    bool mainReticleActive = false;
+    bool overlayReticleActive = false;
+
+    // Track last UI-set values for tolerance-based feedback prevention
+    float lastUISetAzimuth = 0.0f;
+    float lastUISetElevation = 0.0f;
+    float lastUISetDiverge = 0.0f;
+    static constexpr float PARAMETER_TOLERANCE = 0.1f;  // Tolerance for parameter comparison
+
 private:
     TrackProperties track_properties;
     void createLayout();
