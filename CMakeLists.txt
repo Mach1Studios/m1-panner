@@ -214,6 +214,13 @@ set(JucePlugin_Desc ${PLUGIN_NAME})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE M1Encode)
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Modules/m1-sdk/libmach1spatial/api_common/include Modules/m1-sdk/libmach1spatial/api_encode/include Modules/m1-sdk/libmach1spatial/deps)
 
+### setup info.plist and entitlements for macos
+if(APPLE)
+  set_target_properties(${PLUGIN_NAME} PROPERTIES
+    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist"
+  )
+endif()
+
 ### IDE Generator post-config ###
 # IDEs:  Move the "shared code" source group (main target) out of the "Targets" folder
 #        to the top level.

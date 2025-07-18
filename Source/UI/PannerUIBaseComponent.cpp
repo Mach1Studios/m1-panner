@@ -13,6 +13,17 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     pannerState = &processor->pannerSettings;
     monitorState = &processor->monitorSettings;
 
+    // ON-DEMAND SERVICE INTEGRATION: Request helper service when UI opens
+    // This ensures service is only launched when user actually opens the plugin UI
+    if (!processor->m_uniqueInstanceId.isEmpty()) {
+        auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+        if (helperManager.requestHelperService(processor->m_uniqueInstanceId.toStdString())) {
+            DBG("[M1-Panner] Helper service requested successfully for UI instance: " + processor->m_uniqueInstanceId);
+        } else {
+            DBG("[M1-Panner] Warning: Failed to request helper service for UI instance: " + processor->m_uniqueInstanceId);
+        }
+    }
+
     // Set up alert dismiss callback
     murkaAlert.onDismiss = [this]() {
         // remove the top alert from our queue

@@ -178,6 +178,27 @@ struct SharedMemoryHeader {
     uint32_t numChannels;
     uint32_t samplesPerBlock;
     char name[64];
+    // Enhanced buffer queue management
+    volatile uint32_t queueSize;
+    volatile uint32_t maxQueueSize;
+    volatile uint32_t nextSequenceNumber;
+    volatile uint64_t nextBufferId;
+    // Consumer management
+    volatile uint32_t consumerCount;
+    volatile uint32_t consumerIds[16];
+};
+
+struct QueuedBuffer {
+    uint64_t bufferId;
+    uint32_t sequenceNumber;
+    uint64_t timestamp;
+    uint32_t dataSize;
+    uint32_t dataOffset;
+    uint32_t requiresAcknowledgment;
+    uint32_t consumerCount;
+    uint32_t acknowledgedCount;
+    uint32_t consumerIds[16];
+    uint32_t acknowledged[16];
 };
 
 struct GenericAudioBufferHeader {
@@ -191,7 +212,14 @@ struct GenericAudioBufferHeader {
     uint32_t headerSize;
     uint32_t updateSource;
     uint32_t isUpdatingFromExternal;
-    uint32_t reserved[4];
+    // Enhanced buffer acknowledgment fields
+    uint64_t bufferId;
+    uint32_t sequenceNumber;
+    uint64_t bufferTimestamp;
+    uint32_t requiresAcknowledgment;
+    uint32_t consumerCount;
+    uint32_t acknowledgedCount;
+    uint32_t reserved[2];
 };
 
 struct GenericParameter {
@@ -262,6 +290,18 @@ int main(int argc, char* argv[]) {
     printf("Write Index: %u\n", header->writeIndex);
     printf("Read Index: %u\n", header->readIndex);
 
+    printf("\n=== Enhanced Buffer Queue Info ===\n");
+    printf("Queue Size: %u\n", header->queueSize);
+    printf("Max Queue Size: %u\n", header->maxQueueSize);
+    printf("Next Sequence Number: %u\n", header->nextSequenceNumber);
+    printf("Next Buffer ID: %llu\n", header->nextBufferId);
+    printf("Consumer Count: %u\n", header->consumerCount);
+    printf("Registered Consumer IDs: ");
+    for (uint32_t i = 0; i < header->consumerCount && i < 16; i++) {
+        printf("%u ", header->consumerIds[i]);
+    }
+    printf("\n");
+
     if (header->hasData && header->dataSize > sizeof(struct GenericAudioBufferHeader)) {
         uint8_t* dataBuffer = (uint8_t*)mapped + sizeof(struct SharedMemoryHeader);
         struct GenericAudioBufferHeader* audioHeader = (struct GenericAudioBufferHeader*)dataBuffer;
@@ -277,6 +317,14 @@ int main(int argc, char* argv[]) {
         printf("Header Size: %u bytes\n", audioHeader->headerSize);
         printf("Update Source: %u (0=HOST, 1=UI, 2=MEMORYSHARE)\n", audioHeader->updateSource);
         printf("Is Updating From External: %s\n", audioHeader->isUpdatingFromExternal ? "Yes" : "No");
+
+        printf("\n=== Buffer Acknowledgment Info ===\n");
+        printf("Buffer ID: %llu\n", audioHeader->bufferId);
+        printf("Sequence Number: %u\n", audioHeader->sequenceNumber);
+        printf("Buffer Timestamp: %llu ms\n", audioHeader->bufferTimestamp);
+        printf("Requires Acknowledgment: %s\n", audioHeader->requiresAcknowledgment ? "Yes" : "No");
+        printf("Consumer Count: %u\n", audioHeader->consumerCount);
+        printf("Acknowledged Count: %u\n", audioHeader->acknowledgedCount);
 
         printf("\n=== Generic Parameters ===\n");
         uint8_t* paramPtr = dataBuffer + sizeof(struct GenericAudioBufferHeader);

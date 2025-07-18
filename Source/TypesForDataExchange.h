@@ -163,7 +163,16 @@ struct GenericAudioBufferHeader
     uint32_t headerSize;        // Total size of header including all parameters
     uint32_t updateSource;      // Source of update (0=HOST, 1=UI, 2=MEMORYSHARE)
     uint32_t isUpdatingFromExternal; // Flag to prevent circular updates
-    uint32_t reserved[4];       // Reserved for future expansion
+
+    // Buffer acknowledgment fields
+    uint64_t bufferId;          // Unique buffer identifier
+    uint32_t sequenceNumber;    // Sequence number for ordering
+    uint64_t bufferTimestamp;   // Buffer creation timestamp
+    uint32_t requiresAcknowledgment; // Whether this buffer requires acknowledgment (1=yes, 0=no)
+    uint32_t consumerCount;     // Number of consumers that need to acknowledge
+    uint32_t acknowledgedCount; // Number of consumers that have acknowledged
+
+    uint32_t reserved[1];       // Reserved for future expansion (reduced from 4 to 1)
 
     // Parameters follow immediately after this struct
     // Each parameter is: GenericParameter + parameter data
@@ -171,7 +180,9 @@ struct GenericAudioBufferHeader
     GenericAudioBufferHeader() : version(1), channels(0), samples(0), dawTimestamp(0),
                                 playheadPositionInSeconds(0.0), isPlaying(0), parameterCount(0),
                                 headerSize(sizeof(GenericAudioBufferHeader)), updateSource(1),
-                                isUpdatingFromExternal(0)
+                                isUpdatingFromExternal(0), bufferId(0), sequenceNumber(0),
+                                bufferTimestamp(0), requiresAcknowledgment(0), consumerCount(0),
+                                acknowledgedCount(0)
     {
         std::memset(reserved, 0, sizeof(reserved));
     }

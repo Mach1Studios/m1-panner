@@ -1,25 +1,41 @@
 #include "M1MemoryShare.h"
 #include "TypesForDataExchange.h"
+#include "Utility/SharedMemoryPaths.h"
 #include <iostream>
 #include <cstring>
+#include <filesystem>
+#include <chrono>
+
+#if JUCE_WINDOWS
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
 
 //==============================================================================
 M1MemoryShare::M1MemoryShare(const juce::String& memoryName,
                              size_t totalSize,
+                             uint32_t maxQueueSize,
                              bool persistent,
                              bool createMode)
     : m_memoryName(memoryName)
     , m_totalSize(totalSize)
+    , m_maxQueueSize(maxQueueSize)
     , m_persistent(persistent)
     , m_createMode(createMode)
     , m_header(nullptr)
     , m_dataBuffer(nullptr)
     , m_dataBufferSize(0)
+    , m_queuedBuffers(nullptr)
+    , m_queuedBuffersSize(0)
 {
-    // Ensure minimum size for header
-    if (m_totalSize < sizeof(SharedMemoryHeader) + 1024)
+    // Ensure minimum size for header and queue
+    size_t minSize = sizeof(SharedMemoryHeader) +
+                    (maxQueueSize * sizeof(QueuedBuffer)) +
+                    1024; // minimum data buffer
+
+    if (m_totalSize < minSize)
     {
-        m_totalSize = sizeof(SharedMemoryHeader) + 1024;
+        m_totalSize = minSize;
     }
 
     // Create or open the shared memory
@@ -60,9 +76,17 @@ M1MemoryShare::~M1MemoryShare()
 //==============================================================================
 bool M1MemoryShare::createSharedMemoryFile()
 {
-    // Create a temporary file for the shared memory
-    juce::String tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName();
-    m_tempFile = juce::File(tempDir + "/M1SpatialSystem_" + m_memoryName + ".mem");
+    // Ensure the shared memory directory exists before creating the file
+    if (!Mach1::SharedMemoryPaths::ensureMemoryDirectoryExists()) {
+        DBG("[M1MemoryShare] Failed to create or access shared memory directory");
+        // Fallback to temp directory
+        std::string tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
+        m_tempFile = juce::File(juce::String(tempDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
+    } else {
+        // Use SharedMemoryPaths to get the App Group container or fallback directory
+        std::string sharedDir = Mach1::SharedMemoryPaths::getMemoryFileDirectory();
+        m_tempFile = juce::File(juce::String(sharedDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
+    }
 
     DBG("[M1MemoryShare] Attempting to create file: " + m_tempFile.getFullPathName());
     DBG("[M1MemoryShare] Total size to allocate: " + juce::String(m_totalSize) + " bytes");
@@ -72,7 +96,7 @@ bool M1MemoryShare::createSharedMemoryFile()
     if (!outputStream.openedOk())
     {
         DBG("[M1MemoryShare] Failed to create temp file for shared memory: " + m_tempFile.getFullPathName());
-        DBG("[M1MemoryShare] Temp directory: " + tempDir);
+        DBG("[M1MemoryShare] Shared directory: " + juce::String(Mach1::SharedMemoryPaths::getMemoryFileDirectory()));
         return false;
     }
 
@@ -108,9 +132,14 @@ bool M1MemoryShare::createSharedMemoryFile()
 
 bool M1MemoryShare::openSharedMemoryFile()
 {
-    // Try to open existing file
-    juce::String tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName();
-    m_tempFile = juce::File(tempDir + "/M1SpatialSystem_" + m_memoryName + ".mem");
+    // Use SharedMemoryPaths to get the App Group container or fallback directory
+    std::string sharedDir = Mach1::SharedMemoryPaths::getMemoryFileDirectory();
+    if (sharedDir.empty()) {
+        // Fallback to temp directory if no shared path available
+        sharedDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
+    }
+
+    m_tempFile = juce::File(juce::String(sharedDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
 
     if (!m_tempFile.exists())
     {
@@ -142,16 +171,29 @@ void M1MemoryShare::setupMemoryPointers()
     // Set up header pointer
     m_header = static_cast<SharedMemoryHeader*>(m_mappedFile->getData());
 
-    // Set up data buffer pointer (after header)
-    m_dataBuffer = static_cast<uint8_t*>(m_mappedFile->getData()) + sizeof(SharedMemoryHeader);
-    m_dataBufferSize = m_totalSize - sizeof(SharedMemoryHeader);
+    // Set up queued buffers pointer (after header)
+    m_queuedBuffers = reinterpret_cast<QueuedBuffer*>(
+        static_cast<uint8_t*>(m_mappedFile->getData()) + sizeof(SharedMemoryHeader));
+    m_queuedBuffersSize = m_maxQueueSize * sizeof(QueuedBuffer);
+
+    // Set up data buffer pointer (after header and queued buffers)
+    m_dataBuffer = static_cast<uint8_t*>(m_mappedFile->getData()) +
+                   sizeof(SharedMemoryHeader) + m_queuedBuffersSize;
+    m_dataBufferSize = m_totalSize - sizeof(SharedMemoryHeader) - m_queuedBuffersSize;
 
     // Initialize header if we're in create mode
     if (m_createMode)
     {
         *m_header = SharedMemoryHeader(); // Initialize with defaults
         m_header->bufferSize = static_cast<uint32_t>(m_dataBufferSize);
+        m_header->maxQueueSize = m_maxQueueSize;
         strncpy(m_header->name, m_memoryName.toUTF8(), sizeof(m_header->name) - 1);
+
+        // Initialize queued buffers array
+        for (uint32_t i = 0; i < m_maxQueueSize; ++i)
+        {
+            m_queuedBuffers[i] = QueuedBuffer();
+        }
     }
 }
 
@@ -173,17 +215,18 @@ bool M1MemoryShare::initializeForAudio(uint32_t sampleRate, uint32_t numChannels
     return true;
 }
 
-bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
-                                                         const ParameterMap& parameters,
-                                                         uint64_t dawTimestamp,
-                                                         double playheadPositionInSeconds,
-                                                         bool isPlaying,
-                                                         uint32_t updateSource)
+uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
+                                                           const ParameterMap& parameters,
+                                                           uint64_t dawTimestamp,
+                                                           double playheadPositionInSeconds,
+                                                           bool isPlaying,
+                                                           bool requiresAcknowledgment,
+                                                           uint32_t updateSource)
 {
     if (!isValid())
     {
         DBG("[M1MemoryShare] writeAudioBufferWithGenericParameters: Not valid");
-        return false;
+        return 0;
     }
 
     // Calculate header size with all parameters
@@ -226,7 +269,28 @@ bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffe
     if (totalSize > m_dataBufferSize)
     {
         DBG("[M1MemoryShare] Generic buffer too large: " + juce::String(totalSize) + " > " + juce::String(m_dataBufferSize));
-        return false;
+        return 0;
+    }
+
+    // Generate buffer ID and sequence number
+    uint64_t bufferId = getNextBufferId();
+    uint32_t sequenceNumber = getNextSequenceNumber();
+    uint64_t timestamp = getCurrentTimestamp();
+
+    // If requiresAcknowledgment is true, check if we have space in queue
+    if (requiresAcknowledgment)
+    {
+        std::lock_guard<std::mutex> lock(m_queueMutex);
+
+        // Clean up acknowledged buffers first
+        cleanupAcknowledgedBuffers();
+
+        // Check if queue is full
+        if (m_header->queueSize >= m_maxQueueSize)
+        {
+            DBG("[M1MemoryShare] Queue full, cannot add buffer");
+            return 0;
+        }
     }
 
     // Write header
@@ -237,11 +301,19 @@ bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffe
     header->channels = audioBuffer.getNumChannels();
     header->samples = audioBuffer.getNumSamples();
     header->dawTimestamp = dawTimestamp;
-    header->playheadPositionInSeconds = playheadPositionInSeconds;
+    header->playheadPositionInSeconds =   playheadPositionInSeconds;
     header->isPlaying = isPlaying ? 1 : 0;
     header->updateSource = updateSource;
     header->isUpdatingFromExternal = 0;
     header->headerSize = static_cast<uint32_t>(headerSize);
+
+    // Add buffer acknowledgment fields
+    header->bufferId = bufferId;
+    header->sequenceNumber = sequenceNumber;
+    header->bufferTimestamp = timestamp;
+    header->requiresAcknowledgment = requiresAcknowledgment ? 1 : 0;
+    header->consumerCount = m_header->consumerCount;
+    header->acknowledgedCount = 0;
 
     // Count total parameters
     header->parameterCount = parameters.floatParams.size() + parameters.intParams.size() +
@@ -303,6 +375,45 @@ bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffe
         writePtr += pair.second.length() + 1;
     }
 
+    // Write double parameters
+    for (const auto& pair : parameters.doubleParams)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::DOUBLE;
+        param->dataSize = sizeof(double);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<double*>(writePtr) = pair.second;
+        writePtr += sizeof(double);
+    }
+
+    // Write uint32 parameters
+    for (const auto& pair : parameters.uint32Params)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::UINT32;
+        param->dataSize = sizeof(uint32_t);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<uint32_t*>(writePtr) = pair.second;
+        writePtr += sizeof(uint32_t);
+    }
+
+    // Write uint64 parameters
+    for (const auto& pair : parameters.uint64Params)
+    {
+        GenericParameter* param = reinterpret_cast<GenericParameter*>(writePtr);
+        param->parameterID = pair.first;
+        param->parameterType = ParameterType::UINT64;
+        param->dataSize = sizeof(uint64_t);
+        writePtr += sizeof(GenericParameter);
+
+        *reinterpret_cast<uint64_t*>(writePtr) = pair.second;
+        writePtr += sizeof(uint64_t);
+    }
+
     // Write audio data
     float* audioDataPtr = reinterpret_cast<float*>(writePtr);
     for (int sample = 0; sample < audioBuffer.getNumSamples(); ++sample)
@@ -316,10 +427,24 @@ bool M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioBuffe
     // Update main header
     m_header->dataSize = static_cast<uint32_t>(totalSize);
     m_header->hasData = true;
-    ++m_writeCount;
 
-    DBG("[M1MemoryShare] Wrote generic buffer with " + juce::String(header->parameterCount) + " parameters");
-    return true;
+    // Add to queue if acknowledgment is required
+    if (requiresAcknowledgment)
+    {
+        addToQueue(bufferId, sequenceNumber, timestamp, totalSize, 0, true);
+    }
+
+    // PERFORMANCE FIX: Remove expensive sync() call and use async file modification time updates
+    // Memory-mapped files are automatically visible to other processes without sync()
+    // Schedule modification time update asynchronously to avoid blocking audio thread
+    static std::atomic<int> writeCounter{0};
+    if (++writeCounter % 50 == 0) { // Update less frequently (every 50 buffers instead of 10)
+        scheduleAsyncFileModTimeUpdate();
+    }
+
+    ++m_writeCount;
+    DBG("[M1MemoryShare] Wrote generic buffer with " + juce::String(header->parameterCount) + " parameters, bufferId=" + juce::String(bufferId));
+    return bufferId;
 }
 
 bool M1MemoryShare::readGenericParameters(ParameterMap& parameters,
@@ -397,6 +522,7 @@ bool M1MemoryShare::readAudioBufferWithGenericParameters(juce::AudioBuffer<float
                                                         uint64_t& dawTimestamp,
                                                         double& playheadPositionInSeconds,
                                                         bool& isPlaying,
+                                                        uint64_t& bufferId,
                                                         uint32_t& updateSource)
 {
     if (!isValid() || !m_header->hasData)
@@ -418,6 +544,7 @@ bool M1MemoryShare::readAudioBufferWithGenericParameters(juce::AudioBuffer<float
     playheadPositionInSeconds = header->playheadPositionInSeconds;
     isPlaying = header->isPlaying != 0;
     updateSource = header->updateSource;
+    bufferId = header->bufferId;
 
     readPtr += sizeof(GenericAudioBufferHeader);
 
@@ -477,7 +604,7 @@ bool M1MemoryShare::readAudioBufferWithGenericParameters(juce::AudioBuffer<float
     }
 
     ++m_readCount;
-    DBG("[M1MemoryShare] Read audio buffer with " + juce::String(header->parameterCount) + " generic parameters");
+    DBG("[M1MemoryShare] Read audio buffer with " + juce::String(header->parameterCount) + " generic parameters, bufferId=" + juce::String(bufferId));
     return true;
 }
 
@@ -648,6 +775,9 @@ M1MemoryShare::MemoryStats M1MemoryShare::getStats() const
         stats.usedSize = 0;
         stats.writeCount = 0;
         stats.readCount = 0;
+        stats.queuedBufferCount = 0;
+        stats.acknowledgedBufferCount = 0;
+        stats.consumerCount = 0;
         return stats;
     }
 
@@ -656,15 +786,262 @@ M1MemoryShare::MemoryStats M1MemoryShare::getStats() const
     stats.availableSize = m_dataBufferSize - stats.usedSize;
     stats.writeCount = m_writeCount.load();
     stats.readCount = m_readCount.load();
+    stats.queuedBufferCount = m_header->queueSize;
+    stats.acknowledgedBufferCount = 0;
+    stats.consumerCount = m_header->consumerCount;
+
+    // Count acknowledged buffers
+    for (uint32_t i = 0; i < m_header->queueSize; ++i)
+    {
+        if (m_queuedBuffers[i].acknowledgedCount == m_queuedBuffers[i].consumerCount)
+        {
+            stats.acknowledgedBufferCount++;
+        }
+    }
 
     return stats;
+}
+
+// Buffer management methods
+uint64_t M1MemoryShare::getNextBufferId()
+{
+    return m_header->nextBufferId++;
+}
+
+uint32_t M1MemoryShare::getNextSequenceNumber()
+{
+    return m_header->nextSequenceNumber++;
+}
+
+uint64_t M1MemoryShare::getCurrentTimestamp() const
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()
+    ).count();
+}
+
+// Queue management methods
+bool M1MemoryShare::addToQueue(uint64_t bufferId, uint32_t sequenceNumber, uint64_t timestamp,
+                              uint32_t dataSize, uint32_t dataOffset, bool requiresAcknowledgment)
+{
+    if (m_header->queueSize >= m_maxQueueSize)
+    {
+        return false;
+    }
+
+    // Find empty slot
+    uint32_t slotIndex = m_header->queueSize;
+
+    QueuedBuffer& buffer = m_queuedBuffers[slotIndex];
+    buffer.bufferId = bufferId;
+    buffer.sequenceNumber = sequenceNumber;
+    buffer.timestamp = timestamp;
+    buffer.dataSize = dataSize;
+    buffer.dataOffset = dataOffset;
+    buffer.requiresAcknowledgment = requiresAcknowledgment;
+    buffer.consumerCount = m_header->consumerCount;
+    buffer.acknowledgedCount = 0;
+
+    // Copy consumer IDs
+    for (uint32_t i = 0; i < m_header->consumerCount; ++i)
+    {
+        buffer.consumerIds[i] = m_header->consumerIds[i];
+        buffer.acknowledged[i] = false;
+    }
+
+    m_header->queueSize++;
+    return true;
+}
+
+bool M1MemoryShare::removeFromQueue(uint64_t bufferId)
+{
+    // Find buffer in queue
+    for (uint32_t i = 0; i < m_header->queueSize; ++i)
+    {
+        if (m_queuedBuffers[i].bufferId == bufferId)
+        {
+            // Move all subsequent buffers down
+            for (uint32_t j = i; j < m_header->queueSize - 1; ++j)
+            {
+                m_queuedBuffers[j] = m_queuedBuffers[j + 1];
+            }
+            m_header->queueSize--;
+            return true;
+        }
+    }
+    return false;
+}
+
+M1MemoryShare::QueuedBuffer* M1MemoryShare::findQueuedBuffer(uint64_t bufferId)
+{
+    for (uint32_t i = 0; i < m_header->queueSize; ++i)
+    {
+        if (m_queuedBuffers[i].bufferId == bufferId)
+        {
+            return &m_queuedBuffers[i];
+        }
+    }
+    return nullptr;
+}
+
+void M1MemoryShare::cleanupAcknowledgedBuffers()
+{
+    // Remove fully acknowledged buffers
+    for (uint32_t i = 0; i < m_header->queueSize; )
+    {
+        if (m_queuedBuffers[i].acknowledgedCount >= m_queuedBuffers[i].consumerCount)
+        {
+            removeFromQueue(m_queuedBuffers[i].bufferId);
+        }
+        else
+        {
+            ++i;
+        }
+    }
+}
+
+// Consumer management methods
+bool M1MemoryShare::registerConsumer(uint32_t consumerId)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+
+    // Check if consumer is already registered
+    if (isConsumerRegistered(consumerId))
+    {
+        return true;
+    }
+
+    // Check if we have space
+    if (m_header->consumerCount >= 16)
+    {
+        return false;
+    }
+
+    // Add consumer
+    m_header->consumerIds[m_header->consumerCount] = consumerId;
+    m_header->consumerCount++;
+
+    return true;
+}
+
+bool M1MemoryShare::unregisterConsumer(uint32_t consumerId)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+
+    int index = findConsumerIndex(consumerId);
+    if (index == -1)
+    {
+        return false;
+    }
+
+    // Remove consumer by shifting others down
+    for (uint32_t i = index; i < m_header->consumerCount - 1; ++i)
+    {
+        m_header->consumerIds[i] = m_header->consumerIds[i + 1];
+    }
+    m_header->consumerCount--;
+
+    return true;
+}
+
+int M1MemoryShare::findConsumerIndex(uint32_t consumerId) const
+{
+    for (uint32_t i = 0; i < m_header->consumerCount; ++i)
+    {
+        if (m_header->consumerIds[i] == consumerId)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool M1MemoryShare::isConsumerRegistered(uint32_t consumerId) const
+{
+    return findConsumerIndex(consumerId) != -1;
+}
+
+// Buffer acknowledgment methods
+bool M1MemoryShare::acknowledgeBuffer(uint64_t bufferId, uint32_t consumerId)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+
+    QueuedBuffer* buffer = findQueuedBuffer(bufferId);
+    if (!buffer)
+    {
+        return false;
+    }
+
+    // Find consumer in buffer's consumer list
+    for (uint32_t i = 0; i < buffer->consumerCount; ++i)
+    {
+        if (buffer->consumerIds[i] == consumerId && !buffer->acknowledged[i])
+        {
+            buffer->acknowledged[i] = true;
+            buffer->acknowledgedCount++;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::vector<uint64_t> M1MemoryShare::getAvailableBufferIds() const
+{
+    std::vector<uint64_t> bufferIds;
+
+    for (uint32_t i = 0; i < m_header->queueSize; ++i)
+    {
+        bufferIds.push_back(m_queuedBuffers[i].bufferId);
+    }
+
+    return bufferIds;
+}
+
+uint32_t M1MemoryShare::getUnconsumedBufferCount() const
+{
+    return m_header->queueSize;
+}
+
+bool M1MemoryShare::readBufferById(uint64_t bufferId,
+                                  juce::AudioBuffer<float>& audioBuffer,
+                                  ParameterMap& parameters,
+                                  uint64_t& dawTimestamp,
+                                  double& playheadPositionInSeconds,
+                                  bool& isPlaying,
+                                  uint32_t& updateSource)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+
+    QueuedBuffer* queuedBuffer = findQueuedBuffer(bufferId);
+    if (!queuedBuffer)
+    {
+        return false;
+    }
+
+    // For now, we only support reading the current buffer in the data buffer
+    // In a full implementation, we would need to store multiple buffers
+    // and use queuedBuffer->dataOffset to read from the correct position
+
+    // Read the current buffer (assuming it's the one we want)
+    uint64_t currentBufferId;
+    return readAudioBufferWithGenericParameters(audioBuffer, parameters, dawTimestamp,
+                                               playheadPositionInSeconds, isPlaying,
+                                               currentBufferId, updateSource) &&
+           currentBufferId == bufferId;
 }
 
 //==============================================================================
 bool M1MemoryShare::deleteSharedMemory(const juce::String& memoryName)
 {
-    juce::String tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName();
-    juce::File memoryFile(tempDir + "/M1SpatialSystem_" + memoryName + ".mem");
+    // Use SharedMemoryPaths to get the App Group container or fallback directory
+    std::string sharedDir = Mach1::SharedMemoryPaths::getMemoryFileDirectory();
+    if (sharedDir.empty()) {
+        // Fallback to temp directory if no shared path available
+        sharedDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
+    }
+
+    juce::File memoryFile(juce::String(sharedDir) + "/M1SpatialSystem_" + memoryName + ".mem");
 
     if (memoryFile.exists())
     {
@@ -672,4 +1049,20 @@ bool M1MemoryShare::deleteSharedMemory(const juce::String& memoryName)
     }
 
     return true; // File doesn't exist, consider it deleted
+}
+
+// PERFORMANCE FIX: Async file modification time update implementation
+void M1MemoryShare::scheduleAsyncFileModTimeUpdate()
+{
+    // Use JUCE's async message manager to update file modification time on main thread
+    // This avoids blocking the audio thread with file I/O operations
+    if (m_tempFile.exists())
+    {
+        juce::MessageManager::callAsync([this]() {
+            if (m_tempFile.exists()) {
+                m_tempFile.setLastModificationTime(juce::Time::getCurrentTime());
+                DBG("[M1MemoryShare] Async file mod time update: " + m_tempFile.getFullPathName());
+            }
+        });
+    }
 }

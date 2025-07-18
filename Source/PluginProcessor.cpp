@@ -170,6 +170,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     // pannerOSC update timer loop
     startTimer(200);
 
+    // Generate unique instance ID for later use when UI opens
+    m_uniqueInstanceId = generateUniqueInstanceName();
+
     // print build time for debug
     juce::String date(__DATE__);
     juce::String time(__TIME__);
@@ -178,8 +181,15 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 
 M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
-            pannerSettings.state.store(-1);
+    pannerSettings.state.store(-1);
     stopTimer();
+
+    // ON-DEMAND SERVICE INTEGRATION: Release helper service when plugin shuts down
+    auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+    if (!m_uniqueInstanceId.isEmpty()) {
+        helperManager.releaseHelperService(m_uniqueInstanceId.toStdString());
+        DBG("[M1-Panner] Helper service released for instance: " + m_uniqueInstanceId);
+    }
 }
 
 //==============================================================================
@@ -249,7 +259,8 @@ void M1PannerAudioProcessor::createLayout()
 {
     if (!getBus(false, 0) || !getBus(true, 0))
     {
-        DBG("Invalid bus configuration in createLayout()");
+        DBG("Invalid bus configuration in createLayout() - buses not ready yet");
+        layoutCreated = false; // Explicitly mark as not created, will retry on next processBlock
         return;
     }
 
@@ -843,7 +854,18 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Use this method as the place to do any pre-playback
     if (!layoutCreated)
     {
-        createLayout(); // this should only be called here after initialization to avoid threading issues
+        // Only attempt layout creation if buses are properly initialized
+        if (getBus(false, 0) && getBus(true, 0))
+        {
+            createLayout(); // this should only be called here after initialization to avoid threading issues
+        }
+        else
+        {
+            // Buses not ready yet - clear buffer and return early to avoid VST3 buffer mapping issues
+            DBG("[PANNER] Buses not ready in processBlock, clearing buffer");
+            buffer.clear();
+            return;
+        }
     }
 
     // Initialize memory sharing if external spatial mixer is active
@@ -1129,6 +1151,25 @@ void M1PannerAudioProcessor::timerCallback()
 {
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
+
+    // ON-DEMAND SERVICE INTEGRATION: Periodic health check for helper service
+    // Check every ~10 seconds (timer runs every 200ms, so check every 50 calls)
+    static int healthCheckCounter = 0;
+    if (++healthCheckCounter >= 50) {
+        healthCheckCounter = 0;
+
+        if (!m_uniqueInstanceId.isEmpty() && !isHelperServiceAvailable()) {
+            DBG("[M1-Panner] Helper service appears to have died unexpectedly - attempting restart");
+            auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+
+            // Re-register this instance
+            if (helperManager.requestHelperService(m_uniqueInstanceId.toStdString())) {
+                DBG("[M1-Panner] Helper service restarted successfully after unexpected exit");
+            } else {
+                DBG("[M1-Panner] Failed to restart helper service after unexpected exit");
+            }
+        }
+    }
 }
 
 //==============================================================================
@@ -1423,26 +1464,11 @@ void M1PannerAudioProcessor::postAlert(const Mach1::AlertData& alert)
 //==============================================================================
 juce::String M1PannerAudioProcessor::generateUniqueInstanceName() const
 {
-    // Create unique name based on process ID, plugin instance, and timestamp
-
-    // Get process ID using platform-specific system calls
-    uint32_t processId = 0;
-#if JUCE_WINDOWS
-    processId = static_cast<uint32_t>(GetCurrentProcessId());
-#elif JUCE_MAC || JUCE_LINUX || JUCE_IOS || JUCE_ANDROID
-    processId = static_cast<uint32_t>(getpid());
+#ifdef JUCE_WINDOWS
+    return juce::String("M1SpatialSystem_M1Panner_PID") + juce::String(GetCurrentProcessId()) + "_PTR" + juce::String::toHexString(reinterpret_cast<uintptr_t>(this)) + "_T" + juce::String(juce::Time::getCurrentTime().toMilliseconds());
 #else
-    // Fallback for unknown platforms - use a hash of the instance pointer
-    processId = static_cast<uint32_t>(std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(this)) & 0xFFFF);
+    return juce::String("M1SpatialSystem_M1Panner_PID") + juce::String(getpid()) + "_PTR" + juce::String::toHexString(reinterpret_cast<uintptr_t>(this)) + "_T" + juce::String(juce::Time::getCurrentTime().toMilliseconds());
 #endif
-
-    auto instancePtr = reinterpret_cast<uintptr_t>(this);
-    auto timestamp = juce::Time::currentTimeMillis();
-
-    // Create filesystem-safe unique identifier
-    return "M1Panner_PID" + juce::String(processId) +
-           "_PTR" + juce::String::toHexString(static_cast<int64>(instancePtr)) +
-           "_T" + juce::String(timestamp);
 }
 
 void M1PannerAudioProcessor::initializeMemorySharing()
@@ -1573,14 +1599,17 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
         parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
 
         // Write audio buffer with generic parameters (timing info passed as separate parameters)
-        if (!m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying))
+        // Enable acknowledgment for external consumers
+        uint64_t bufferId = m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, true);
+
+        if (bufferId == 0)
         {
             DBG("[M1MemoryShare] Failed to write audio buffer with generic parameters to shared memory");
         }
         else
         {
-            DBG("[M1MemoryShare] Successfully wrote audio buffer with generic parameters - channels: " +
-                juce::String(numInputChannels) + ", samples: " + juce::String(numSamples) +
+            DBG("[M1MemoryShare] Successfully wrote audio buffer with generic parameters - bufferId: " + juce::String(bufferId) +
+                ", channels: " + juce::String(numInputChannels) + ", samples: " + juce::String(numSamples) +
                 ", maxLevel: " + juce::String(maxLevel, 6) +
                 ", azimuth: " + juce::String(pannerSettings.azimuth.load()) + ", elevation: " + juce::String(pannerSettings.elevation.load()));
         }
@@ -1589,4 +1618,11 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     {
         DBG("[M1MemoryShare] Not sharing audio data - unsupported channel count: " + juce::String(numInputChannels));
     }
+}
+
+// ON-DEMAND SERVICE INTEGRATION: Helper method to check service availability
+bool M1PannerAudioProcessor::isHelperServiceAvailable() const
+{
+    auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+    return helperManager.isHelperServiceRunning();
 }

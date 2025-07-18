@@ -27,7 +27,7 @@ class M1MemoryShare
 public:
     /**
      * Header structure that prefixes all shared memory segments
-     * Contains metadata about the shared data
+     * Contains metadata about the shared data and buffer queue
      */
     struct SharedMemoryHeader
     {
@@ -41,10 +41,47 @@ public:
         uint32_t samplesPerBlock;               // Samples per processing block
         char name[64];                          // Name identifier for debugging
 
+        // Buffer queue management
+        volatile uint32_t queueSize;            // Number of buffers in queue
+        volatile uint32_t maxQueueSize;         // Maximum queue size
+        volatile uint32_t nextSequenceNumber;   // Next sequence number to assign
+        volatile uint64_t nextBufferId;         // Next buffer ID to assign
+
+        // Consumer management
+        volatile uint32_t consumerCount;        // Number of registered consumers
+        volatile uint32_t consumerIds[16];      // Consumer IDs (max 16 consumers)
+
         SharedMemoryHeader() : writeIndex(0), readIndex(0), dataSize(0), hasData(false),
-                              bufferSize(0), sampleRate(0), numChannels(0), samplesPerBlock(0)
+                              bufferSize(0), sampleRate(0), numChannels(0), samplesPerBlock(0),
+                              queueSize(0), maxQueueSize(8), nextSequenceNumber(0), nextBufferId(1),
+                              consumerCount(0)
         {
             std::memset(name, 0, sizeof(name));
+            std::memset(const_cast<uint32_t*>(consumerIds), 0, sizeof(consumerIds));
+        }
+    };
+
+    /**
+     * Queued buffer entry with acknowledgment tracking
+     */
+    struct QueuedBuffer
+    {
+        uint64_t bufferId;
+        uint32_t sequenceNumber;
+        uint64_t timestamp;
+        uint32_t dataSize;
+        uint32_t dataOffset;        // Offset from start of data buffer
+        bool requiresAcknowledgment;
+        uint32_t consumerCount;
+        uint32_t acknowledgedCount;
+        uint32_t consumerIds[16];   // IDs of consumers that need to acknowledge
+        bool acknowledged[16];      // Acknowledgment status for each consumer
+
+        QueuedBuffer() : bufferId(0), sequenceNumber(0), timestamp(0), dataSize(0), dataOffset(0),
+                        requiresAcknowledgment(false), consumerCount(0), acknowledgedCount(0)
+        {
+            std::memset(consumerIds, 0, sizeof(consumerIds));
+            std::memset(acknowledged, false, sizeof(acknowledged));
         }
     };
 
@@ -52,11 +89,13 @@ public:
      * Constructor for creating/opening a shared memory segment
      * @param memoryName Unique name for the shared memory segment (OS-wide)
      * @param totalSize Total size of the shared memory in bytes (must be >= 4KB)
+     * @param maxQueueSize Maximum number of buffers to queue (default: 8)
      * @param persistent If true, memory persists until manually deleted; if false, cleaned up when process exits
      * @param createMode If true, creates new segment; if false, opens existing segment
      */
     M1MemoryShare(const juce::String& memoryName,
                   size_t totalSize,
+                  uint32_t maxQueueSize = 8,
                   bool persistent = true,
                   bool createMode = true);
 
@@ -74,29 +113,46 @@ public:
     // ParameterMap is now defined in TypesForDataExchange.h
 
     /**
+     * Register a consumer for buffer acknowledgment
+     * @param consumerId Unique ID for the consumer
+     * @return true if registration successful
+     */
+    bool registerConsumer(uint32_t consumerId);
+
+    /**
+     * Unregister a consumer
+     * @param consumerId Consumer ID to unregister
+     * @return true if unregistration successful
+     */
+    bool unregisterConsumer(uint32_t consumerId);
+
+    /**
      * Write audio buffer to shared memory with generic parameter system
      * @param audioBuffer JUCE AudioBuffer containing the audio data
      * @param parameters Generic parameter map containing all settings
      * @param dawTimestamp DAW/host timestamp
      * @param playheadPositionInSeconds DAW playhead position
      * @param isPlaying Whether DAW is currently playing
+     * @param requiresAcknowledgment Whether this buffer requires acknowledgment
      * @param updateSource Source of the update (HOST, UI, MEMORYSHARE)
-     * @return true if write was successful
+     * @return buffer ID if write was successful, 0 otherwise
      */
-    bool writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
-                                             const ParameterMap& parameters,
-                                             uint64_t dawTimestamp,
-                                             double playheadPositionInSeconds,
-                                             bool isPlaying,
-                                             uint32_t updateSource = 1);
+    uint64_t writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
+                                                  const ParameterMap& parameters,
+                                                  uint64_t dawTimestamp,
+                                                  double playheadPositionInSeconds,
+                                                  bool isPlaying,
+                                                  bool requiresAcknowledgment = false,
+                                                  uint32_t updateSource = 1);
 
     /**
-     * Read audio buffer from shared memory with generic parameter system
+     * Read the oldest unacknowledged audio buffer from shared memory
      * @param audioBuffer JUCE AudioBuffer to store the read data
      * @param parameters Output parameter map to store all parameters
      * @param dawTimestamp Output DAW timestamp
      * @param playheadPositionInSeconds Output DAW playhead position
      * @param isPlaying Output playing state
+     * @param bufferId Output buffer ID
      * @param updateSource Output update source
      * @return true if read was successful and data was available
      */
@@ -105,7 +161,47 @@ public:
                                             uint64_t& dawTimestamp,
                                             double& playheadPositionInSeconds,
                                             bool& isPlaying,
+                                            uint64_t& bufferId,
                                             uint32_t& updateSource);
+
+    /**
+     * Read a specific buffer by ID
+     * @param bufferId Buffer ID to read
+     * @param audioBuffer JUCE AudioBuffer to store the read data
+     * @param parameters Output parameter map to store all parameters
+     * @param dawTimestamp Output DAW timestamp
+     * @param playheadPositionInSeconds Output DAW playhead position
+     * @param isPlaying Output playing state
+     * @param updateSource Output update source
+     * @return true if read was successful and buffer was found
+     */
+    bool readBufferById(uint64_t bufferId,
+                       juce::AudioBuffer<float>& audioBuffer,
+                       ParameterMap& parameters,
+                       uint64_t& dawTimestamp,
+                       double& playheadPositionInSeconds,
+                       bool& isPlaying,
+                       uint32_t& updateSource);
+
+    /**
+     * Acknowledge consumption of a buffer
+     * @param bufferId Buffer ID to acknowledge
+     * @param consumerId Consumer ID that is acknowledging
+     * @return true if acknowledgment was successful
+     */
+    bool acknowledgeBuffer(uint64_t bufferId, uint32_t consumerId);
+
+    /**
+     * Get list of available buffer IDs
+     * @return Vector of buffer IDs that are available for reading
+     */
+    std::vector<uint64_t> getAvailableBufferIds() const;
+
+    /**
+     * Get the number of unconsumed buffers in the queue
+     * @return Number of buffers waiting to be consumed
+     */
+    uint32_t getUnconsumedBufferCount() const;
 
     /**
      * Read only the generic parameters from shared memory (without audio data)
@@ -185,6 +281,9 @@ public:
         size_t usedSize;
         uint32_t writeCount;
         uint32_t readCount;
+        uint32_t queuedBufferCount;
+        uint32_t acknowledgedBufferCount;
+        uint32_t consumerCount;
     };
 
     MemoryStats getStats() const;
@@ -196,9 +295,22 @@ public:
      */
     static bool deleteSharedMemory(const juce::String& memoryName);
 
+    // Consumer management
+    bool isConsumerRegistered(uint32_t consumerId) const;
+
+    // Performance-optimized async file modification time updates
+    void scheduleAsyncFileModTimeUpdate();
+
+    // PERFORMANCE OPTIMIZATION: Ring buffer configuration
+    // Consider implementing a ring buffer design to avoid data overwrites
+    static constexpr size_t RING_BUFFER_SIZE = 4;        // Number of audio buffers in ring
+    static constexpr int MOD_TIME_UPDATE_INTERVAL = 50;  // Update file mod time every N buffers
+    static constexpr int CLEANUP_INTERVAL = 1000;        // Cleanup acknowledged buffers every N buffers
+
 private:
     juce::String m_memoryName;
     size_t m_totalSize;
+    uint32_t m_maxQueueSize;
     bool m_persistent;
     bool m_createMode;
 
@@ -209,12 +321,32 @@ private:
     uint8_t* m_dataBuffer;
     size_t m_dataBufferSize;
 
+    // Queue management
+    QueuedBuffer* m_queuedBuffers;  // Array of queued buffers
+    size_t m_queuedBuffersSize;     // Size of queued buffers area
+
     mutable std::atomic<uint32_t> m_writeCount{0};
     mutable std::atomic<uint32_t> m_readCount{0};
+    mutable std::mutex m_queueMutex;
 
     bool createSharedMemoryFile();
     bool openSharedMemoryFile();
     void setupMemoryPointers();
+
+    // Buffer management
+    uint64_t getNextBufferId();
+    uint32_t getNextSequenceNumber();
+    uint64_t getCurrentTimestamp() const;
+
+    // Queue management
+    bool addToQueue(uint64_t bufferId, uint32_t sequenceNumber, uint64_t timestamp,
+                   uint32_t dataSize, uint32_t dataOffset, bool requiresAcknowledgment);
+    bool removeFromQueue(uint64_t bufferId);
+    QueuedBuffer* findQueuedBuffer(uint64_t bufferId);
+    void cleanupAcknowledgedBuffers();
+
+    // Consumer management
+    int findConsumerIndex(uint32_t consumerId) const;
 
     // Prevent copying
     M1MemoryShare(const M1MemoryShare&) = delete;

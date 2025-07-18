@@ -8,6 +8,7 @@
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
 #include "M1MemoryShare.h"
+#include "M1SystemHelperManager.h"  // ON-DEMAND SERVICE INTEGRATION
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"
@@ -198,6 +199,10 @@ public:
 
     juce::String generateUniqueInstanceName() const;
     juce::String getMemoryInstanceName() const { return m_instanceBaseName; }
+
+    // ON-DEMAND SERVICE INTEGRATION: Helper methods
+    bool isHelperServiceAvailable() const;
+    juce::String m_uniqueInstanceId;  // Unique identifier for this plugin instance
 
     // UI related utility functions
     struct Line2D
