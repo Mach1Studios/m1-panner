@@ -1122,6 +1122,11 @@ void PannerUIBaseComponent::draw()
             if (outputLayoutLockCheckbox.changed)
             {
                 processor->parameterChanged(juce::String("output_layout_lock"), pannerState->lockOutputLayout);
+                if (!pannerState->lockOutputLayout)
+                {
+                    // Now unlocked, need to request current output mode
+                    processor->pannerOSC->sendRequestForCurrentChannelConfig();
+                }
             }
 
             auto& outputDropdownButton = m.prepare<M1DropdownButton>({ m.getSize().width() / 2 + 20, m.getSize().height() - 28, 80, 20 })

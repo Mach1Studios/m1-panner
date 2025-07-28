@@ -1092,10 +1092,6 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
         pannerSettings.m1Encode.setOutputMode(outputMode);
         gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
-        if (!pannerSettings.lockOutputLayout)
-        {
-            pannerOSC->sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
-        }
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
 

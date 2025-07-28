@@ -23,7 +23,7 @@ public:
     void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
     bool Send(const juce::OSCMessage& msg);
     bool isConnected();
-    bool sendRequestToChangeChannelConfig(int channel_count_for_config);
+    bool sendRequestForCurrentChannelConfig();
     bool sendPannerSettings(int state);
     bool sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool gain_comp_active, bool st_auto_orbit, float st_azimuth, float st_spread);
 
