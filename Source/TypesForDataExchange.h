@@ -39,8 +39,8 @@ struct PannerSettings
     float stereoInputBalance = 0.;
     bool autoOrbit = true;
     bool overlay = false;
-    bool isotropicMode = false;
-    bool equalpowerMode = false;
+    bool isotropicMode = true;
+    bool equalpowerMode = true;
     bool lockOutputLayout = false;
     bool gainCompensationMode = true; // used for gain compensation when changing the output mode
 
