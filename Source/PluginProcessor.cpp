@@ -144,9 +144,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     });
 
     // Get or assign a track color for panner instance -> player
-    if (track_properties.colour.getAlpha() != 0)
+    if (track_properties.colour.has_value() && track_properties.colour->getAlpha() != 0)
     { // unfound colors are 0,0,0,0
-        osc_colour.fromInt32(track_properties.colour.getARGB());
+        osc_colour.fromInt32(track_properties.colour->getARGB());
     }
     else
     {
@@ -547,7 +547,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     try {
         if (pannerOSC->isConnected())
         {
-            pannerOSC->sendPannerSettings(pannerSettings.state, track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
+            std::string track_name = track_properties.name.has_value() ? track_properties.name->toStdString() : "";
+            pannerOSC->sendPannerSettings(pannerSettings.state, track_name, osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
         }
     }
     catch (...) {
