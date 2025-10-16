@@ -1139,6 +1139,10 @@ void PannerUIBaseComponent::draw()
             // add the outputs based on discovered number of channels from host
             if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 14)
                 output_options.push_back("M1Spatial-14");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 26)
+                output_options.push_back("M1Spatial-26");
+            if (processor->external_spatialmixer_active || processor->getMainBusNumOutputChannels() >= 38)
+                output_options.push_back("M1Spatial-38");
 
             auto& outputDropdownMenu = m.prepare<M1DropdownMenu>({ m.getSize().width() / 2 + 20,
                                                                    m.getSize().height() - 28 - output_options.size() * dropdownItemHeight,
@@ -1182,6 +1186,14 @@ void PannerUIBaseComponent::draw()
                 else if (outputDropdownMenu.selectedOption == 2)
                 {
                     pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
+                }
+                else if (outputDropdownMenu.selectedOption == 3)
+                {
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_26);
+                }
+                else if (outputDropdownMenu.selectedOption == 4)
+                {
+                    pannerState->m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_38);
                 }
                 auto& params = processor->getValueTreeState();
                 auto* param = params.getParameter(processor->paramOutputMode);

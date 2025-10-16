@@ -55,7 +55,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 #ifndef CUSTOM_CHANNEL_LAYOUT
           std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramInputMode, 1), TRANS("Input Mode"), 0, Mach1EncodeInputMode::BFOAACN, Mach1EncodeInputMode::Mono),
           // Note: Change init output to max bus size when new formats are introduced
-          std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputMode::M1Spatial_14, Mach1EncodeOutputMode::M1Spatial_8),
+          std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputMode::M1Spatial_38, Mach1EncodeOutputMode::M1Spatial_8),
 #endif
 #ifdef ITD_PARAMETERS
           std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramITDActive, 1), TRANS("ITD"), pannerSettings.itdActive),
@@ -134,6 +134,14 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                 else if (channel_count == 14)
                 {
                     parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_14));
+                }
+                else if (channel_count == 26)
+                {
+                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_26));
+                }
+                else if (channel_count == 38)
+                {
+                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_38));
                 }
                 else
                 {
@@ -336,11 +344,27 @@ void M1PannerAudioProcessor::createLayout()
                     pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_8);
                     gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                 }
-                else if (getBus(false, 0)->getCurrentLayout().size() >= 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() >= 3)
+                else if (getBus(false, 0)->getCurrentLayout().size() == 14 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 3)
                 {
                     if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
                     {
                         pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_14);
+                        gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
+                    }
+                }
+                else if (getBus(false, 0)->getCurrentLayout().size() == 26 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() == 5)
+                {
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_26))
+                    {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_26);
+                        gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
+                    }
+                }
+                else if (getBus(false, 0)->getCurrentLayout().size() >= 38 || getBus(false, 0)->getCurrentLayout().getAmbisonicOrder() > 5)
+                {
+                    if ((pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_4) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_8) && (pannerSettings.m1Encode.getOutputMode() != Mach1EncodeOutputMode::M1Spatial_14))
+                    {
+                        pannerSettings.m1Encode.setOutputMode(Mach1EncodeOutputMode::M1Spatial_38);
                         gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
                     }
                 }
@@ -640,7 +664,7 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
             if (layouts.getMainInputChannelSet().size() == configTester.getInputChannelsCount())
             {
                 // Note: Change the max for loop output to max bus size when new formats are introduced
-                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputMode::M1Spatial_14; outputEnum++)
+                for (int outputEnum = 0; outputEnum != Mach1EncodeOutputMode::M1Spatial_38; outputEnum++)
                 {
                     configTester.setOutputMode(static_cast<Mach1EncodeOutputMode>(outputEnum));
                     if (layouts.getMainOutputChannelSet().size() == configTester.getOutputChannelsCount())
