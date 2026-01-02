@@ -10,6 +10,9 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     PannerOSC.h
                                     PannerOSC.cpp
                                     RingBuffer.h
+                                    StreamingMode.h
+                                    LockFreeRingBuffer.h
+                                    M1SystemHelperManager.h
                                     WindowUtil.h
                                     WindowUtil.cpp
                                     UI/M1Label.h

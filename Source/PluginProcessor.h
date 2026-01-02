@@ -7,6 +7,8 @@
 #include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
+#include "StreamingMode.h"
+#include "M1SystemHelperManager.h"
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"
@@ -138,6 +140,9 @@ public:
     static juce::String paramInputMode;
     static juce::String paramOutputMode;
 #endif
+    // Streaming mode parameters
+    static juce::String paramStreamingMode;
+    static juce::String paramLocalMonitor;
 
 #ifdef ITD_PARAMETERS
     // Delay init
@@ -171,8 +176,34 @@ public:
     std::unique_ptr<PannerOSC> pannerOSC;
     juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
-    // TODO: change this
+    // Streaming mode for stereo DAW compatibility
+    // When enabled, plugin outputs silence to DAW but writes encoded audio to shared memory
     bool external_spatialmixer_active = false; // global detect spatialmixer
+    bool streamingModeEnabled = false;         // streaming mode active flag
+    bool streamingModeAutoEnabled = false;     // true if streaming mode was auto-enabled (don't override with saved state)
+    bool localMonitorEnabled = false;          // when true, output encoded audio to DAW (for monitoring)
+    
+    // Panner UUID - unique identifier for this panner instance (persisted in plugin state)
+    juce::String pannerUuid;
+    
+    // Unique instance ID - includes PID, PTR, timestamp for helper registration and memory file naming
+    // Format: M1SpatialSystem_M1Panner_PID{pid}_PTR{ptr}_T{timestamp}
+    juce::String uniqueInstanceId;
+    
+    // Streaming mode manager
+    std::unique_ptr<Mach1::StreamingMode> streamingMode;
+    
+    // Multichannel encode buffer for streaming (pre-allocated in prepareToPlay)
+    juce::AudioBuffer<float> streamingEncodeBuffer;
+    
+    // Check if streaming mode is available (helper is running)
+    bool isStreamingModeAvailable() const;
+    
+    // Enable/disable streaming mode
+    void setStreamingModeEnabled(bool enabled);
+    
+    // Get/generate panner UUID
+    juce::String getOrCreatePannerUuid();
 
     // UI related utility functions
     struct Line2D

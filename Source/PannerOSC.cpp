@@ -158,6 +158,22 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
                 is_connected = false;
             }
         }
+        else if (msg.getAddressPattern() == "/m1-streaming-ack")
+        {
+            // Helper acknowledged streaming registration
+            streamingAcknowledged = true;
+            DBG("[OSC] Streaming registration acknowledged");
+        }
+        else if (msg.getAddressPattern() == "/m1-streaming-nack")
+        {
+            // Helper rejected streaming registration
+            streamingAcknowledged = false;
+            if (msg.size() > 0 && msg[0].isString()) {
+                DBG("[OSC] Streaming registration rejected: " + msg[0].getString().toStdString());
+            } else {
+                DBG("[OSC] Streaming registration rejected");
+            }
+        }
         else
         {
             messageReceived(msg);
@@ -359,6 +375,134 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
     }
     catch (...) {
         is_connected = false;
+        return false;
+    }
+}
+
+//==============================================================================
+// Streaming Mode OSC Methods
+//==============================================================================
+
+bool PannerOSC::registerStreamingPanner(const juce::String& sessionId,
+                                        const juce::String& pannerUuid,
+                                        const juce::String& mmapPath,
+                                        int numChannels,
+                                        int sampleRate,
+                                        int maxBlockSize)
+{
+    if (helperPort <= 0)
+        return false;
+
+    // Try to connect to helper
+    try {
+        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
+        {
+            DBG("[PannerOSC] Failed to connect to helper for streaming registration");
+            return false;
+        }
+    }
+    catch (...) {
+        DBG("[PannerOSC] Exception connecting to helper for streaming registration");
+        return false;
+    }
+
+    // Build streaming registration message
+    // /m1-streaming-register sessionId pannerUuid mmapPath numChannels sampleRate maxBlockSize port
+    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/m1-streaming-register"));
+    try {
+        m.addString(sessionId);           // [0]: Host PID as string (groups panners)
+        m.addString(pannerUuid);          // [1]: Unique panner identifier
+        m.addString(mmapPath);            // [2]: Path to memory-mapped file
+        m.addInt32(numChannels);          // [3]: Number of M1 output channels
+        m.addInt32(sampleRate);           // [4]: Sample rate
+        m.addInt32(maxBlockSize);         // [5]: Maximum block size
+        m.addInt32(port);                 // [6]: OSC reply port for this panner
+    }
+    catch (...) {
+        DBG("[PannerOSC] Exception building streaming registration message");
+        return false;
+    }
+
+    // Send registration
+    try {
+        if (!juce::OSCSender::send(m)) {
+            DBG("[PannerOSC] Failed to send streaming registration");
+            return false;
+        }
+        
+        DBG("[PannerOSC] Sent streaming registration: UUID=" + pannerUuid + 
+            " session=" + sessionId + " channels=" + juce::String(numChannels));
+        return true;
+    }
+    catch (...) {
+        DBG("[PannerOSC] Exception sending streaming registration");
+        return false;
+    }
+}
+
+bool PannerOSC::unregisterStreamingPanner(const juce::String& pannerUuid)
+{
+    if (helperPort <= 0)
+        return false;
+
+    // Try to connect to helper
+    try {
+        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
+        {
+            return false;
+        }
+    }
+    catch (...) {
+        return false;
+    }
+
+    // Build unregistration message
+    // /m1-streaming-unregister pannerUuid
+    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/m1-streaming-unregister"));
+    try {
+        m.addString(pannerUuid);          // [0]: Unique panner identifier
+        m.addInt32(port);                 // [1]: OSC port for identification
+    }
+    catch (...) {
+        return false;
+    }
+
+    // Send unregistration
+    try {
+        if (!juce::OSCSender::send(m)) {
+            return false;
+        }
+        
+        streamingAcknowledged = false;
+        DBG("[PannerOSC] Sent streaming unregistration: UUID=" + pannerUuid);
+        return true;
+    }
+    catch (...) {
+        return false;
+    }
+}
+
+bool PannerOSC::sendStreamingHeartbeat(const juce::String& pannerUuid)
+{
+    if (!is_connected || helperPort <= 0)
+        return false;
+
+    // Build heartbeat message
+    // /m1-streaming-heartbeat pannerUuid port
+    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/m1-streaming-heartbeat"));
+    try {
+        m.addString(pannerUuid);          // [0]: Unique panner identifier  
+        m.addInt32(port);                 // [1]: OSC port for identification
+    }
+    catch (...) {
+        return false;
+    }
+
+    // Send heartbeat
+    try {
+        return juce::OSCSender::send(m);
+    }
+    catch (...) {
         return false;
     }
 }

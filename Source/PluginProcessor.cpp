@@ -31,6 +31,9 @@ juce::String M1PannerAudioProcessor::paramGainCompensationMode("gainCompensation
 juce::String M1PannerAudioProcessor::paramInputMode("inputMode");
 juce::String M1PannerAudioProcessor::paramOutputMode("outputMode");
 #endif
+// Streaming mode parameters
+juce::String M1PannerAudioProcessor::paramStreamingMode("streamingMode");
+juce::String M1PannerAudioProcessor::paramLocalMonitor("localMonitor");
 #ifdef ITD_PARAMETERS
 juce::String M1PannerAudioProcessor::paramITDActive("ITDProcessing");
 juce::String M1PannerAudioProcessor::paramDelayTime("DelayTime");
@@ -57,6 +60,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
           // Note: Change init output to max bus size when new formats are introduced
           std::make_unique<juce::AudioParameterInt>(juce::ParameterID(paramOutputMode, 1), TRANS("Output Mode"), 0, Mach1EncodeOutputMode::M1Spatial_14, Mach1EncodeOutputMode::M1Spatial_8),
 #endif
+          // Streaming mode parameters for stereo DAW compatibility
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramStreamingMode, 1), TRANS("Streaming Mode"), false),
+          std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramLocalMonitor, 1), TRANS("Local Monitor (Dry)"), false),
 #ifdef ITD_PARAMETERS
           std::make_unique<juce::AudioParameterBool>(juce::ParameterID(paramITDActive, 1), TRANS("ITD"), pannerSettings.itdActive),
           std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(paramDelayTime, 1), TRANS("Delay Time (max)"), juce::NormalisableRange<float>(0.0f, 10000.0f, 1.0f), pannerSettings.delayTime, "", juce::AudioProcessorParameter::genericParameter, [](float v, int) { return juce::String(v, 1) + "μS"; }, [](const juce::String& t) { return t.dropLastCharacters(1).getFloatValue(); }),
@@ -79,11 +85,42 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramInputMode, this);
     parameters.addParameterListener(paramOutputMode, this);
 #endif
+    // Streaming mode parameter listeners
+    parameters.addParameterListener(paramStreamingMode, this);
+    parameters.addParameterListener(paramLocalMonitor, this);
 #ifdef ITD_PARAMETERS
     parameters.addParameterListener(paramITDActive, this);
     parameters.addParameterListener(paramDelayTime, this);
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
+
+    // Generate or load panner UUID (will be overwritten by setStateInformation if saved)
+    pannerUuid = Mach1::StreamingMode::generatePannerUuid();
+    DBG("[Panner] Initial UUID: " + pannerUuid);
+    
+    // Generate unique instance ID for helper registration and memory file naming
+    // This includes PID, PTR (this pointer), and timestamp for uniqueness
+    uniqueInstanceId = Mach1::StreamingMode::generateUniqueInstanceName(this);
+    DBG("[Panner] Unique instance ID: " + uniqueInstanceId);
+    
+    // Request helper service - this ensures helper is running for ALL panners
+    // (not just streaming mode) so OSC communication works
+    auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+    if (!helperManager.requestHelperService(uniqueInstanceId.toStdString())) {
+        DBG("[Panner] Warning: Could not start helper service. Some features may be limited.");
+        if (helperManager.hasLaunchFailed()) {
+            // Helper launch failed (possibly due to sandbox restrictions)
+            // User will need to start helper manually
+            DBG("[Panner] Helper launch failed - user may need to start m1-system-helper manually");
+        }
+    }
+    
+    // Initialize streaming mode manager
+    streamingMode = std::make_unique<Mach1::StreamingMode>();
+    
+    // Log the streaming file path for debugging
+    DBG("[Panner] Streaming would use path: " + Mach1::StreamingMode::getStreamFilePath(uniqueInstanceId));
+    DBG("[Panner] Streaming mode default enabled: " + juce::String(streamingModeEnabled ? "true" : "false"));
 
     // Setup osc and listener
     pannerOSC = std::make_unique<PannerOSC>(this);
@@ -170,6 +207,25 @@ M1PannerAudioProcessor::~M1PannerAudioProcessor()
 {
     pannerSettings.state = -1;
     stopTimer();
+    
+    // Clean up streaming mode
+    if (streamingMode && streamingMode->isStreamingActive())
+    {
+        // Unregister from helper before shutdown
+        if (pannerOSC && pannerOSC->isConnected())
+        {
+            pannerOSC->unregisterStreamingPanner(uniqueInstanceId);
+        }
+        streamingMode->shutdown();
+    }
+    
+    // Release helper service for this instance
+    // This tells the helper manager that this panner is shutting down
+    if (!uniqueInstanceId.isEmpty()) {
+        auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+        helperManager.releaseHelperService(uniqueInstanceId.toStdString());
+        DBG("[Panner] Released helper service for: " + uniqueInstanceId);
+    }
 }
 
 //==============================================================================
@@ -402,6 +458,74 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
             postAlert(alert);
         }
     }
+    
+    // Prepare streaming mode
+    // Pre-allocate encode buffer for streaming (max 14 channels)
+    const int maxStreamingChannels = 14;
+    streamingEncodeBuffer.setSize(maxStreamingChannels, samplesPerBlock, false, true, false);
+    
+    // Auto-detect if streaming mode should be enabled
+    // If the track's output channels < Mach1 encoder output channels, we need streaming mode
+    int trackOutputChannels = getMainBusNumOutputChannels();
+    int m1OutputChannels = pannerSettings.m1Encode.getOutputChannelsCount();
+    
+    DBG("[Panner] prepareToPlay: track outputs=" + juce::String(trackOutputChannels) + 
+        ", M1 outputs=" + juce::String(m1OutputChannels) + 
+        ", streamingModeEnabled=" + juce::String(streamingModeEnabled ? "true" : "false"));
+    
+    // Auto-enable streaming mode if track can't handle all M1 channels
+    if (trackOutputChannels < m1OutputChannels && !streamingModeEnabled) {
+        DBG("[Panner] Auto-enabling streaming mode: track has " + juce::String(trackOutputChannels) + 
+            " outputs but M1 needs " + juce::String(m1OutputChannels));
+        
+        // Enable streaming mode and mark as auto-enabled (so state restoration won't override)
+        streamingModeEnabled = true;
+        streamingModeAutoEnabled = true;
+        
+        // Try to launch helper if not running
+        if (!isStreamingModeAvailable()) {
+            DBG("[Panner] Helper not available, attempting auto-launch");
+            Mach1::HelperAutoLauncher::launchHelperAsync();
+        }
+        
+        // Update the parameter so UI reflects the change (without triggering callback loop)
+        if (auto* param = parameters.getParameter(paramStreamingMode)) {
+            param->beginChangeGesture();
+            param->setValueNotifyingHost(1.0f);
+            param->endChangeGesture();
+        }
+    }
+    // Log if track has enough channels but streaming mode is still enabled
+    else if (trackOutputChannels >= m1OutputChannels && streamingModeEnabled) {
+        DBG("[Panner] Track has enough outputs (" + juce::String(trackOutputChannels) + 
+            "), but streaming mode is enabled (manual or previous auto)");
+    }
+    
+    // Initialize streaming mode if enabled
+    if (streamingModeEnabled && streamingMode) {
+        int numOutputChannels = pannerSettings.m1Encode.getOutputChannelsCount();
+        if (!streamingMode->isStreamingActive()) {
+            if (streamingMode->prepareStreaming(uniqueInstanceId, numOutputChannels, sampleRate, samplesPerBlock)) {
+                // Touch the file immediately to ensure it's fresh
+                streamingMode->touchFile();
+                
+                // Register with helper via OSC
+                if (pannerOSC && pannerOSC->isConnected()) {
+                    pannerOSC->registerStreamingPanner(
+                        Mach1::StreamingMode::getSessionId(),
+                        uniqueInstanceId,
+                        streamingMode->getMmapPath(),
+                        numOutputChannels,
+                        static_cast<int>(sampleRate),
+                        samplesPerBlock
+                    );
+                }
+                DBG("[Panner] Streaming mode initialized for: " + uniqueInstanceId);
+            } else {
+                DBG("[Panner] Failed to initialize streaming mode");
+            }
+        }
+    }
 }
 
 void M1PannerAudioProcessor::releaseResources()
@@ -542,6 +666,15 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         pannerSettings.lockOutputLayout = (bool)newValue;
         lockOutputLayout = (bool)newValue;
+    }
+    else if (parameterID == paramStreamingMode)
+    {
+        setStreamingModeEnabled((bool)newValue);
+    }
+    else if (parameterID == paramLocalMonitor)
+    {
+        localMonitorEnabled = (bool)newValue;
+        DBG("[Panner] Local monitor: " + juce::String(localMonitorEnabled ? "enabled" : "disabled"));
     }
     // send a pannersettings update to helper since a parameter changed
     try {
@@ -999,6 +1132,63 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         }
     }
 
+    // ========================================================================
+    // STREAMING MODE: Write encoded audio to shared memory
+    // ========================================================================
+    if (streamingModeEnabled && streamingMode && streamingMode->isStreamingActive())
+    {
+        // Copy encoded multichannel audio to streaming buffer
+        const int numEncodeChannels = pannerSettings.m1Encode.getOutputChannelsCount();
+        const int numSamplesToStream = buffer.getNumSamples();
+        
+        // Resize streaming buffer if needed (should be pre-allocated in prepareToPlay)
+        if (streamingEncodeBuffer.getNumChannels() < numEncodeChannels || 
+            streamingEncodeBuffer.getNumSamples() < numSamplesToStream)
+        {
+            // This shouldn't happen in normal operation - buffer should be pre-allocated
+            // But handle it gracefully without allocation in audio thread
+            DBG("[Panner] Warning: Streaming buffer size mismatch");
+        }
+        else
+        {
+            // Copy encoded audio from buf (which has the M1Encode output) to streaming buffer
+            for (int ch = 0; ch < numEncodeChannels; ++ch)
+            {
+                // buf contains the encoded spatial audio before channel reordering
+                streamingEncodeBuffer.copyFrom(ch, 0, buf, ch, 0, numSamplesToStream);
+            }
+            
+            // Write to shared memory ring buffer (RT-safe)
+            streamingMode->writeEncodedAudio(streamingEncodeBuffer, numSamplesToStream);
+            
+            // Update header with current encode parameters (RT-safe)
+            // Build gains vector from current M1Encode state
+            auto m1Gains = pannerSettings.m1Encode.getGains();
+            streamingMode->updateHeader(
+                m1Gains,
+                static_cast<int>(pannerSettings.m1Encode.getInputMode()),
+                static_cast<int>(pannerSettings.m1Encode.getOutputMode()),
+                static_cast<int>(pannerSettings.m1Encode.getPannerMode()),
+                pannerSettings.azimuth,
+                pannerSettings.elevation,
+                pannerSettings.diverge,
+                pannerSettings.gain,
+                pannerSettings.autoOrbit,
+                pannerSettings.stereoOrbitAzimuth,
+                pannerSettings.stereoSpread,
+                pannerSettings.stereoInputBalance,
+                hostTimelineData.playheadPositionInSeconds,
+                hostTimelineData.isPlaying
+            );
+        }
+        
+        // In streaming mode, clear output to DAW unless local monitor is enabled
+        if (!localMonitorEnabled)
+        {
+            mainOutput.clear();
+        }
+    }
+
     // update meters
          outputMeterValuedB.resize(mainOutput.getNumChannels()); // expand meter UI number
      for (int output_channel = 0; output_channel < mainOutput.getNumChannels(); output_channel++)
@@ -1011,6 +1201,23 @@ void M1PannerAudioProcessor::timerCallback()
 {
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
+    
+    // Send streaming heartbeat and touch the memory file if streaming mode is active
+    // This keeps the registration alive with the helper and prevents file staleness
+    if (streamingModeEnabled && streamingMode && streamingMode->isStreamingActive())
+    {
+        // Send OSC heartbeat
+        pannerOSC->sendStreamingHeartbeat(uniqueInstanceId);
+        
+        // Touch the memory file periodically to update modification time
+        // M1MemoryShareTracker considers files older than 120 seconds as stale
+        // Timer runs every 200ms, so touch every ~150 calls (30 seconds)
+        static int touchCounter = 0;
+        if (++touchCounter >= 150) {
+            streamingMode->touchFile();
+            touchCounter = 0;
+        }
+    }
 }
 
 //==============================================================================
@@ -1191,6 +1398,11 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     addXmlElement(root, "trackColor_b", juce::String(osc_colour.blue));
     addXmlElement(root, "trackColor_a", juce::String(osc_colour.alpha));
     addXmlElement(root, "output_layout_lock", juce::String(pannerSettings.lockOutputLayout ? 1 : 0));
+    
+    // Streaming mode state
+    addXmlElement(root, "pannerUuid", getOrCreatePannerUuid());
+    addXmlElement(root, paramStreamingMode, juce::String(streamingModeEnabled ? 1 : 0));
+    addXmlElement(root, paramLocalMonitor, juce::String(localMonitorEnabled ? 1 : 0));
 
     juce::String strDoc = root.createDocument(juce::String(""), false, false);
     stream.writeString(strDoc);
@@ -1239,6 +1451,35 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         osc_colour.blue = (int)getParameterIntFromXmlElement(root.get(), "trackColor_b", osc_colour.blue);
         osc_colour.alpha = (int)getParameterIntFromXmlElement(root.get(), "trackColor_a", osc_colour.alpha);
         parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
+        
+        // Streaming mode state - restore pannerUuid first (persisted across sessions)
+        if (root->getChildByName("param_pannerUuid") && root->getChildByName("param_pannerUuid")->hasAttribute("value"))
+        {
+            pannerUuid = root->getChildByName("param_pannerUuid")->getStringAttribute("value", "");
+            if (pannerUuid.isEmpty()) {
+                pannerUuid = Mach1::StreamingMode::generatePannerUuid();
+            }
+            DBG("[Panner] Restored UUID: " + pannerUuid);
+        }
+        
+        // Restore streaming mode settings
+        // Only restore if streaming mode wasn't auto-enabled due to channel constraints
+        bool savedStreamingMode = (bool)getParameterIntFromXmlElement(root.get(), paramStreamingMode, 0);
+        localMonitorEnabled = (bool)getParameterIntFromXmlElement(root.get(), paramLocalMonitor, 0);
+        
+        DBG("[Panner] setStateInformation: savedStreamingMode=" + juce::String(savedStreamingMode ? "true" : "false") +
+            ", streamingModeAutoEnabled=" + juce::String(streamingModeAutoEnabled ? "true" : "false") +
+            ", current streamingModeEnabled=" + juce::String(streamingModeEnabled ? "true" : "false"));
+        
+        // Don't disable streaming mode if it was auto-enabled due to stereo track constraints
+        if (streamingModeAutoEnabled && !savedStreamingMode) {
+            DBG("[Panner] State has streamingMode=false, but auto-enabled due to stereo track - keeping enabled");
+            savedStreamingMode = true;
+        }
+        
+        // Update parameters
+        params.getParameter(paramStreamingMode)->setValueNotifyingHost(savedStreamingMode ? 1.0f : 0.0f);
+        params.getParameter(paramLocalMonitor)->setValueNotifyingHost(localMonitorEnabled ? 1.0f : 0.0f);
 
         // if the parsed input from xml is not the default value
         parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
@@ -1282,4 +1523,122 @@ void M1PannerAudioProcessor::postAlert(const Mach1::AlertData& alert)
         pendingAlerts.push_back(alert); // Store for later
         DBG("Stored alert for UI. Total pending: " + juce::String(pendingAlerts.size()));
     }
+}
+
+//==============================================================================
+// Streaming Mode Methods
+//==============================================================================
+
+bool M1PannerAudioProcessor::isStreamingModeAvailable() const
+{
+    // Check if helper is reachable
+    if (pannerOSC && pannerOSC->isConnected()) {
+        return true;
+    }
+    
+    // Try to check if helper port is in use (helper running)
+    // Read helper port from settings
+    juce::File settingsFile;
+    juce::File m1SupportDirectory = juce::File::getSpecialLocation(juce::File::commonApplicationDataDirectory);
+    
+    #if JUCE_MAC
+        settingsFile = m1SupportDirectory.getChildFile("Application Support").getChildFile("Mach1").getChildFile("settings.json");
+    #else
+        settingsFile = m1SupportDirectory.getChildFile("Mach1").getChildFile("settings.json");
+    #endif
+    
+    if (settingsFile.exists()) {
+        juce::var settings = juce::JSON::parse(settingsFile);
+        int helperPort = settings["helperPort"];
+        if (helperPort > 0) {
+            return Mach1::HelperAutoLauncher::isHelperReachable(helperPort);
+        }
+    }
+    
+    return false;
+}
+
+void M1PannerAudioProcessor::setStreamingModeEnabled(bool enabled)
+{
+    DBG("[Panner] setStreamingModeEnabled called with: " + juce::String(enabled ? "true" : "false") + 
+        " (current: " + juce::String(streamingModeEnabled ? "true" : "false") + ")");
+    
+    if (streamingModeEnabled == enabled) {
+        DBG("[Panner] Streaming mode already " + juce::String(enabled ? "enabled" : "disabled") + ", skipping");
+        return;
+    }
+    
+    streamingModeEnabled = enabled;
+    DBG("[Panner] Streaming mode: " + juce::String(enabled ? "enabled" : "disabled"));
+    
+    if (enabled) {
+        // Try to launch helper if not running
+        bool helperAvailable = isStreamingModeAvailable();
+        DBG("[Panner] Helper available: " + juce::String(helperAvailable ? "yes" : "no"));
+        if (!helperAvailable) {
+            DBG("[Panner] Helper not available, attempting auto-launch");
+            Mach1::HelperAutoLauncher::launchHelperAsync();
+        }
+        
+        // Initialize streaming if we have sample rate info
+        DBG("[Panner] processorSampleRate: " + juce::String(processorSampleRate) + 
+            ", streamingMode: " + juce::String(streamingMode ? "valid" : "null"));
+        if (processorSampleRate > 0 && streamingMode) {
+            int numOutputChannels = pannerSettings.m1Encode.getOutputChannelsCount();
+            int blockSize = streamingEncodeBuffer.getNumSamples();
+            if (blockSize <= 0) blockSize = 512; // Default if not yet set
+            
+            DBG("[Panner] Preparing streaming: instanceId=" + uniqueInstanceId + 
+                " channels=" + juce::String(numOutputChannels) + 
+                " SR=" + juce::String(processorSampleRate) + 
+                " blockSize=" + juce::String(blockSize));
+            
+            if (streamingMode->prepareStreaming(uniqueInstanceId, numOutputChannels, processorSampleRate, blockSize)) {
+                DBG("[Panner] Streaming prepared, mmap path: " + streamingMode->getMmapPath());
+                
+                // Touch the file immediately to ensure it's fresh
+                streamingMode->touchFile();
+                
+                // Register with helper via OSC
+                if (pannerOSC && pannerOSC->isConnected()) {
+                    DBG("[Panner] Registering with helper via OSC");
+                    pannerOSC->registerStreamingPanner(
+                        Mach1::StreamingMode::getSessionId(),
+                        uniqueInstanceId,
+                        streamingMode->getMmapPath(),
+                        numOutputChannels,
+                        static_cast<int>(processorSampleRate),
+                        blockSize
+                    );
+                } else {
+                    DBG("[Panner] OSC not connected, cannot register with helper");
+                }
+                DBG("[Panner] Streaming mode initialized successfully");
+            } else {
+                DBG("[Panner] Failed to initialize streaming mode");
+                streamingModeEnabled = false;
+            }
+        } else {
+            DBG("[Panner] Cannot initialize streaming: sampleRate or streamingMode not ready");
+        }
+    } else {
+        // Disable streaming
+        if (streamingMode && streamingMode->isStreamingActive()) {
+            // Unregister from helper
+            if (pannerOSC && pannerOSC->isConnected()) {
+                pannerOSC->unregisterStreamingPanner(uniqueInstanceId);
+            }
+            streamingMode->shutdown();
+            DBG("[Panner] Streaming mode shutdown");
+        }
+    }
+}
+
+juce::String M1PannerAudioProcessor::getOrCreatePannerUuid()
+{
+    if (pannerUuid.isEmpty()) {
+        pannerUuid = Mach1::StreamingMode::generatePannerUuid();
+        DBG("[Panner] Generated new UUID: " + pannerUuid);
+    }
+    return pannerUuid;
 }
