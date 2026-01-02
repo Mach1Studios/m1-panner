@@ -188,6 +188,7 @@ public:
     juce::String m_instanceBaseName;
     void initializeMemorySharing();
     void updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer);
+    void updateMemorySharingParametersOnly();  // Update parameters even when audio isn't playing
 
     /**
      * Apply external settings updates from memory share with priority handling

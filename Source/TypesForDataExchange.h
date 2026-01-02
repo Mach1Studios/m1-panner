@@ -172,7 +172,7 @@ struct GenericAudioBufferHeader
     uint32_t consumerCount;     // Number of consumers that need to acknowledge
     uint32_t acknowledgedCount; // Number of consumers that have acknowledged
 
-    uint32_t reserved[1];       // Reserved for future expansion (reduced from 4 to 1)
+    uint32_t reserved[2];       // Reserved for future expansion (reduced from 4 to 2)
 
     // Parameters follow immediately after this struct
     // Each parameter is: GenericParameter + parameter data

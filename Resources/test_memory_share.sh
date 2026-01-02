@@ -7,7 +7,9 @@ set -e
 
 # Check multiple possible locations for shared memory files
 TEMP_DIRS=(
+    "$HOME/Library/Group Containers/group.com.mach1.spatial.shared/Library/Caches/M1-Panner"
     "$HOME/Library/Caches/M1-Panner"
+    "/tmp/M1-Panner"
     "/tmp"
     "$HOME/Library/Caches"
 )
@@ -186,6 +188,10 @@ struct SharedMemoryHeader {
     // Consumer management
     volatile uint32_t consumerCount;
     volatile uint32_t consumerIds[16];
+    // Bidirectional communication - Control messages from consumers back to producer
+    volatile uint32_t controlMessageCount;
+    volatile uint32_t controlReadIndex;
+    volatile uint32_t controlWriteIndex;
 };
 
 struct QueuedBuffer {

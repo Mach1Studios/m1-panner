@@ -448,6 +448,13 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
             postAlert(alert);
         }
     }
+    
+    // Initialize memory sharing if in external spatial mixer mode
+    // This ensures the memory file is created even before audio starts playing
+    if (external_spatialmixer_active && !m_memoryShareInitialized)
+    {
+        initializeMemorySharing();
+    }
 }
 
 void M1PannerAudioProcessor::releaseResources()
@@ -1171,6 +1178,13 @@ void M1PannerAudioProcessor::timerCallback()
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
 
+    // Update memory sharing with current parameters (even when audio isn't playing)
+    // This ensures parameter changes are visible to the helper immediately
+    if (external_spatialmixer_active && m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
+    {
+        updateMemorySharingParametersOnly();
+    }
+
     // ON-DEMAND SERVICE INTEGRATION: Periodic health check for helper service
     // Check every ~10 seconds (timer runs every 200ms, so check every 50 calls)
     static int healthCheckCounter = 0;
@@ -1593,10 +1607,103 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     
     // Add state and color info
     parameters.addInt(M1PannerParameterIDs::STATE, pannerSettings.state.load());
+    parameters.addInt(M1PannerParameterIDs::PORT, pannerSettings.port);
+    
+    // Add color info
+    parameters.addInt(M1PannerParameterIDs::COLOR_R, static_cast<int32_t>(pannerSettings.color.r.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_G, static_cast<int32_t>(pannerSettings.color.g.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_B, static_cast<int32_t>(pannerSettings.color.b.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_A, static_cast<int32_t>(pannerSettings.color.a.load()));
+    
+    // Add display name (track name from host) - cache it from track_properties
+    // Note: track_properties is updated by host via updateTrackProperties()
+    std::string displayName;
+    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
+    {
+        displayName = track_properties.name->toStdString();
+    }
+    else
+    {
+        // Fallback: use a generated name with the port/instance ID
+        displayName = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
+    }
+    parameters.addString(M1PannerParameterIDs::DISPLAY_NAME, displayName);
 
     // Write audio buffer with generic parameters
     // Note: writeAudioBufferWithGenericParameters should be RT-safe internally
     m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, true);
+}
+
+void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
+{
+    if (!m_memoryShare || !m_memoryShare->isValid())
+    {
+        return;
+    }
+
+    // Get DAW timestamp
+    uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
+    double playheadPosition = 0.0;
+    bool isPlaying = false;
+
+    // Get playhead info from DAW if available
+    if (auto* ph = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
+        if (ph->getCurrentPosition(currentPlayHeadInfo))
+        {
+            isPlaying = currentPlayHeadInfo.isPlaying;
+            playheadPosition = currentPlayHeadInfo.timeInSeconds;
+        }
+    }
+
+    // Create parameter map with current panner settings
+    ParameterMap parameters;
+    parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
+    parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
+    parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
+    parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
+    parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
+    parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
+    parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
+    parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
+    parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
+    
+    // Add input/output mode info
+    {
+        std::lock_guard<std::mutex> lock(pannerSettings.processingMutex);
+        parameters.addInt(M1PannerParameterIDs::INPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getInputMode()));
+        parameters.addInt(M1PannerParameterIDs::OUTPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getOutputMode()));
+    }
+    
+    // Add state, port, and color info
+    parameters.addInt(M1PannerParameterIDs::STATE, pannerSettings.state.load());
+    parameters.addInt(M1PannerParameterIDs::PORT, pannerSettings.port);
+    parameters.addInt(M1PannerParameterIDs::COLOR_R, static_cast<int32_t>(pannerSettings.color.r.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_G, static_cast<int32_t>(pannerSettings.color.g.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_B, static_cast<int32_t>(pannerSettings.color.b.load()));
+    parameters.addInt(M1PannerParameterIDs::COLOR_A, static_cast<int32_t>(pannerSettings.color.a.load()));
+    
+    // Add display name (track name from host)
+    std::string displayName;
+    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
+    {
+        displayName = track_properties.name->toStdString();
+    }
+    else
+    {
+        displayName = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
+    }
+    parameters.addString(M1PannerParameterIDs::DISPLAY_NAME, displayName);
+
+    // Create an empty audio buffer (0 samples) for parameter-only updates
+    juce::AudioBuffer<float> emptyBuffer(2, 0);  // 2 channels, 0 samples
+    
+    // Write parameters without audio data
+    m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, false);
 }
 
 // ON-DEMAND SERVICE INTEGRATION: Helper method to check service availability

@@ -50,11 +50,16 @@ public:
         // Consumer management
         volatile uint32_t consumerCount;        // Number of registered consumers
         volatile uint32_t consumerIds[16];      // Consumer IDs (max 16 consumers)
+        
+        // Bidirectional communication - Control messages from consumers back to producer
+        volatile uint32_t controlMessageCount;  // Number of pending control messages
+        volatile uint32_t controlReadIndex;     // Read index for control messages
+        volatile uint32_t controlWriteIndex;    // Write index for control messages
 
         SharedMemoryHeader() : writeIndex(0), readIndex(0), dataSize(0), hasData(false),
                               bufferSize(0), sampleRate(0), numChannels(0), samplesPerBlock(0),
                               queueSize(0), maxQueueSize(8), nextSequenceNumber(0), nextBufferId(1),
-                              consumerCount(0)
+                              consumerCount(0), controlMessageCount(0), controlReadIndex(0), controlWriteIndex(0)
         {
             std::memset(name, 0, sizeof(name));
             std::memset(const_cast<uint32_t*>(consumerIds), 0, sizeof(consumerIds));

@@ -88,6 +88,10 @@ struct SharedMemoryHeader {
     // Consumer management
     volatile uint32_t consumerCount;
     volatile uint32_t consumerIds[16];
+    // Bidirectional communication - Control messages from consumers back to producer
+    volatile uint32_t controlMessageCount;
+    volatile uint32_t controlReadIndex;
+    volatile uint32_t controlWriteIndex;
 };
 
 struct QueuedBuffer {
