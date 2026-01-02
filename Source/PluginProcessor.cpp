@@ -454,6 +454,17 @@ void M1PannerAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    
+    // Reset layout state to ensure clean re-initialization on next prepareToPlay
+    layoutCreated = false;
+    
+    // Clean up memory sharing
+    if (m_memoryShare)
+    {
+        m_memoryShareInitialized = false;
+        // Don't destroy the memory share here - it will be cleaned up in destructor
+        // Just mark it as not initialized for safety
+    }
 }
 
 void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
@@ -678,14 +689,16 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
 
         return isValid;
     }
-    /* TODO: Finish EXTERNAL STREAMING Mode before using this
-    else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
+    // EXTERNAL STREAMING MODE: Accept stereo in/out for streaming to external mixer
+    else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || 
+              layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && 
+             (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
     {
-        // RETURN TRUE FOR EXTERNAL STREAMING MODE
-        // hard set {1,2} and {2,2} for streaming use case
+        // Accept stereo output - streaming mode will use M1MemoryShare instead
+        DBG("Layout ACCEPTED for streaming mode - Input: " + layouts.getMainInputChannelSet().getDescription() +
+            " Output: " + layouts.getMainOutputChannelSet().getDescription());
         return true;
     }
-    */
     else
     {
         // Test for all available Mach1Encode configs
@@ -851,6 +864,13 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
 void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    
+    // Early exit if plugin is being destroyed (state == -1)
+    if (pannerSettings.state.load() == -1)
+    {
+        buffer.clear();
+        return;
+    }
 
     // Use this method as the place to do any pre-playback
     if (!layoutCreated)
@@ -1099,16 +1119,14 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         }
     }
 
-    // In external mixer mode, copy processed samples to host output (stereo only)
+    // In external mixer mode, output SILENCE to avoid double-monitoring
+    // (the spatial audio goes to m1-system-helper via M1MemoryShare, not to host output)
     if (external_spatialmixer_active)
     {
-        for (int output_channel = 0; output_channel < mainOutput.getNumChannels(); output_channel++)
-        {
-            for (int sample = 0; sample < buffer.getNumSamples(); sample++)
-            {
-                outBuffer[output_channel][sample] = buf.getSample(output_channel, sample);
-            }
-        }
+        // Output silence - audio is already sent via M1MemoryShare to external mixer
+        mainOutput.clear();
+        // Note: If a "Local Monitor (Dry)" parameter is added in the future,
+        // we could optionally pass through the dry input signal here instead of silence
     }
     else
     {
@@ -1518,103 +1536,67 @@ void M1PannerAudioProcessor::initializeMemorySharing()
 
 void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer)
 {
-    if (!m_memoryShare)
+    
+    if (!m_memoryShare || !m_memoryShare->isValid())
     {
-        DBG("[M1MemoryShare] updateMemorySharing called but m_memoryShare is null");
-        return;
-    }
-
-    if (!m_memoryShare->isValid())
-    {
-        DBG("[M1MemoryShare] updateMemorySharing called but m_memoryShare is not valid");
         return;
     }
 
     // Only share audio data for 1-channel (mono) or 2-channel (stereo) inputs
-    int numInputChannels = inputBuffer.getNumChannels();
-    int numSamples = inputBuffer.getNumSamples();
+    const int numInputChannels = inputBuffer.getNumChannels();
+    const int numSamples = inputBuffer.getNumSamples();
 
-    if (numInputChannels == 1 || numInputChannels == 2)
+    if (numInputChannels != 1 && numInputChannels != 2)
     {
-        // Debug: Check if the buffer actually contains audio data
-        float maxLevel = 0.0f;
-        float rmsLevel = 0.0f;
-        float sumSquares = 0.0f;
-        int totalSamples = numSamples * numInputChannels;
+        return; // Unsupported channel count
+    }
 
-        for (int channel = 0; channel < numInputChannels; ++channel)
+    // Get DAW timestamp and playhead information
+    uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
+    double playheadPosition = 0.0;
+    bool isPlaying = false;
+
+    // Get playhead info from DAW (this is safe in processBlock)
+    if (auto* ph = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
+        if (ph->getCurrentPosition(currentPlayHeadInfo))
         {
-            const float* channelData = inputBuffer.getReadPointer(channel);
-            for (int sample = 0; sample < numSamples; ++sample)
-            {
-                float sampleValue = channelData[sample];
-                maxLevel = std::max(maxLevel, std::abs(sampleValue));
-                sumSquares += sampleValue * sampleValue;
-            }
-        }
-
-        if (totalSamples > 0)
-        {
-            rmsLevel = std::sqrt(sumSquares / totalSamples);
-        }
-
-        DBG("[M1MemoryShare] Audio buffer analysis: channels=" + juce::String(numInputChannels) +
-            ", samples=" + juce::String(numSamples) +
-            ", maxLevel=" + juce::String(maxLevel, 6) +
-            ", rmsLevel=" + juce::String(rmsLevel, 6));
-
-        // Get DAW timestamp and playhead information
-        uint64_t dawTimestamp = juce::Time::currentTimeMillis();
-        double playheadPosition = 0.0;
-        bool isPlaying = false;
-
-        // Get playhead info from DAW
-        if (getPlayHead() != nullptr)
-        {
-            juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
-            if (getPlayHead()->getCurrentPosition(currentPlayHeadInfo))
-            {
-                isPlaying = currentPlayHeadInfo.isPlaying;
-                playheadPosition = currentPlayHeadInfo.timeInSeconds;
-            }
-        }
-
-        // Only share if there's actually audio data or if we want to share silence as well
-        // Create parameter map with current panner settings
-        ParameterMap parameters;
-        parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
-        parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
-        parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
-        parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
-        parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
-        parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
-        parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
-        parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
-        parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
-        parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
-        parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
-        parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
-
-        // Write audio buffer with generic parameters (timing info passed as separate parameters)
-        // Enable acknowledgment for external consumers
-        uint64_t bufferId = m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, true);
-
-        if (bufferId == 0)
-        {
-            DBG("[M1MemoryShare] Failed to write audio buffer with generic parameters to shared memory");
-        }
-        else
-        {
-            DBG("[M1MemoryShare] Successfully wrote audio buffer with generic parameters - bufferId: " + juce::String(bufferId) +
-                ", channels: " + juce::String(numInputChannels) + ", samples: " + juce::String(numSamples) +
-                ", maxLevel: " + juce::String(maxLevel, 6) +
-                ", azimuth: " + juce::String(pannerSettings.azimuth.load()) + ", elevation: " + juce::String(pannerSettings.elevation.load()));
+            isPlaying = currentPlayHeadInfo.isPlaying;
+            playheadPosition = currentPlayHeadInfo.timeInSeconds;
         }
     }
-    else
+
+    // Create parameter map with current panner settings
+    // Note: ParameterMap uses std::map which has allocations - consider pre-allocating
+    // or using a fixed-size structure for truly RT-safe operation
+    ParameterMap parameters;
+    parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
+    parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
+    parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
+    parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
+    parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
+    parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
+    parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
+    parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
+    parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
+    parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
+    
+    // Add input/output mode info
     {
-        DBG("[M1MemoryShare] Not sharing audio data - unsupported channel count: " + juce::String(numInputChannels));
+        std::lock_guard<std::mutex> lock(pannerSettings.processingMutex);
+        parameters.addInt(M1PannerParameterIDs::INPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getInputMode()));
+        parameters.addInt(M1PannerParameterIDs::OUTPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getOutputMode()));
     }
+    
+    // Add state and color info
+    parameters.addInt(M1PannerParameterIDs::STATE, pannerSettings.state.load());
+
+    // Write audio buffer with generic parameters
+    // Note: writeAudioBufferWithGenericParameters should be RT-safe internally
+    m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, true);
 }
 
 // ON-DEMAND SERVICE INTEGRATION: Helper method to check service availability

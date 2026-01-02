@@ -81,11 +81,13 @@ bool M1MemoryShare::createSharedMemoryFile()
         DBG("[M1MemoryShare] Failed to create or access shared memory directory");
         // Fallback to temp directory
         std::string tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
-        m_tempFile = juce::File(juce::String(tempDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
+        // m_memoryName already includes M1SpatialSystem_ prefix from generateUniqueInstanceName()
+        m_tempFile = juce::File(juce::String(tempDir) + "/" + m_memoryName + ".mem");
     } else {
         // Use SharedMemoryPaths to get the App Group container or fallback directory
         std::string sharedDir = Mach1::SharedMemoryPaths::getMemoryFileDirectory();
-        m_tempFile = juce::File(juce::String(sharedDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
+        // m_memoryName already includes M1SpatialSystem_ prefix from generateUniqueInstanceName()
+        m_tempFile = juce::File(juce::String(sharedDir) + "/" + m_memoryName + ".mem");
     }
 
     DBG("[M1MemoryShare] Attempting to create file: " + m_tempFile.getFullPathName());
@@ -139,7 +141,8 @@ bool M1MemoryShare::openSharedMemoryFile()
         sharedDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
     }
 
-    m_tempFile = juce::File(juce::String(sharedDir) + "/M1SpatialSystem_" + m_memoryName + ".mem");
+    // m_memoryName already includes M1SpatialSystem_ prefix from generateUniqueInstanceName()
+    m_tempFile = juce::File(juce::String(sharedDir) + "/" + m_memoryName + ".mem");
 
     if (!m_tempFile.exists())
     {
@@ -225,7 +228,6 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
 {
     if (!isValid())
     {
-        DBG("[M1MemoryShare] writeAudioBufferWithGenericParameters: Not valid");
         return 0;
     }
 
@@ -268,8 +270,7 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
 
     if (totalSize > m_dataBufferSize)
     {
-        DBG("[M1MemoryShare] Generic buffer too large: " + juce::String(totalSize) + " > " + juce::String(m_dataBufferSize));
-        return 0;
+        return 0; // Buffer too large
     }
 
     // Generate buffer ID and sequence number
@@ -288,8 +289,7 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
         // Check if queue is full
         if (m_header->queueSize >= m_maxQueueSize)
         {
-            DBG("[M1MemoryShare] Queue full, cannot add buffer");
-            return 0;
+            return 0; // Queue full
         }
     }
 
@@ -443,7 +443,6 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
     }
 
     ++m_writeCount;
-    DBG("[M1MemoryShare] Wrote generic buffer with " + juce::String(header->parameterCount) + " parameters, bufferId=" + juce::String(bufferId));
     return bufferId;
 }
 
