@@ -149,7 +149,7 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
                     juce::OSCMessage response = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
                     response.addInt32(port);
                     is_connected = tempSender.send(response);
-                    DBG("[OSC] Ping responded: " + std::to_string(port));
+                    //DBG("[OSC] Ping responded: " + std::to_string(port));
                 }
             }
             catch (...)
@@ -204,7 +204,7 @@ bool PannerOSC::isConnected()
     return is_connected;
 }
 
-bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
+bool PannerOSC::sendRequestForCurrentChannelConfig()
 {
     if (!is_connected) {
         // Try to reconnect if needed
@@ -213,7 +213,7 @@ bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
                 if (processor) {
                     Mach1::AlertData alert;
                     alert.title = "Connection Error";
-                    alert.message = "Failed to connect to Mach1 Spatial Mixer when changing channel configuration.";
+                    alert.message = "Failed to connect to m1-system-helper when requesting current channel configuration.";
                     alert.buttonText = "OK";
                     processor->postAlert(alert);
                 }
@@ -223,7 +223,7 @@ bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
             if (processor) {
                 Mach1::AlertData alert;
                 alert.title = "Connection Error";
-                alert.message = "Exception occurred when connecting to Mach1 Spatial Mixer.";
+                alert.message = "Exception occurred when connecting to m1-system-helper.";
                 alert.buttonText = "OK";
                 processor->postAlert(alert);
             }
@@ -231,18 +231,17 @@ bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
         }
     }
 
-    // Build message
-    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-request-channel-config"));
+    // Build message to request current channel config
+    juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/request-current-channel-config"));
     try {
-        m.addInt32(port);
-        m.addInt32(channel_count_for_config);
+        m.addInt32(port); // Include our port for identification
 
         if (!juce::OSCSender::send(m)) {
             is_connected = false;
             if (processor) {
                 Mach1::AlertData alert;
-                alert.title = "Configuration Error";
-                alert.message = "Failed to send channel configuration request to Mach1 Spatial Mixer.";
+                alert.title = "Request Error";
+                alert.message = "Failed to send request for current channel configuration to m1-system-helper.";
                 alert.buttonText = "OK";
                 processor->postAlert(alert);
             }
@@ -253,8 +252,8 @@ bool PannerOSC::sendRequestToChangeChannelConfig(int channel_count_for_config)
         is_connected = false;
         if (processor) {
             Mach1::AlertData alert;
-            alert.title = "Configuration Error";
-            alert.message = "Exception occurred when sending channel configuration request.";
+            alert.title = "Request Error";
+            alert.message = "Exception occurred when requesting current channel configuration.";
             alert.buttonText = "OK";
             processor->postAlert(alert);
         }

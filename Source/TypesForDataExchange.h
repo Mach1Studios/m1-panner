@@ -96,8 +96,8 @@ struct PannerSettings
     // Thread-safe boolean flags
     std::atomic<bool> autoOrbit{true};
     std::atomic<bool> overlay{false};
-    std::atomic<bool> isotropicMode{false};
-    std::atomic<bool> equalpowerMode{false};
+    std::atomic<bool> isotropicMode{true};
+    std::atomic<bool> equalpowerMode{true};
     std::atomic<bool> lockOutputLayout{false};
     std::atomic<bool> gainCompensationMode{true}; // used for gain compensation when changing the output mode
 

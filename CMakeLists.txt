@@ -129,6 +129,7 @@ target_compile_definitions(${PLUGIN_NAME}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=$<IF:$<BOOL:${ENABLE_VST2_COMPATIBILITY}>,1,0>
+    JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.

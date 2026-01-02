@@ -154,9 +154,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     });
 
     // Get or assign a track color for panner instance -> player
-    if (track_properties.colour.getAlpha() != 0)
+    if (track_properties.colour.has_value() && track_properties.colour->getAlpha() != 0)
     { // unfound colors are 0,0,0,0
-        osc_colour.fromInt32(track_properties.colour.getARGB());
+        osc_colour.fromInt32(track_properties.colour->getARGB());
     }
     else
     {
@@ -605,7 +605,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     try {
         if (pannerOSC->isConnected())
         {
-            pannerOSC->sendPannerSettings(pannerSettings.state.load(), track_properties.name.toStdString(), osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth.load(), pannerSettings.elevation.load(), pannerSettings.diverge.load(), pannerSettings.gain.load(), (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode.load(), pannerSettings.autoOrbit.load(), pannerSettings.stereoOrbitAzimuth.load(), pannerSettings.stereoSpread.load());
+            std::string track_name = track_properties.name.has_value() ? track_properties.name->toStdString() : "";
+            pannerOSC->sendPannerSettings(pannerSettings.state, track_name, osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
         }
     }
     catch (...) {
@@ -1252,10 +1253,6 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         DBG("Current config: " + std::to_string(pannerSettings.m1Encode.getOutputMode()) + " and new config: " + std::to_string(outputMode));
         pannerSettings.m1Encode.setOutputMode(outputMode);
         gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
-        if (!pannerSettings.lockOutputLayout)
-        {
-            pannerOSC->sendRequestToChangeChannelConfig(pannerSettings.m1Encode.getOutputChannelsCount());
-        }
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
 
