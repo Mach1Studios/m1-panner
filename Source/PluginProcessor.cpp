@@ -968,6 +968,14 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     {
         DBG("[M1MemoryShare] Memory sharing active but not initialized yet");
     }
+    
+    // Debug: log when NOT sharing audio (to diagnose capture issues)
+    static int debugCounter = 0;
+    if (!external_spatialmixer_active && m_memoryShareInitialized && ++debugCounter % 5000 == 0)
+    {
+        DBG("[M1MemoryShare] external_spatialmixer NOT active - audio not shared. Input: " + 
+            juce::String(mainInput.getNumChannels()) + "ch, " + juce::String(mainInput.getNumSamples()) + " samples");
+    }
 
     // output buffers
     juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
@@ -1178,9 +1186,12 @@ void M1PannerAudioProcessor::timerCallback()
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
 
-    // Update memory sharing with current parameters (even when audio isn't playing)
-    // This ensures parameter changes are visible to the helper immediately
-    if (external_spatialmixer_active && m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
+    // Update memory sharing with current parameters ONLY if we didn't already write audio
+    // (audio updates include parameters, so no need to duplicate)
+    // This ensures parameter changes are visible to the helper even when audio isn't being shared
+    // NOTE: Only call this if external_spatialmixer is NOT active, because when active,
+    // updateMemorySharing() already writes both audio AND parameters
+    if (!external_spatialmixer_active && m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
     {
         updateMemorySharingParametersOnly();
     }
@@ -1631,7 +1642,11 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
 
     // Write audio buffer with generic parameters
     // Note: writeAudioBufferWithGenericParameters should be RT-safe internally
-    m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, true);
+    // Pass current sample rate for accurate startSamplePosition calculation
+    uint32_t currentSampleRate = static_cast<uint32_t>(processorSampleRate);
+    if (currentSampleRate == 0) currentSampleRate = 44100; // Fallback
+    m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, 
+                                                         playheadPosition, isPlaying, true, 1, currentSampleRate);
 }
 
 void M1PannerAudioProcessor::updateMemorySharingParametersOnly()

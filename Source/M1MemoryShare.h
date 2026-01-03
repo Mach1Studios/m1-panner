@@ -140,6 +140,7 @@ public:
      * @param isPlaying Whether DAW is currently playing
      * @param requiresAcknowledgment Whether this buffer requires acknowledgment
      * @param updateSource Source of the update (HOST, UI, MEMORYSHARE)
+     * @param sampleRate Sample rate for calculating startSamplePosition (default 44100)
      * @return buffer ID if write was successful, 0 otherwise
      */
     uint64_t writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
@@ -148,7 +149,8 @@ public:
                                                   double playheadPositionInSeconds,
                                                   bool isPlaying,
                                                   bool requiresAcknowledgment = false,
-                                                  uint32_t updateSource = 1);
+                                                  uint32_t updateSource = 1,
+                                                  uint32_t sampleRate = 44100);
 
     /**
      * Read the oldest unacknowledged audio buffer from shared memory

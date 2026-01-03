@@ -224,7 +224,8 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
                                                            double playheadPositionInSeconds,
                                                            bool isPlaying,
                                                            bool requiresAcknowledgment,
-                                                           uint32_t updateSource)
+                                                           uint32_t updateSource,
+                                                           uint32_t sampleRate)
 {
     if (!isValid())
     {
@@ -301,7 +302,7 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
     header->channels = audioBuffer.getNumChannels();
     header->samples = audioBuffer.getNumSamples();
     header->dawTimestamp = dawTimestamp;
-    header->playheadPositionInSeconds =   playheadPositionInSeconds;
+    header->playheadPositionInSeconds = playheadPositionInSeconds;
     header->isPlaying = isPlaying ? 1 : 0;
     header->updateSource = updateSource;
     header->isUpdatingFromExternal = 0;
@@ -314,6 +315,10 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
     header->requiresAcknowledgment = requiresAcknowledgment ? 1 : 0;
     header->consumerCount = m_header->consumerCount;
     header->acknowledgedCount = 0;
+    
+    // Set sample-accurate position for capture/export
+    header->sampleRate = sampleRate;
+    header->startSamplePosition = static_cast<int64_t>(playheadPositionInSeconds * sampleRate);
 
     // Count total parameters
     header->parameterCount = parameters.floatParams.size() + parameters.intParams.size() +
