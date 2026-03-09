@@ -44,6 +44,9 @@ private:
 
     MurImage m1logo;
 
+    bool overlayReticleGestureActive = false;
+    bool overlayDivergeKnobGestureActive = false;
+
     bool pitchWheelHoveredAtLastFrame = false; // to tie up Z knob and pitch wheel
     bool reticleHoveredLastFrame = false;
     bool divergeKnobDraggingNow = false;

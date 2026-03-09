@@ -126,11 +126,6 @@ void OverlayUIBaseComponent::initialise()
 
 void OverlayUIBaseComponent::draw()
 {
-    // *** GESTURE TRACKING FLAGS ***
-    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
-    static bool overlayReticleGestureActive = false;
-    static bool overlayDivergeKnobGestureActive = false;
-
     // Track dragging states for cleanup
     bool overlayReticleDraggingNow = false;
     bool overlayDivergeDraggingNow = false;

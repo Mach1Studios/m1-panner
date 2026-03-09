@@ -44,15 +44,6 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::draw()
 {
-    // *** GESTURE TRACKING FLAGS ***
-    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
-    static bool reticleGestureActive = false;
-    static bool azKnobGestureActive = false;
-    static bool dKnobGestureActive = false;
-    static bool xKnobGestureActive = false;
-    static bool yKnobGestureActive = false;
-    static bool zKnobGestureActive = false;
-
     // TODO: Remove this and rescale all sizing and positions
     float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
