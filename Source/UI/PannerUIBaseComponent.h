@@ -53,6 +53,15 @@ private:
 
     MurImage m1logo;
 
+    // Gesture state must be per-editor-instance. Shared static state causes
+    // mismatched begin/endChangeGesture() calls when multiple plugin UIs are open.
+    bool reticleGestureActive = false;
+    bool azKnobGestureActive = false;
+    bool dKnobGestureActive = false;
+    bool xKnobGestureActive = false;
+    bool yKnobGestureActive = false;
+    bool zKnobGestureActive = false;
+
     bool pitchWheelHoveredAtLastFrame = false; // to tie up Z knob and pitch wheel
     bool reticleHoveredLastFrame = false;
     bool divergeKnobDraggingNow = false;

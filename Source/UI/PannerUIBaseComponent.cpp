@@ -22,9 +22,6 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
         murkaAlert.alertActive = false;
     };
 
-    processor->postAlertToUI = [this](const Mach1::AlertData& alert) {
-        this->postAlert(alert);
-    };
 }
 
 PannerUIBaseComponent::~PannerUIBaseComponent()
@@ -41,15 +38,6 @@ void PannerUIBaseComponent::initialise()
 
 void PannerUIBaseComponent::draw()
 {
-    // *** GESTURE TRACKING FLAGS ***
-    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
-    static bool reticleGestureActive = false;
-    static bool azKnobGestureActive = false;
-    static bool dKnobGestureActive = false;
-    static bool xKnobGestureActive = false;
-    static bool yKnobGestureActive = false;
-    static bool zKnobGestureActive = false;
-
     // TODO: Remove this and rescale all sizing and positions
     float scale = (float)openGLContext.getRenderingScale() * 0.7;
     if (scale != m.getScreenScale())
@@ -94,25 +82,26 @@ void PannerUIBaseComponent::draw()
 
     // Manage gesture state for reticle movement
 
+    auto& params = processor->getValueTreeState();
+    auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+    auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+    // Begin the parameter gesture as soon as dragging starts.
+    // This keeps JUCE's begin/end gesture pairing symmetric even if the user
+    // clicks, double-clicks, or briefly drags before any delta is registered.
+    if (reticleField.draggingNow && !reticleGestureActive)
+    {
+        processor->azimuthOwnedByUI = true;
+        processor->divergeOwnedByUI = true;
+
+        paramAzimuth->beginChangeGesture();
+        paramDiverge->beginChangeGesture();
+        reticleGestureActive = true;
+    }
+
     if (reticleField.results)
     {
         processor->convertXYtoRCRaw(pannerState->x, pannerState->y, pannerState->azimuth, pannerState->diverge);
-
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
-        // Begin gesture when dragging starts
-        if (reticleField.draggingNow && !reticleGestureActive)
-        {
-            // Claim ownership of azimuth and diverge parameters
-            processor->azimuthOwnedByUI = true;
-            processor->divergeOwnedByUI = true;
-
-            paramAzimuth->beginChangeGesture();
-            paramDiverge->beginChangeGesture();
-            reticleGestureActive = true;
-        }
 
         // Set parameter values during drag
         if (reticleField.draggingNow)
@@ -125,10 +114,6 @@ void PannerUIBaseComponent::draw()
     // End gesture when dragging stops
     if (reticleGestureActive && !reticleField.draggingNow)
     {
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
         paramAzimuth->endChangeGesture();
         paramDiverge->endChangeGesture();
         reticleGestureActive = false;

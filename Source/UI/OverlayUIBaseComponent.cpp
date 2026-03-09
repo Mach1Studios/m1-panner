@@ -126,11 +126,6 @@ void OverlayUIBaseComponent::initialise()
 
 void OverlayUIBaseComponent::draw()
 {
-    // *** GESTURE TRACKING FLAGS ***
-    // These track whether beginChangeGesture() has been called but endChangeGesture() has not
-    static bool overlayReticleGestureActive = false;
-    static bool overlayDivergeKnobGestureActive = false;
-
     // Track dragging states for cleanup
     bool overlayReticleDraggingNow = false;
     bool overlayDivergeDraggingNow = false;
@@ -174,26 +169,26 @@ void OverlayUIBaseComponent::draw()
         overlayReticleField.pannerState = pannerState;
         overlayReticleField.draw();
 
+        auto& params = processor->getValueTreeState();
+        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+        auto* paramElevation = params.getParameter(processor->paramElevation);
+
+        // Mirror the main reticle behavior and begin gestures on drag start,
+        // not only once a value delta has already been observed.
+        if (overlayReticleField.draggingNow && !overlayReticleGestureActive)
+        {
+            processor->azimuthOwnedByUI = true;
+            processor->elevationOwnedByUI = true;
+
+            paramAzimuth->beginChangeGesture();
+            paramElevation->beginChangeGesture();
+            overlayReticleGestureActive = true;
+        }
+
         // Manage gesture state for overlay reticle movement
         if (overlayReticleField.changed)
         {
             convertRCtoXYRaw(pannerState->azimuth, pannerState->diverge, pannerState->x, pannerState->y);
-
-            auto& params = processor->getValueTreeState();
-            auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-            auto* paramElevation = params.getParameter(processor->paramElevation);
-
-            // Begin gesture when dragging starts
-            if (overlayReticleField.draggingNow && !overlayReticleGestureActive)
-            {
-                // Claim ownership of azimuth and elevation parameters
-                processor->azimuthOwnedByUI = true;
-                processor->elevationOwnedByUI = true;
-
-                paramAzimuth->beginChangeGesture();
-                paramElevation->beginChangeGesture();
-                overlayReticleGestureActive = true;
-            }
 
             // Set parameter values during drag
             if (overlayReticleField.draggingNow)
@@ -206,10 +201,6 @@ void OverlayUIBaseComponent::draw()
         // End gesture when dragging stops
         if (overlayReticleGestureActive && !overlayReticleField.draggingNow)
         {
-            auto& params = processor->getValueTreeState();
-            auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-            auto* paramElevation = params.getParameter(processor->paramElevation);
-
             paramAzimuth->endChangeGesture();
             paramElevation->endChangeGesture();
             overlayReticleGestureActive = false;
@@ -341,7 +332,6 @@ void OverlayUIBaseComponent::draw()
         overlayDivergeKnobGestureActive = false;
     }
 
-    m.end();
 }
 
 //==============================================================================
