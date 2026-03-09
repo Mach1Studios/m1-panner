@@ -13,15 +13,10 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     pannerState = &processor->pannerSettings;
     monitorState = &processor->monitorSettings;
 
-    // ON-DEMAND SERVICE INTEGRATION: Request helper service when UI opens
-    // This ensures service is only launched when user actually opens the plugin UI
-    if (!processor->m_uniqueInstanceId.isEmpty()) {
+    {
         auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
-        if (helperManager.requestHelperService(processor->m_uniqueInstanceId.toStdString())) {
-            DBG("[M1-Panner] Helper service requested successfully for UI instance: " + processor->m_uniqueInstanceId);
-        } else {
-            DBG("[M1-Panner] Warning: Failed to request helper service for UI instance: " + processor->m_uniqueInstanceId);
-        }
+        if (!helperManager.requestHelperService("M1-Panner"))
+            DBG("[M1-Panner] Warning: Failed to request helper service");
     }
 
     // Set up alert dismiss callback
@@ -33,9 +28,6 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
         murkaAlert.alertActive = false;
     };
 
-    processor->postAlertToUI = [this](const Mach1::AlertData& alert) {
-        this->postAlert(alert);
-    };
 }
 
 PannerUIBaseComponent::~PannerUIBaseComponent()
@@ -122,6 +114,23 @@ void PannerUIBaseComponent::draw()
 
     // Manage gesture state for reticle movement
 
+    auto& params = processor->getValueTreeState();
+    auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
+    auto* paramDiverge = params.getParameter(processor->paramDiverge);
+
+    // Begin the parameter gesture as soon as dragging starts.
+    // This keeps JUCE's begin/end gesture pairing symmetric even if the user
+    // clicks, double-clicks, or briefly drags before any delta is registered.
+    if (reticleField.draggingNow && !reticleGestureActive)
+    {
+        processor->azimuthOwnedByUI = true;
+        processor->divergeOwnedByUI = true;
+
+        paramAzimuth->beginChangeGesture();
+        paramDiverge->beginChangeGesture();
+        reticleGestureActive = true;
+    }
+
     if (reticleField.results)
     {
         // Update atomic values from UI changes
@@ -136,22 +145,6 @@ void PannerUIBaseComponent::draw()
         pannerState->azimuth.store(newAzimuth);
         pannerState->diverge.store(newDiverge);
 
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
-        // Begin gesture when dragging starts
-        if (reticleField.draggingNow && !reticleGestureActive)
-        {
-            // Claim ownership of azimuth and diverge parameters
-            processor->azimuthOwnedByUI = true;
-            processor->divergeOwnedByUI = true;
-
-            paramAzimuth->beginChangeGesture();
-            paramDiverge->beginChangeGesture();
-            reticleGestureActive = true;
-        }
-
         // Set parameter values during drag
         if (reticleField.draggingNow)
         {
@@ -163,10 +156,6 @@ void PannerUIBaseComponent::draw()
     // End gesture when dragging stops
     if (reticleGestureActive && !reticleField.draggingNow)
     {
-        auto& params = processor->getValueTreeState();
-        auto* paramAzimuth = params.getParameter(processor->paramAzimuth);
-        auto* paramDiverge = params.getParameter(processor->paramDiverge);
-
         paramAzimuth->endChangeGesture();
         paramDiverge->endChangeGesture();
         reticleGestureActive = false;

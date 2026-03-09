@@ -7,8 +7,10 @@
 #include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
+#include "M1SystemHelperManager.h"
+#if M1_ENABLE_EXTERNAL_RENDERER
 #include "M1MemoryShare.h"
-#include "M1SystemHelperManager.h"  // ON-DEMAND SERVICE INTEGRATION
+#endif
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"
@@ -173,37 +175,46 @@ public:
     std::unique_ptr<PannerOSC> pannerOSC;
     juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
-    // External spatial mixer mode management
-    bool external_spatialmixer_active = false; // global detect spatialmixer
+    // External spatial mixer mode management (requires M1_ENABLE_EXTERNAL_RENDERER)
+#if M1_ENABLE_EXTERNAL_RENDERER
+    bool external_spatialmixer_active = false;
+#else
+    static constexpr bool external_spatialmixer_active = false;
+#endif
 
     // Global functions for external mixer mode
     static bool getExternalSpatialMixerActive() { return s_globalExternalMixerActive; }
     static void setExternalSpatialMixerActive(bool active) { s_globalExternalMixerActive = active; }
     bool isExternalSpatialMixerActive() const { return external_spatialmixer_active; }
+#if M1_ENABLE_EXTERNAL_RENDERER
     void setInstanceExternalMixerActive(bool active) { external_spatialmixer_active = active; }
+#else
+    void setInstanceExternalMixerActive(bool) {}
+#endif
 
+#if M1_ENABLE_EXTERNAL_RENDERER
     // IPC Memory sharing for external spatial mixer
     std::unique_ptr<M1MemoryShare> m_memoryShare;
     bool m_memoryShareInitialized = false;
     juce::String m_instanceBaseName;
     void initializeMemorySharing();
     void updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer);
-    void updateMemorySharingParametersOnly();  // Update parameters even when audio isn't playing
+    void updateMemorySharingParametersOnly();
 
-    /**
-     * Apply external settings updates from memory share with priority handling
-     * @param parameters Generic parameter map containing external settings
-     * @param updateSource Source of the update (HOST, UI, MEMORYSHARE)
-     * @return true if settings were applied
-     */
+    // Pre-allocated parameter map for RT-safe memory sharing
+    ParameterMap m_rtParameterMap;
+    std::atomic<int> m_cachedInputMode{0};
+    std::atomic<int> m_cachedOutputMode{0};
+
     bool applyExternalSettingsUpdate(const ParameterMap& parameters, ParameterUpdateSource updateSource);
 
     juce::String generateUniqueInstanceName() const;
     juce::String getMemoryInstanceName() const { return m_instanceBaseName; }
 
-    // ON-DEMAND SERVICE INTEGRATION: Helper methods
+    // On-demand helper service
     bool isHelperServiceAvailable() const;
-    juce::String m_uniqueInstanceId;  // Unique identifier for this plugin instance
+    juce::String m_uniqueInstanceId;
+#endif
 
     // UI related utility functions
     struct Line2D

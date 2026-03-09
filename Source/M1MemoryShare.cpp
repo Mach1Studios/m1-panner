@@ -279,18 +279,23 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
     uint32_t sequenceNumber = getNextSequenceNumber();
     uint64_t timestamp = getCurrentTimestamp();
 
-    // If requiresAcknowledgment is true, check if we have space in queue
+    // If requiresAcknowledgment is true, check if we have space in queue using try_lock (RT-safe)
     if (requiresAcknowledgment)
     {
-        std::lock_guard<std::mutex> lock(m_queueMutex);
-
-        // Clean up acknowledged buffers first
-        cleanupAcknowledgedBuffers();
-
-        // Check if queue is full
-        if (m_header->queueSize >= m_maxQueueSize)
+        std::unique_lock<std::mutex> lock(m_queueMutex, std::try_to_lock);
+        if (!lock.owns_lock())
         {
-            return 0; // Queue full
+            // Could not acquire lock -- skip queue check rather than blocking the audio thread.
+            // Data will still be written below; only acknowledgment tracking is skipped.
+            requiresAcknowledgment = false;
+        }
+        else
+        {
+            cleanupAcknowledgedBuffers();
+            if (m_header->queueSize >= m_maxQueueSize)
+            {
+                return 0;
+            }
         }
     }
 
@@ -1038,21 +1043,44 @@ bool M1MemoryShare::readBufferById(uint64_t bufferId,
 //==============================================================================
 bool M1MemoryShare::deleteSharedMemory(const juce::String& memoryName)
 {
-    // Use SharedMemoryPaths to get the App Group container or fallback directory
     std::string sharedDir = Mach1::SharedMemoryPaths::getMemoryFileDirectory();
     if (sharedDir.empty()) {
-        // Fallback to temp directory if no shared path available
         sharedDir = juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName().toStdString();
     }
 
-    juce::File memoryFile(juce::String(sharedDir) + "/M1SpatialSystem_" + memoryName + ".mem");
+    // memoryName already includes the full prefix (e.g., "M1SpatialSystem_M1Panner_PID...")
+    // so do NOT prepend M1SpatialSystem_ again
+    juce::File memoryFile(juce::String(sharedDir) + "/" + memoryName + ".mem");
 
     if (memoryFile.exists())
     {
         return memoryFile.deleteFile();
     }
 
-    return true; // File doesn't exist, consider it deleted
+    return true;
+}
+
+bool M1MemoryShare::readControlMessage(ControlMessage& outMessage)
+{
+    if (!isValid() || !m_header)
+        return false;
+
+    if (m_header->controlReadIndex >= m_header->controlWriteIndex)
+        return false;
+
+    uint32_t readIdx = m_header->controlReadIndex % MAX_CONTROL_MESSAGES;
+
+    size_t controlRingOffset = m_dataBufferSize - (MAX_CONTROL_MESSAGES * sizeof(ControlMessage));
+    if (controlRingOffset >= m_dataBufferSize)
+        return false;
+
+    const ControlMessage* ring = reinterpret_cast<const ControlMessage*>(m_dataBuffer + controlRingOffset);
+    outMessage = ring[readIdx];
+
+    m_header->controlReadIndex++;
+    m_header->controlMessageCount--;
+
+    return true;
 }
 
 // PERFORMANCE FIX: Async file modification time update implementation

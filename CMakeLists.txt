@@ -41,6 +41,7 @@ else()
 endif()
 
 option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF)
+option(ENABLE_EXTERNAL_RENDERER "Enable external multichannel rendering via M1MemoryShare to m1-system-helper" OFF)
 option(BUILD_VST3 "Compile VST3 plugin type" ON)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)
@@ -63,6 +64,14 @@ if(ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
     message(STATUS "Compiling with experimental ITD parameters.")
 endif(ITD_PARAMETERS)
+
+if(ENABLE_EXTERNAL_RENDERER)
+    add_definitions(-DM1_ENABLE_EXTERNAL_RENDERER=1)
+    message(STATUS "External renderer via M1MemoryShare: ENABLED")
+else()
+    add_definitions(-DM1_ENABLE_EXTERNAL_RENDERER=0)
+    message(STATUS "External renderer via M1MemoryShare: DISABLED (standard multichannel mode)")
+endif()
 
 # check which formats we want to build
 if(BUILD_AAX)

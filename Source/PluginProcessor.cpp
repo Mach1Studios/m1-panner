@@ -170,8 +170,9 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     // pannerOSC update timer loop
     startTimer(200);
 
-    // Generate unique instance ID for later use when UI opens
+#if M1_ENABLE_EXTERNAL_RENDERER
     m_uniqueInstanceId = generateUniqueInstanceName();
+#endif
 
     // print build time for debug
     juce::String date(__DATE__);
@@ -184,12 +185,16 @@ M1PannerAudioProcessor::~M1PannerAudioProcessor()
     pannerSettings.state.store(-1);
     stopTimer();
 
-    // ON-DEMAND SERVICE INTEGRATION: Release helper service when plugin shuts down
-    auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
-    if (!m_uniqueInstanceId.isEmpty()) {
-        helperManager.releaseHelperService(m_uniqueInstanceId.toStdString());
-        DBG("[M1-Panner] Helper service released for instance: " + m_uniqueInstanceId);
+#if M1_ENABLE_EXTERNAL_RENDERER
+    if (m_memoryShare && m_memoryShareInitialized && m_instanceBaseName.isNotEmpty())
+    {
+        m_memoryShare.reset();
+        M1MemoryShare::deleteSharedMemory(m_instanceBaseName);
+        DBG("[M1-Panner] Deleted shared memory file for: " + m_instanceBaseName);
     }
+#endif
+
+    Mach1::M1SystemHelperManager::getInstance().releaseHelperService("M1-Panner");
 }
 
 //==============================================================================
@@ -269,18 +274,21 @@ void M1PannerAudioProcessor::createLayout()
     int outputChannels = getBus(false, 0)->getCurrentLayout().size();
 
     // Activate external mixer for 1,2 (mono in, stereo out) or 2,2 (stereo in, stereo out) configurations
+#if M1_ENABLE_EXTERNAL_RENDERER
     if ((inputChannels == 1 && outputChannels == 2) || (inputChannels == 2 && outputChannels == 2))
     {
         external_spatialmixer_active = true;
-        setExternalSpatialMixerActive(true);  // Set global flag as well
+        setExternalSpatialMixerActive(true);
         DBG("[PANNER] External spatial mixer activated for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
-        DBG("[PANNER] Memory sharing will be initialized for audio data with enhanced headers");
     }
     else
     {
         external_spatialmixer_active = false;
         DBG("[PANNER] Internal processing mode for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
     }
+#else
+    DBG("[PANNER] Internal processing mode for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration (external renderer disabled)");
+#endif
 
     if (external_spatialmixer_active)
     {
@@ -451,10 +459,10 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     
     // Initialize memory sharing if in external spatial mixer mode
     // This ensures the memory file is created even before audio starts playing
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (external_spatialmixer_active && !m_memoryShareInitialized)
-    {
         initializeMemorySharing();
-    }
+#endif
 }
 
 void M1PannerAudioProcessor::releaseResources()
@@ -466,12 +474,12 @@ void M1PannerAudioProcessor::releaseResources()
     layoutCreated = false;
     
     // Clean up memory sharing
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (m_memoryShare)
-    {
         m_memoryShareInitialized = false;
         // Don't destroy the memory share here - it will be cleaned up in destructor
         // Just mark it as not initialized for safety
-    }
+#endif
 }
 
 void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
@@ -576,6 +584,9 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         {
             Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
             pannerSettings.m1Encode.setInputMode(inputType);
+#if M1_ENABLE_EXTERNAL_RENDERER
+            m_cachedInputMode.store(static_cast<int>(inputType));
+#endif
             parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
@@ -587,7 +598,10 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         {
             Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
             pannerSettings.m1Encode.setOutputMode(outputType);
-            gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
+#if M1_ENABLE_EXTERNAL_RENDERER
+            m_cachedOutputMode.store(static_cast<int>(outputType));
+#endif
+            gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true);
             parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
             layoutCreated = false;
         }
@@ -697,15 +711,16 @@ bool M1PannerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
         return isValid;
     }
     // EXTERNAL STREAMING MODE: Accept stereo in/out for streaming to external mixer
+#if M1_ENABLE_EXTERNAL_RENDERER
     else if ((layouts.getMainInputChannelSet() == juce::AudioChannelSet::mono() || 
               layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()) && 
              (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()))
     {
-        // Accept stereo output - streaming mode will use M1MemoryShare instead
         DBG("Layout ACCEPTED for streaming mode - Input: " + layouts.getMainInputChannelSet().getDescription() +
             " Output: " + layouts.getMainOutputChannelSet().getDescription());
         return true;
     }
+#endif
     else
     {
         // Test for all available Mach1Encode configs
@@ -897,10 +912,10 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     // Initialize memory sharing if external spatial mixer is active
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (external_spatialmixer_active && !m_memoryShareInitialized)
-    {
         initializeMemorySharing();
-    }
+#endif
 
     if (needToUpdateM1EncodePoints)
     {
@@ -925,17 +940,18 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     // Update the host playhead data external usage
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (external_spatialmixer_active && getPlayHead() != nullptr)
     {
         juce::AudioPlayHead* ph = getPlayHead();
         juce::AudioPlayHead::CurrentPositionInfo currentPlayHeadInfo;
-        // Lots of defenses against hosts who do not support playhead data returns
         if (ph->getCurrentPosition(currentPlayHeadInfo))
         {
             hostTimelineData.isPlaying = currentPlayHeadInfo.isPlaying;
             hostTimelineData.playheadPositionInSeconds = currentPlayHeadInfo.timeInSeconds;
         }
     }
+#endif
 
     // Safety check: Ensure coefficients are initialized before processing
     if (smoothedChannelCoeffs.empty() || smoothedChannelCoeffs.size() == 0)
@@ -960,6 +976,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     juce::AudioChannelSet inputLayout = getChannelLayoutOfBus(true, 0);
 
     // Share input audio data BEFORE any processing (for external spatial mixer)
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (external_spatialmixer_active && m_memoryShareInitialized)
     {
         updateMemorySharing(mainInput);
@@ -968,14 +985,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     {
         DBG("[M1MemoryShare] Memory sharing active but not initialized yet");
     }
-    
-    // Debug: log when NOT sharing audio (to diagnose capture issues)
-    static int debugCounter = 0;
-    if (!external_spatialmixer_active && m_memoryShareInitialized && ++debugCounter % 5000 == 0)
-    {
-        DBG("[M1MemoryShare] external_spatialmixer NOT active - audio not shared. Input: " + 
-            juce::String(mainInput.getNumChannels()) + "ch, " + juce::String(mainInput.getNumSamples()) + " samples");
-    }
+#endif
 
     // output buffers
     juce::AudioSampleBuffer mainOutput = getBusBuffer(buffer, false, 0);
@@ -1186,32 +1196,18 @@ void M1PannerAudioProcessor::timerCallback()
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
 
-    // Update memory sharing with current parameters ONLY if we didn't already write audio
-    // (audio updates include parameters, so no need to duplicate)
-    // This ensures parameter changes are visible to the helper even when audio isn't being shared
-    // NOTE: Only call this if external_spatialmixer is NOT active, because when active,
-    // updateMemorySharing() already writes both audio AND parameters
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (!external_spatialmixer_active && m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
-    {
         updateMemorySharingParametersOnly();
-    }
+#endif
 
-    // ON-DEMAND SERVICE INTEGRATION: Periodic health check for helper service
-    // Check every ~10 seconds (timer runs every 200ms, so check every 50 calls)
+    // Periodic health check: ensure helper is running (every ~10s at 200ms timer)
     static int healthCheckCounter = 0;
     if (++healthCheckCounter >= 50) {
         healthCheckCounter = 0;
-
-        if (!m_uniqueInstanceId.isEmpty() && !isHelperServiceAvailable()) {
-            DBG("[M1-Panner] Helper service appears to have died unexpectedly - attempting restart");
-            auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
-
-            // Re-register this instance
-            if (helperManager.requestHelperService(m_uniqueInstanceId.toStdString())) {
-                DBG("[M1-Panner] Helper service restarted successfully after unexpected exit");
-            } else {
-                DBG("[M1-Panner] Failed to restart helper service after unexpected exit");
-            }
+        auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
+        if (!helperManager.isHelperServiceRunning()) {
+            helperManager.requestHelperService("M1-Panner");
         }
     }
 }
@@ -1229,15 +1225,7 @@ bool M1PannerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
-    auto* editor = new M1PannerAudioProcessorEditor(*this);
-
-    // When the processor sees a new alert, tell the editor to display it
-    postAlertToUI = [editor](const Mach1::AlertData& a)
-    {
-        editor->pannerUIBaseComponent->postAlert(a);
-    };
-
-    return editor;
+    return new M1PannerAudioProcessorEditor(*this);
 }
 
 void M1PannerAudioProcessor::convertRCtoXYRaw(float r, float d, float& x, float& y)
@@ -1298,6 +1286,11 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
     }
     pannerSettings.m1Encode.setInputMode(inputMode);
+
+#if M1_ENABLE_EXTERNAL_RENDERER
+    m_cachedInputMode.store(static_cast<int>(inputMode));
+    m_cachedOutputMode.store(static_cast<int>(outputMode));
+#endif
 
     auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
     auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
@@ -1396,10 +1389,10 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     addXmlElement(root, "output_layout_lock", juce::String(pannerSettings.lockOutputLayout ? 1 : 0));
 
     // Memory sharing instance identifier
+#if M1_ENABLE_EXTERNAL_RENDERER
     if (m_instanceBaseName.isNotEmpty())
-    {
         addXmlElement(root, "memory_instance_name", m_instanceBaseName);
-    }
+#endif
 
     juce::String strDoc = root.createDocument(juce::String(""), false, false);
     stream.writeString(strDoc);
@@ -1450,12 +1443,13 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
 
         // Restore memory sharing instance identifier
+#if M1_ENABLE_EXTERNAL_RENDERER
         if (root.get()->getChildByName("param_memory_instance_name") &&
             root.get()->getChildByName("param_memory_instance_name")->hasAttribute("value"))
         {
             m_instanceBaseName = root.get()->getChildByName("param_memory_instance_name")->getStringAttribute("value");
-            DBG("[M1MemoryShare] Restored memory instance name: " + m_instanceBaseName);
         }
+#endif
 
         // if the parsed input from xml is not the default value
         parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
@@ -1502,6 +1496,8 @@ void M1PannerAudioProcessor::postAlert(const Mach1::AlertData& alert)
 }
 
 //==============================================================================
+#if M1_ENABLE_EXTERNAL_RENDERER
+
 juce::String M1PannerAudioProcessor::generateUniqueInstanceName() const
 {
 #ifdef JUCE_WINDOWS
@@ -1561,22 +1557,13 @@ void M1PannerAudioProcessor::initializeMemorySharing()
 
 void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer)
 {
-    
     if (!m_memoryShare || !m_memoryShare->isValid())
-    {
         return;
-    }
 
-    // Only share audio data for 1-channel (mono) or 2-channel (stereo) inputs
     const int numInputChannels = inputBuffer.getNumChannels();
-    const int numSamples = inputBuffer.getNumSamples();
-
     if (numInputChannels != 1 && numInputChannels != 2)
-    {
-        return; // Unsupported channel count
-    }
+        return;
 
-    // Get DAW timestamp and playhead information
     uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
     double playheadPosition = 0.0;
     bool isPlaying = false;
@@ -1592,71 +1579,50 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
         }
     }
 
-    // Create parameter map with current panner settings
-    // Note: ParameterMap uses std::map which has allocations - consider pre-allocating
-    // or using a fixed-size structure for truly RT-safe operation
-    ParameterMap parameters;
-    parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
-    parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
-    parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
-    parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
-    parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
-    parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
-    parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
-    parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
-    parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
-    
-    // Add input/output mode info
-    {
-        std::lock_guard<std::mutex> lock(pannerSettings.processingMutex);
-        parameters.addInt(M1PannerParameterIDs::INPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getInputMode()));
-        parameters.addInt(M1PannerParameterIDs::OUTPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getOutputMode()));
-    }
-    
-    // Add state and color info
-    parameters.addInt(M1PannerParameterIDs::STATE, pannerSettings.state.load());
-    parameters.addInt(M1PannerParameterIDs::PORT, pannerSettings.port);
-    
-    // Add color info
-    parameters.addInt(M1PannerParameterIDs::COLOR_R, static_cast<int32_t>(pannerSettings.color.r.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_G, static_cast<int32_t>(pannerSettings.color.g.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_B, static_cast<int32_t>(pannerSettings.color.b.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_A, static_cast<int32_t>(pannerSettings.color.a.load()));
-    
-    // Add display name (track name from host) - cache it from track_properties
-    // Note: track_properties is updated by host via updateTrackProperties()
-    std::string displayName;
-    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
-    {
-        displayName = track_properties.name->toStdString();
-    }
-    else
-    {
-        // Fallback: use a generated name with the port/instance ID
-        displayName = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
-    }
-    parameters.addString(M1PannerParameterIDs::DISPLAY_NAME, displayName);
+    // Reuse pre-allocated map -- update values in-place (no heap allocations for existing keys)
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::AZIMUTH] = pannerSettings.azimuth.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::ELEVATION] = pannerSettings.elevation.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::DIVERGE] = pannerSettings.diverge.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::GAIN] = pannerSettings.gain.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH] = pannerSettings.stereoOrbitAzimuth.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_SPREAD] = pannerSettings.stereoSpread.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_INPUT_BALANCE] = pannerSettings.stereoInputBalance.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::AUTO_ORBIT] = pannerSettings.autoOrbit.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::ISOTROPIC_MODE] = pannerSettings.isotropicMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::EQUALPOWER_MODE] = pannerSettings.equalpowerMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::GAIN_COMPENSATION_MODE] = pannerSettings.gainCompensationMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT] = pannerSettings.lockOutputLayout.load();
 
-    // Write audio buffer with generic parameters
-    // Note: writeAudioBufferWithGenericParameters should be RT-safe internally
-    // Pass current sample rate for accurate startSamplePosition calculation
+    // Use cached input/output mode (updated by parameterChanged on message thread) -- no mutex needed
+    m_rtParameterMap.intParams[M1PannerParameterIDs::INPUT_MODE] = m_cachedInputMode.load();
+    m_rtParameterMap.intParams[M1PannerParameterIDs::OUTPUT_MODE] = m_cachedOutputMode.load();
+
+    m_rtParameterMap.intParams[M1PannerParameterIDs::STATE] = pannerSettings.state.load();
+    m_rtParameterMap.intParams[M1PannerParameterIDs::PORT] = pannerSettings.port;
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_R] = static_cast<int32_t>(pannerSettings.color.r.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_G] = static_cast<int32_t>(pannerSettings.color.g.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_B] = static_cast<int32_t>(pannerSettings.color.b.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_A] = static_cast<int32_t>(pannerSettings.color.a.load());
+
+    // DISPLAY_NAME: use cached string to avoid allocation (updated on timer thread)
+    // The key already exists after first call, so this is an in-place update
+    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
+        m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = track_properties.name->toStdString();
+    else
+        m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
+
     uint32_t currentSampleRate = static_cast<uint32_t>(processorSampleRate);
-    if (currentSampleRate == 0) currentSampleRate = 44100; // Fallback
-    m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, parameters, dawTimestamp, 
-                                                         playheadPosition, isPlaying, true, 1, currentSampleRate);
+    if (currentSampleRate == 0) currentSampleRate = 44100;
+
+    m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, m_rtParameterMap, dawTimestamp,
+                                                         playheadPosition, isPlaying, false, 1, currentSampleRate);
 }
 
 void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
 {
     if (!m_memoryShare || !m_memoryShare->isValid())
-    {
         return;
-    }
 
-    // Get DAW timestamp
     uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
     double playheadPosition = 0.0;
     bool isPlaying = false;
@@ -1672,58 +1638,47 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
         }
     }
 
-    // Create parameter map with current panner settings
-    ParameterMap parameters;
-    parameters.addFloat(M1PannerParameterIDs::AZIMUTH, pannerSettings.azimuth.load());
-    parameters.addFloat(M1PannerParameterIDs::ELEVATION, pannerSettings.elevation.load());
-    parameters.addFloat(M1PannerParameterIDs::DIVERGE, pannerSettings.diverge.load());
-    parameters.addFloat(M1PannerParameterIDs::GAIN, pannerSettings.gain.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, pannerSettings.stereoOrbitAzimuth.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_SPREAD, pannerSettings.stereoSpread.load());
-    parameters.addFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, pannerSettings.stereoInputBalance.load());
-    parameters.addBool(M1PannerParameterIDs::AUTO_ORBIT, pannerSettings.autoOrbit.load());
-    parameters.addBool(M1PannerParameterIDs::ISOTROPIC_MODE, pannerSettings.isotropicMode.load());
-    parameters.addBool(M1PannerParameterIDs::EQUALPOWER_MODE, pannerSettings.equalpowerMode.load());
-    parameters.addBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, pannerSettings.gainCompensationMode.load());
-    parameters.addBool(M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT, pannerSettings.lockOutputLayout.load());
-    
-    // Add input/output mode info
-    {
-        std::lock_guard<std::mutex> lock(pannerSettings.processingMutex);
-        parameters.addInt(M1PannerParameterIDs::INPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getInputMode()));
-        parameters.addInt(M1PannerParameterIDs::OUTPUT_MODE, static_cast<int32_t>(pannerSettings.m1Encode.getOutputMode()));
-    }
-    
-    // Add state, port, and color info
-    parameters.addInt(M1PannerParameterIDs::STATE, pannerSettings.state.load());
-    parameters.addInt(M1PannerParameterIDs::PORT, pannerSettings.port);
-    parameters.addInt(M1PannerParameterIDs::COLOR_R, static_cast<int32_t>(pannerSettings.color.r.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_G, static_cast<int32_t>(pannerSettings.color.g.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_B, static_cast<int32_t>(pannerSettings.color.b.load()));
-    parameters.addInt(M1PannerParameterIDs::COLOR_A, static_cast<int32_t>(pannerSettings.color.a.load()));
-    
-    // Add display name (track name from host)
-    std::string displayName;
-    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
-    {
-        displayName = track_properties.name->toStdString();
-    }
-    else
-    {
-        displayName = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
-    }
-    parameters.addString(M1PannerParameterIDs::DISPLAY_NAME, displayName);
+    // Reuse pre-allocated parameter map (timer thread -- allocations OK but keeping consistent)
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::AZIMUTH] = pannerSettings.azimuth.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::ELEVATION] = pannerSettings.elevation.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::DIVERGE] = pannerSettings.diverge.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::GAIN] = pannerSettings.gain.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH] = pannerSettings.stereoOrbitAzimuth.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_SPREAD] = pannerSettings.stereoSpread.load();
+    m_rtParameterMap.floatParams[M1PannerParameterIDs::STEREO_INPUT_BALANCE] = pannerSettings.stereoInputBalance.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::AUTO_ORBIT] = pannerSettings.autoOrbit.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::ISOTROPIC_MODE] = pannerSettings.isotropicMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::EQUALPOWER_MODE] = pannerSettings.equalpowerMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::GAIN_COMPENSATION_MODE] = pannerSettings.gainCompensationMode.load();
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::LOCK_OUTPUT_LAYOUT] = pannerSettings.lockOutputLayout.load();
 
-    // Create an empty audio buffer (0 samples) for parameter-only updates
-    juce::AudioBuffer<float> emptyBuffer(2, 0);  // 2 channels, 0 samples
-    
-    // Write parameters without audio data
-    m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, parameters, dawTimestamp, playheadPosition, isPlaying, false);
+    m_rtParameterMap.intParams[M1PannerParameterIDs::INPUT_MODE] = m_cachedInputMode.load();
+    m_rtParameterMap.intParams[M1PannerParameterIDs::OUTPUT_MODE] = m_cachedOutputMode.load();
+
+    m_rtParameterMap.intParams[M1PannerParameterIDs::STATE] = pannerSettings.state.load();
+    m_rtParameterMap.intParams[M1PannerParameterIDs::PORT] = pannerSettings.port;
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_R] = static_cast<int32_t>(pannerSettings.color.r.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_G] = static_cast<int32_t>(pannerSettings.color.g.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_B] = static_cast<int32_t>(pannerSettings.color.b.load());
+    m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_A] = static_cast<int32_t>(pannerSettings.color.a.load());
+
+    if (track_properties.name.has_value() && !track_properties.name->isEmpty())
+        m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = track_properties.name->toStdString();
+    else
+        m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
+
+    juce::AudioBuffer<float> emptyBuffer(2, 0);
+    m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, m_rtParameterMap, dawTimestamp, playheadPosition, isPlaying, false);
+
+    // Touch the file modification time on the timer thread (not the audio thread)
+    if (m_memoryShare)
+        m_memoryShare->scheduleAsyncFileModTimeUpdate();
 }
 
-// ON-DEMAND SERVICE INTEGRATION: Helper method to check service availability
 bool M1PannerAudioProcessor::isHelperServiceAvailable() const
 {
     auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
     return helperManager.isHelperServiceRunning();
 }
+
+#endif // M1_ENABLE_EXTERNAL_RENDERER

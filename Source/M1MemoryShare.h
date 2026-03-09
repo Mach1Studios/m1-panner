@@ -91,6 +91,21 @@ public:
     };
 
     /**
+     * Control message for bidirectional communication (helper -> panner)
+     */
+    struct ControlMessage
+    {
+        uint32_t parameterID;
+        ParameterType parameterType;
+        float floatValue;
+        int32_t intValue;
+
+        ControlMessage() : parameterID(0), parameterType(ParameterType::FLOAT), floatValue(0.0f), intValue(0) {}
+    };
+
+    static constexpr uint32_t MAX_CONTROL_MESSAGES = 16;
+
+    /**
      * Constructor for creating/opening a shared memory segment
      * @param memoryName Unique name for the shared memory segment (OS-wide)
      * @param totalSize Total size of the shared memory in bytes (must be >= 4KB)
@@ -304,6 +319,11 @@ public:
 
     // Consumer management
     bool isConsumerRegistered(uint32_t consumerId) const;
+
+    /**
+     * Read the next pending control message (panner reads from helper)
+     */
+    bool readControlMessage(ControlMessage& outMessage);
 
     // Performance-optimized async file modification time updates
     void scheduleAsyncFileModTimeUpdate();
