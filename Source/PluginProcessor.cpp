@@ -9,6 +9,13 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+// Platform-specific includes for process ID.
+#if JUCE_WINDOWS
+    #include <windows.h>
+#elif JUCE_MAC || JUCE_LINUX || JUCE_IOS || JUCE_ANDROID
+    #include <unistd.h>
+#endif
+
 /*
  Architecture:
     - parameterChanged() updates the i/o layout
@@ -778,7 +785,18 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Use this method as the place to do any pre-playback
     if (!layoutCreated)
     {
-        createLayout(); // this should only be called here after initialization to avoid threading issues
+        // Only attempt layout creation if buses are properly initialized
+        if (getBus(false, 0) && getBus(true, 0))
+        {
+            createLayout(); // this should only be called here after initialization to avoid threading issues
+        }
+        else
+        {
+            // Buses not ready yet - clear buffer and return early to avoid VST3 buffer mapping issues
+            DBG("[PANNER] Buses not ready in processBlock, clearing buffer");
+            buffer.clear();
+            return;
+        }
     }
 
     if (needToUpdateM1EncodePoints)
@@ -1011,7 +1029,7 @@ void M1PannerAudioProcessor::timerCallback()
 {
     // Added if we need to move the OSC stuff from the processorblock
     pannerOSC->update(); // test for connection
-}
+        }
 
 //==============================================================================
 juce::AudioProcessorValueTreeState& M1PannerAudioProcessor::getValueTreeState()
