@@ -32,6 +32,44 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
 
 PannerUIBaseComponent::~PannerUIBaseComponent()
 {
+    if (processor != nullptr)
+    {
+        auto& params = processor->getValueTreeState();
+
+        if (reticleGestureActive)
+        {
+            params.getParameter(processor->paramAzimuth)->endChangeGesture();
+            params.getParameter(processor->paramDiverge)->endChangeGesture();
+        }
+
+        if (xKnobGestureActive)
+        {
+            params.getParameter(processor->paramAzimuth)->endChangeGesture();
+            params.getParameter(processor->paramDiverge)->endChangeGesture();
+        }
+
+        if (yKnobGestureActive)
+        {
+            params.getParameter(processor->paramAzimuth)->endChangeGesture();
+            params.getParameter(processor->paramDiverge)->endChangeGesture();
+        }
+
+        if (azKnobGestureActive)
+            params.getParameter(processor->paramAzimuth)->endChangeGesture();
+
+        if (dKnobGestureActive)
+            params.getParameter(processor->paramDiverge)->endChangeGesture();
+
+        if (zKnobGestureActive)
+            params.getParameter(processor->paramElevation)->endChangeGesture();
+
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
+        processor->elevationOwnedByUI.store(false);
+        processor->mainReticleActive.store(false);
+        processor->updatingCoordinatesFromUI.store(false);
+    }
+
     murkaAlert.onDismiss();
 }
 
@@ -88,16 +126,7 @@ void PannerUIBaseComponent::draw()
     reticleField.shouldDrawRotateGuideLine = rotateKnobDraggingNow;
     reticleField.pannerState = pannerState;
     reticleField.monitorState = monitorState;
-    reticleField.m1encodeUpdate = [&]() {
-        juce::AudioPlayHead::CurrentPositionInfo currentPosition;
-        if (processor->getPlayHead() != nullptr)
-        {
-            if (!currentPosition.isPlaying)
-            {
-                processor->needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
-            }
-        }
-    };
+    reticleField.m1encodeUpdate = []() {};
     reticleField.processor = processor;
     reticleField.isConnected = processor->pannerOSC->isConnected();
     reticleField.track_color = processor->osc_colour;
@@ -114,8 +143,9 @@ void PannerUIBaseComponent::draw()
     // clicks, double-clicks, or briefly drags before any delta is registered.
     if (reticleField.draggingNow && !reticleGestureActive)
     {
-        processor->azimuthOwnedByUI = true;
-        processor->divergeOwnedByUI = true;
+        processor->azimuthOwnedByUI.store(true);
+        processor->divergeOwnedByUI.store(true);
+        processor->mainReticleActive.store(true);
 
         paramAzimuth->beginChangeGesture();
         paramDiverge->beginChangeGesture();
@@ -135,7 +165,6 @@ void PannerUIBaseComponent::draw()
         processor->convertXYtoRCRaw(newX, newY, newAzimuth, newDiverge);
         pannerState->azimuth.store(newAzimuth);
         pannerState->diverge.store(newDiverge);
-
         // Set parameter values during drag
         if (reticleField.draggingNow)
         {
@@ -152,8 +181,9 @@ void PannerUIBaseComponent::draw()
         reticleGestureActive = false;
 
         // Release ownership of azimuth and diverge parameters
-        processor->azimuthOwnedByUI = false;
-        processor->divergeOwnedByUI = false;
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
+        processor->mainReticleActive.store(false);
     }
     reticleHoveredLastFrame = reticleField.reticleHoveredLastFrame;
 
@@ -201,8 +231,8 @@ void PannerUIBaseComponent::draw()
         if (!xKnobGestureActive)
         {
             // Claim ownership of azimuth and diverge parameters
-            processor->azimuthOwnedByUI = true;
-            processor->divergeOwnedByUI = true;
+            processor->azimuthOwnedByUI.store(true);
+            processor->divergeOwnedByUI.store(true);
 
             paramAzimuth->beginChangeGesture();
             paramDiverge->beginChangeGesture();
@@ -225,8 +255,8 @@ void PannerUIBaseComponent::draw()
         xKnobGestureActive = false;
 
         // Release ownership of azimuth and diverge parameters
-        processor->azimuthOwnedByUI = false;
-        processor->divergeOwnedByUI = false;
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
     }
 
     m.setColor(ENABLED_PARAM);
@@ -272,8 +302,8 @@ void PannerUIBaseComponent::draw()
         if (!yKnobGestureActive)
         {
             // Claim ownership of azimuth and diverge parameters
-            processor->azimuthOwnedByUI = true;
-            processor->divergeOwnedByUI = true;
+            processor->azimuthOwnedByUI.store(true);
+            processor->divergeOwnedByUI.store(true);
 
             paramAzimuth->beginChangeGesture();
             paramDiverge->beginChangeGesture();
@@ -296,8 +326,8 @@ void PannerUIBaseComponent::draw()
         yKnobGestureActive = false;
 
         // Release ownership of azimuth and diverge parameters
-        processor->azimuthOwnedByUI = false;
-        processor->divergeOwnedByUI = false;
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
     }
 
     m.setColor(ENABLED_PARAM);
@@ -344,7 +374,7 @@ void PannerUIBaseComponent::draw()
         if (azKnob.draggingNow && !azKnobGestureActive)
         {
             // Claim ownership of azimuth parameter
-            processor->azimuthOwnedByUI = true;
+            processor->azimuthOwnedByUI.store(true);
 
             paramAzimuth->beginChangeGesture();
             azKnobGestureActive = true;
@@ -363,7 +393,7 @@ void PannerUIBaseComponent::draw()
         azKnobGestureActive = false;
 
         // Release ownership of azimuth parameter
-        processor->azimuthOwnedByUI = false;
+        processor->azimuthOwnedByUI.store(false);
     }
 
     rotateKnobDraggingNow = azKnob.draggingNow;
@@ -394,7 +424,7 @@ void PannerUIBaseComponent::draw()
     if (dKnob.changed)
     {
         // Check if overlay reticle is active - if so, don't update parameters to avoid conflict
-        if (processor->overlayReticleActive)
+        if (processor->overlayReticleActive.load())
         {
             // Overlay reticle has priority, don't update parameters
             return;
@@ -410,7 +440,7 @@ void PannerUIBaseComponent::draw()
         pannerState->y.store(newY);
 
         // Set flag to prevent recursive conversion during diverge knob movement
-        processor->updatingCoordinatesFromUI = true;
+        processor->updatingCoordinatesFromUI.store(true);
 
         auto& params = processor->getValueTreeState();
         auto* paramDiverge = params.getParameter(processor->paramDiverge);
@@ -418,6 +448,7 @@ void PannerUIBaseComponent::draw()
         // Begin gesture when diverge knob starts dragging
         if (dKnob.draggingNow && !dKnobGestureActive)
         {
+            processor->divergeOwnedByUI.store(true);
             paramDiverge->beginChangeGesture();
             dKnobGestureActive = true;
         }
@@ -438,7 +469,8 @@ void PannerUIBaseComponent::draw()
         dKnobGestureActive = false;
 
         // Release ownership of diverge parameter
-        processor->divergeOwnedByUI = false;
+        processor->divergeOwnedByUI.store(false);
+        processor->updatingCoordinatesFromUI.store(false);
     }
 
 
@@ -564,7 +596,7 @@ void PannerUIBaseComponent::draw()
         if (zKnob.draggingNow && !zKnobGestureActive)
         {
             // Claim ownership of elevation parameter
-            processor->elevationOwnedByUI = true;
+            processor->elevationOwnedByUI.store(true);
 
             paramElevation->beginChangeGesture();
             zKnobGestureActive = true;
@@ -583,7 +615,7 @@ void PannerUIBaseComponent::draw()
         zKnobGestureActive = false;
 
         // Release ownership of elevation parameter
-        processor->elevationOwnedByUI = false;
+        processor->elevationOwnedByUI.store(false);
     }
 
     bool zHovered = zKnob.hovered;
@@ -829,7 +861,7 @@ void PannerUIBaseComponent::draw()
     pitchWheelHoveredAtLastFrame = pitchWheel.hovered;
 
     // Drawing volume meters
-    if (processor->layoutCreated && processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0)
+    if (processor->layoutCreated.load() && processor->pannerSettings.m1Encode.getOutputChannelsCount() > 0)
     {
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 5);
         auto outputChannelsCount = processor->pannerSettings.m1Encode.getOutputChannelsCount();
@@ -1357,6 +1389,9 @@ void PannerUIBaseComponent::draw()
         paramAzimuth->endChangeGesture();
         paramDiverge->endChangeGesture();
         reticleGestureActive = false;
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
+        processor->mainReticleActive.store(false);
     }
 
     // Cleanup for orphaned X knob gestures
@@ -1370,6 +1405,8 @@ void PannerUIBaseComponent::draw()
         paramDiverge->endChangeGesture();
         xKnobGestureActive = false;
         DBG("CLEANUP: Ending orphaned X knob gesture");
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
     }
 
     // Cleanup for orphaned Y knob gestures
@@ -1383,6 +1420,8 @@ void PannerUIBaseComponent::draw()
         paramDiverge->endChangeGesture();
         yKnobGestureActive = false;
         DBG("CLEANUP: Ending orphaned Y knob gesture");
+        processor->azimuthOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
     }
 
     // Check for orphaned azimuth knob gesture
@@ -1394,6 +1433,7 @@ void PannerUIBaseComponent::draw()
         DBG("CLEANUP: Ending orphaned azimuth knob gesture");
         paramAzimuth->endChangeGesture();
         azKnobGestureActive = false;
+        processor->azimuthOwnedByUI.store(false);
     }
 
     // Check for orphaned diverge knob gesture
@@ -1405,6 +1445,8 @@ void PannerUIBaseComponent::draw()
         DBG("CLEANUP: Ending orphaned diverge knob gesture");
         paramDiverge->endChangeGesture();
         dKnobGestureActive = false;
+        processor->divergeOwnedByUI.store(false);
+        processor->updatingCoordinatesFromUI.store(false);
     }
 
     // Check for orphaned Z knob gesture
@@ -1418,7 +1460,7 @@ void PannerUIBaseComponent::draw()
         zKnobGestureActive = false;
 
         // Release ownership of elevation parameter
-        processor->elevationOwnedByUI = false;
+        processor->elevationOwnedByUI.store(false);
     }
 }
 

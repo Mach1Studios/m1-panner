@@ -3,6 +3,8 @@
 #include <JuceHeader.h>
 #include <Mach1Encode.h>
 
+#include <atomic>
+
 #include "Config.h"
 #include "AlertData.h"
 #include "PannerOSC.h"
@@ -163,12 +165,13 @@ public:
     juce::PluginHostType hostType;
     void updateTrackProperties(const TrackProperties& properties) override { track_properties = properties; }
     TrackProperties getTrackProperties() { return track_properties; }
-    bool layoutCreated = false;
+    std::atomic<bool> layoutCreated { false };
     bool lockOutputLayout = false;
 
     // update m1encode obj points
-    bool needToUpdateM1EncodePoints = false;
+    std::atomic<bool> needToUpdateM1EncodePoints { false };
     void updateM1EncodePoints();
+    void getUiReticleSnapshot(std::vector<Mach1Point3D>& points, std::vector<std::string>& names);
 
     // Communication to OrientationManager/Monitor and the rest of the M1SpatialSystem
     void timerCallback() override;
@@ -262,17 +265,34 @@ public:
     void postAlert(const Mach1::AlertData& alert);
     std::vector<Mach1::AlertData> pendingAlerts;
 
+    struct UiReticleSnapshotState
+    {
+        float azimuth = 0.0f;
+        float elevation = 0.0f;
+        float diverge = 0.0f;
+        float gain = 0.0f;
+        float stereoOrbitAzimuth = 0.0f;
+        float stereoSpread = 0.0f;
+        bool autoOrbit = false;
+        bool isotropicMode = false;
+        bool equalpowerMode = false;
+        bool gainCompensationMode = false;
+        int monitorMode = 0;
+        int inputMode = 0;
+        int outputMode = 0;
+    };
+
     // Flag to prevent recursive parameter conversion during UI coordinate updates
-    bool updatingCoordinatesFromUI = false;
+    std::atomic<bool> updatingCoordinatesFromUI { false };
 
     // Parameter ownership flags - track which UI control is actively managing each parameter
-    bool azimuthOwnedByUI = false;
-    bool elevationOwnedByUI = false;
-    bool divergeOwnedByUI = false;
+    std::atomic<bool> azimuthOwnedByUI { false };
+    std::atomic<bool> elevationOwnedByUI { false };
+    std::atomic<bool> divergeOwnedByUI { false };
 
     // Reticle priority flags to prevent main and overlay reticles from fighting over azimuth parameter
-    bool mainReticleActive = false;
-    bool overlayReticleActive = false;
+    std::atomic<bool> mainReticleActive { false };
+    std::atomic<bool> overlayReticleActive { false };
 
     // Track last UI-set values for tolerance-based feedback prevention
     float lastUISetAzimuth = 0.0f;
@@ -283,12 +303,29 @@ public:
 private:
     TrackProperties track_properties;
     void createLayout();
+    void applyPendingModeChange();
+    void applyPendingStereoParameterReset();
+    UiReticleSnapshotState getUiReticleSnapshotState();
+    void refreshUiReticleSnapshotIfNeeded();
+    void applyStateToEncode(Mach1Encode<float>& encode, const UiReticleSnapshotState& state);
+    bool sendCurrentPannerSettings();
 
     // Static variable for global external mixer state
     static bool s_globalExternalMixerActive;
 
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
+
+    std::atomic<bool> uiReticleSnapshotDirty { true };
+    std::atomic<bool> pendingPannerSettingsSend { true };
+    std::atomic<bool> pendingModeChange { false };
+    std::atomic<bool> pendingStereoParameterReset { false };
+    std::atomic<int> requestedInputMode { 0 };
+    std::atomic<int> requestedOutputMode { 0 };
+    UiReticleSnapshotState lastUiReticleSnapshotState {};
+    juce::CriticalSection uiReticleSnapshotLock;
+    std::vector<Mach1Point3D> uiReticlePoints;
+    std::vector<std::string> uiReticlePointNames;
 
     // Channel input
     std::vector<std::vector<float>> audioDataIn;

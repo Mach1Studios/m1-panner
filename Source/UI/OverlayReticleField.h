@@ -13,6 +13,13 @@ public:
     {
         bool isInside = inside() * hasMouseFocus(m);
         XYRZ* xyrz = (XYRZ*)dataToControl;
+        std::vector<Mach1Point3D> points;
+        std::vector<std::string> pointsNames;
+
+        if (processor != nullptr)
+        {
+            processor->getUiReticleSnapshot(points, pointsNames);
+        }
 
         m.enableFill();
 
@@ -73,11 +80,9 @@ public:
         }
 
         // Draw additional reticles for each input channel
-        std::vector<std::string> pointsNames = m1Encode->getPointsNames();
-        std::vector<Mach1Point3D> points = m1Encode->getPoints();
-        if (m1Encode->getPointsCount() > 1)
+        if (processor != nullptr && points.size() > 1)
         { // do not draw additional points if only mono input
-            for (int i = 0; i < m1Encode->getPointsCount(); i++)
+            for (size_t i = 0; i < points.size() && i < pointsNames.size(); i++)
             {
                 float r, d;
                 float x = points[i].z;
@@ -257,6 +262,7 @@ public:
     bool shouldDrawRotateLine = false;
     float sRotate = 0, sSpread = 50;
     Mach1Encode<float>* m1Encode = nullptr;
+    M1PannerAudioProcessor* processor = nullptr;
     PannerSettings* pannerState = nullptr;
     MixerSettings* monitorState = nullptr;
     bool isConnected = false;

@@ -115,6 +115,24 @@ void OverlayUIBaseComponent::convertXYtoRCRaw(float x, float y, float& r, float&
 
 OverlayUIBaseComponent::~OverlayUIBaseComponent()
 {
+    if (processor != nullptr)
+    {
+        auto& params = processor->getValueTreeState();
+
+        if (overlayReticleGestureActive)
+        {
+            params.getParameter(processor->paramAzimuth)->endChangeGesture();
+            params.getParameter(processor->paramElevation)->endChangeGesture();
+        }
+
+        if (overlayDivergeKnobGestureActive)
+            params.getParameter(processor->paramDiverge)->endChangeGesture();
+
+        processor->azimuthOwnedByUI.store(false);
+        processor->elevationOwnedByUI.store(false);
+        processor->divergeOwnedByUI.store(false);
+        processor->overlayReticleActive.store(false);
+    }
 }
 
 //==============================================================================
@@ -187,6 +205,7 @@ void OverlayUIBaseComponent::draw()
         overlayReticleField.shouldDrawDivergeLine = divergeKnobDraggingNow;
         overlayReticleField.shouldDrawRotateLine = rotateKnobDraggingNow;
         overlayReticleField.m1Encode = &pannerState->m1Encode;
+        overlayReticleField.processor = processor;
         overlayReticleField.sRotate = currentStereoOrbitAzimuth;
         overlayReticleField.sSpread = currentStereoSpread;
         overlayReticleField.isConnected = processor->pannerOSC->isConnected();
@@ -203,8 +222,9 @@ void OverlayUIBaseComponent::draw()
         // not only once a value delta has already been observed.
         if (overlayReticleField.draggingNow && !overlayReticleGestureActive)
         {
-            processor->azimuthOwnedByUI = true;
-            processor->elevationOwnedByUI = true;
+            processor->azimuthOwnedByUI.store(true);
+            processor->elevationOwnedByUI.store(true);
+            processor->overlayReticleActive.store(true);
 
             paramAzimuth->beginChangeGesture();
             paramElevation->beginChangeGesture();
@@ -224,7 +244,6 @@ void OverlayUIBaseComponent::draw()
             convertRCtoXYRaw(std::get<2>(xyrz), currentDiverge, newX, newY);
             pannerState->x.store(newX);
             pannerState->y.store(newY);
-
             // Set parameter values during drag
             if (overlayReticleField.draggingNow)
             {
@@ -241,8 +260,9 @@ void OverlayUIBaseComponent::draw()
             overlayReticleGestureActive = false;
 
             // Release ownership of azimuth and elevation parameters
-            processor->azimuthOwnedByUI = false;
-            processor->elevationOwnedByUI = false;
+            processor->azimuthOwnedByUI.store(false);
+            processor->elevationOwnedByUI.store(false);
+            processor->overlayReticleActive.store(false);
         }
 
         // Track dragging state for cleanup
@@ -293,7 +313,7 @@ void OverlayUIBaseComponent::draw()
             if (!overlayDivergeKnobGestureActive)
             {
                 // Claim ownership of diverge parameter
-                processor->divergeOwnedByUI = true;
+                processor->divergeOwnedByUI.store(true);
 
                 paramDiverge->beginChangeGesture();
                 overlayDivergeKnobGestureActive = true;
@@ -312,7 +332,7 @@ void OverlayUIBaseComponent::draw()
             overlayDivergeKnobGestureActive = false;
 
             // Release ownership of diverge parameter
-            processor->divergeOwnedByUI = false;
+            processor->divergeOwnedByUI.store(false);
         }
 
         labelAnimation = m.A(divergeKnob.hovered || reticleHoveredLastFrame);
@@ -360,6 +380,9 @@ void OverlayUIBaseComponent::draw()
         paramAzimuth->endChangeGesture();
         paramElevation->endChangeGesture();
         overlayReticleGestureActive = false;
+        processor->azimuthOwnedByUI.store(false);
+        processor->elevationOwnedByUI.store(false);
+        processor->overlayReticleActive.store(false);
     }
 
     // Check for orphaned overlay diverge knob gesture
@@ -371,6 +394,7 @@ void OverlayUIBaseComponent::draw()
         DBG("CLEANUP: Ending orphaned overlay diverge knob gesture");
         paramDiverge->endChangeGesture();
         overlayDivergeKnobGestureActive = false;
+        processor->divergeOwnedByUI.store(false);
     }
 
 }

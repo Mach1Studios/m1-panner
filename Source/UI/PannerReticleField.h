@@ -21,6 +21,13 @@ public:
 
         m1encodeUpdate();
 
+        std::vector<Mach1Point3D> points;
+        std::vector<std::string> pointsNames;
+        if (processor != nullptr)
+        {
+            processor->getUiReticleSnapshot(points, pointsNames);
+        }
+
         XYRD* xyrd = (XYRD*)dataToControl;
 
         // Increase circle resolution
@@ -173,11 +180,9 @@ public:
             m.drawCircle(reticlePositionInWidgetSpace.x, reticlePositionInWidgetSpace.y, 6);
 
             // Reticles
-            std::vector<Mach1Point3D> points = pannerState->m1Encode.getPoints();
-            std::vector<std::string> pointsNames = pannerState->m1Encode.getPointsNames();
-            if (pannerState->m1Encode.getInputChannelsCount() > 1)
+            if (processor != nullptr && pannerState->m1Encode.getInputChannelsCount() > 1)
             {
-                for (int i = 0; i < pannerState->m1Encode.getPointsCount(); i++)
+                for (size_t i = 0; i < points.size() && i < pointsNames.size() && i < processor->channelMuteStates.size(); i++)
                 {
                     MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
                     clamp(point.x, 0, shape.size.x);
@@ -244,12 +249,11 @@ public:
         clamp(std::get<1>(*xyrd), -100, 100);
 
         // Add option-click handling for muting reticles when input mode is greater than mono
-        if (mouseDownPressed(0) && isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT && pannerState->m1Encode.getInputChannelsCount() > 1))
+        if (processor != nullptr
+            && mouseDownPressed(0)
+            && isKeyHeld(murka::MurkaKey::MURKA_KEY_ALT && pannerState->m1Encode.getInputChannelsCount() > 1))
         {
-            std::vector<Mach1Point3D> points = pannerState->m1Encode.getPoints();
-            std::vector<std::string> pointsNames = pannerState->m1Encode.getPointsNames();
-
-            for (int i = 0; i < pannerState->m1Encode.getPointsCount(); i++)
+            for (size_t i = 0; i < points.size() && i < processor->channelMuteStates.size(); i++)
             {
                 MurkaPoint point((points[i].z + 1.0) * shape.size.x / 2, (-points[i].x + 1.0) * shape.size.y / 2);
 
