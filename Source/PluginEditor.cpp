@@ -19,20 +19,12 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
 
     processor = &p;
 
-    // Whenever the processor wants to post an alert, it calls postAlertToUI
-    // which we forward to our pannerUIBaseComponent:
-    processor->postAlertToUI = [this](const Mach1::AlertData& alert)
-    {
-        if (pannerUIBaseComponent)
-            pannerUIBaseComponent->postAlert(alert);
-    };
-
     // overlay init
     {
         overlayWindow = std::make_unique<Overlay>(processor, this);
 
         overlayDialogLaunchOptions.dialogTitle = juce::String("Overlay");
-        overlayDialogLaunchOptions.content.setOwned(overlayWindow.get());
+        overlayDialogLaunchOptions.content.setNonOwned(overlayWindow.get());
         overlayDialogLaunchOptions.componentToCentreAround = this;
         overlayDialogLaunchOptions.escapeKeyTriggersCloseButton = true;
         overlayDialogLaunchOptions.useNativeTitleBar = false;
@@ -49,12 +41,22 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
     }
 
     // ui component
-    pannerUIBaseComponent = new PannerUIBaseComponent(processor);
+    pannerUIBaseComponent = new NativePannerUIComponent(*processor);
     pannerUIBaseComponent->setOverlayVisible = [&](bool visible) {
         isOverlayShow = visible;
     };
     pannerUIBaseComponent->setSize(getWidth(), getHeight());
     addAndMakeVisible(pannerUIBaseComponent);
+
+    auto safeThis = juce::Component::SafePointer<M1PannerAudioProcessorEditor>(this);
+    processor->postAlertToUI = [safeThis, processor = processor](const Mach1::AlertData& alert)
+    {
+        if (safeThis != nullptr && safeThis->pannerUIBaseComponent != nullptr) {
+            safeThis->pannerUIBaseComponent->postAlert(alert);
+        } else if (processor != nullptr) {
+            processor->pendingAlerts.push_back(alert);
+        }
+    };
 
     startTimer(50);
 
@@ -67,9 +69,11 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 {
+    if (processor != nullptr) {
+        processor->postAlertToUI = nullptr;
+    }
     overlayWindow = nullptr;
     stopTimer();
-    pannerUIBaseComponent->shutdownOpenGL();
     removeAllChildren();
     delete pannerUIBaseComponent;
 }
@@ -83,20 +87,21 @@ void M1PannerAudioProcessorEditor::paint(juce::Graphics& g)
 
 void M1PannerAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
+    if (pannerUIBaseComponent != nullptr) {
+        pannerUIBaseComponent->setBounds(getLocalBounds());
+    }
 }
 
 void M1PannerAudioProcessorEditor::timerCallback()
 {
     if (isOverlayShow && !overlayDialogWindow->isVisible())
     {
-        overlayWindow->addOpenGLComponent();
+        overlayWindow->addOverlayComponent();
         overlayDialogWindow->setVisible(true);
     }
     else if (!isOverlayShow && overlayDialogWindow->isVisible())
     {
         overlayDialogWindow->setVisible(false);
-        overlayWindow->removeOpenGLComponent();
+        overlayWindow->removeOverlayComponent();
     }
 }

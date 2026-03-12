@@ -19,9 +19,19 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     UI/M1Knob.h
                                     UI/M1PitchWheel.h
                                     UI/M1VolumeDisplayLine.h
+                                    UI/NativeLookAndFeel.h
+                                    UI/NativeOverlayReticleComponent.h
+                                    UI/NativeOverlayReticleComponent.cpp
+                                    UI/NativeOverlayUIComponent.h
+                                    UI/NativeOverlayUIComponent.cpp
+                                    UI/NativePannerReticleComponent.h
+                                    UI/NativePannerReticleComponent.cpp
+                                    UI/NativePannerUIComponent.h
+                                    UI/NativePannerUIComponent.cpp
                                     UI/OverlayReticleField.h
                                     UI/OverlayUIBaseComponent.h
                                     UI/OverlayUIBaseComponent.cpp
+                                    UI/PannerUIHelpers.h
                                     UI/PannerReticleField.h
                                     UI/M1AlertComponent.h
                                     UI/PannerUIBaseComponent.h

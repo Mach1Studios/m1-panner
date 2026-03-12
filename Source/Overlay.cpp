@@ -13,7 +13,7 @@ Overlay::Overlay(M1PannerAudioProcessor* processor_, M1PannerAudioProcessorEdito
     setAlwaysOnTop(true);
     setSize(300, 300);
 
-    addOpenGLComponent();
+    addOverlayComponent();
 
     startTimer(200);
 }
@@ -22,7 +22,7 @@ Overlay::~Overlay()
 {
     stopTimer();
 
-    removeOpenGLComponent();
+    removeOverlayComponent();
 }
 
 //==============================================================================
@@ -66,9 +66,9 @@ void Overlay::timerCallback()
 
 void Overlay::resized()
 {
-    if (dialogWindow)
+    if (dialogWindow && overlayUIBaseComponent != nullptr)
     {
-        overlayUIBaseComponent->setSize(getWidth(), getHeight());
+        overlayUIBaseComponent->setBounds(getLocalBounds());
     }
 }
 

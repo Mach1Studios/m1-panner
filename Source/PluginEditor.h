@@ -2,7 +2,7 @@
 
 #include "Overlay.h"
 #include "PluginProcessor.h"
-#include "UI/PannerUIBaseComponent.h"
+#include "UI/NativePannerUIComponent.h"
 #include <JuceHeader.h>
 
 //==============================================================================
@@ -15,7 +15,7 @@ public:
     ~M1PannerAudioProcessorEditor() override;
 
     M1PannerAudioProcessor* processor = nullptr;
-    PannerUIBaseComponent* pannerUIBaseComponent = nullptr;
+    NativePannerUIComponent* pannerUIBaseComponent = nullptr;
 
     //==============================================================================
     void paint(juce::Graphics&) override;

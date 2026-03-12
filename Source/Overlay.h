@@ -4,7 +4,7 @@
 
 #include "WindowUtil.h"
 
-#include "UI/OverlayUIBaseComponent.h"
+#include "UI/NativeOverlayUIComponent.h"
 
 class M1PannerAudioProcessor;
 class M1PannerAudioProcessorEditor;
@@ -25,7 +25,7 @@ class Overlay : public juce::Component, public juce::Timer
     M1PannerAudioProcessor* processor = nullptr;
     M1PannerAudioProcessorEditor* editor = nullptr;
     juce::DialogWindow* dialogWindow = nullptr;
-    OverlayUIBaseComponent* overlayUIBaseComponent = nullptr;
+    NativeOverlayUIComponent* overlayUIBaseComponent = nullptr;
 
 public:
     //==============================================================================
@@ -36,22 +36,21 @@ public:
     void paint(juce::Graphics& g);
     void resized();
 
-    void addOpenGLComponent()
+    void addOverlayComponent()
     {
         // ui component
         if (overlayUIBaseComponent == nullptr)
         {
-            overlayUIBaseComponent = new OverlayUIBaseComponent(processor);
-            overlayUIBaseComponent->setSize(getWidth(), getHeight());
+            overlayUIBaseComponent = new NativeOverlayUIComponent(*processor);
+            overlayUIBaseComponent->setBounds(getLocalBounds());
             addAndMakeVisible(overlayUIBaseComponent);
         }
     }
 
-    void removeOpenGLComponent()
+    void removeOverlayComponent()
     {
         if (overlayUIBaseComponent)
         {
-            overlayUIBaseComponent->shutdownOpenGL();
             removeAllChildren();
 
             delete overlayUIBaseComponent;
