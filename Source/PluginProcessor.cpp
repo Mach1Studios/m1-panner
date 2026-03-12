@@ -16,6 +16,28 @@
     #include <unistd.h>
 #endif
 
+namespace
+{
+bool areUiReticleSnapshotStatesEqual(const M1PannerAudioProcessor::UiReticleSnapshotState& lhs,
+                                     const M1PannerAudioProcessor::UiReticleSnapshotState& rhs)
+{
+    return lhs.azimuth == rhs.azimuth
+        && lhs.elevation == rhs.elevation
+        && lhs.diverge == rhs.diverge
+        && lhs.gain == rhs.gain
+        && lhs.stereoOrbitAzimuth == rhs.stereoOrbitAzimuth
+        && lhs.stereoSpread == rhs.stereoSpread
+        && lhs.autoOrbit == rhs.autoOrbit
+        && lhs.isotropicMode == rhs.isotropicMode
+        && lhs.equalpowerMode == rhs.equalpowerMode
+        && lhs.gainCompensationMode == rhs.gainCompensationMode
+        && lhs.monitorMode == rhs.monitorMode
+        && lhs.inputMode == rhs.inputMode
+        && lhs.outputMode == rhs.outputMode;
+}
+
+}
+
 /*
  Architecture:
     - parameterChanged() updates the i/o layout
@@ -92,6 +114,11 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     parameters.addParameterListener(paramDelayDistance, this);
 #endif
 
+#ifndef CUSTOM_CHANNEL_LAYOUT
+    requestedInputMode.store(static_cast<int>(pannerSettings.m1Encode.getInputMode()));
+    requestedOutputMode.store(static_cast<int>(pannerSettings.m1Encode.getOutputMode()));
+#endif
+
     // Setup osc and listener
     pannerOSC = std::make_unique<PannerOSC>(this);
     pannerOSC->AddListener([&](juce::OSCMessage msg) {
@@ -165,7 +192,7 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     }
 
     // pannerOSC update timer loop
-    startTimer(200);
+    startTimer(50);
 
     // print build time for debug
     juce::String date(__DATE__);
@@ -359,15 +386,57 @@ void M1PannerAudioProcessor::createLayout()
         m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
     }
 
-    layoutCreated = true; // flow control for static i/o
+   #ifndef CUSTOM_CHANNEL_LAYOUT
+    requestedInputMode.store(static_cast<int>(pannerSettings.m1Encode.getInputMode()));
+    requestedOutputMode.store(static_cast<int>(pannerSettings.m1Encode.getOutputMode()));
+   #endif
+
+    layoutCreated.store(true); // flow control for static i/o
     updateHostDisplay();
+}
+
+void M1PannerAudioProcessor::applyPendingModeChange()
+{
+#ifndef CUSTOM_CHANNEL_LAYOUT
+    if (!pendingModeChange.exchange(false))
+        return;
+
+    const auto requestedInput = static_cast<Mach1EncodeInputMode>(requestedInputMode.load());
+    const auto requestedOutput = static_cast<Mach1EncodeOutputMode>(requestedOutputMode.load());
+
+    if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6)))
+        pannerSettings.m1Encode.setInputMode(requestedInput);
+
+    if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8))
+        pannerSettings.m1Encode.setOutputMode(requestedOutput);
+
+    createLayout();
+    pendingPannerSettingsSend.store(true);
+#endif
+}
+
+void M1PannerAudioProcessor::applyPendingStereoParameterReset()
+{
+    if (!pendingStereoParameterReset.exchange(false))
+        return;
+
+    if (!pannerSettings.autoOrbit)
+    {
+        auto* stereoOrbitParam = parameters.getParameter(paramStereoOrbitAzimuth);
+        auto* stereoSpreadParam = parameters.getParameter(paramStereoSpread);
+        auto* stereoBalanceParam = parameters.getParameter(paramStereoInputBalance);
+
+        stereoOrbitParam->setValueNotifyingHost(stereoOrbitParam->convertTo0to1(0.0f));
+        stereoSpreadParam->setValueNotifyingHost(stereoSpreadParam->convertTo0to1(0.0f));
+        stereoBalanceParam->setValueNotifyingHost(stereoBalanceParam->convertTo0to1(0.0f));
+    }
 }
 
 //==============================================================================
 void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
-    if (!layoutCreated)
+    if (!layoutCreated.load())
     {
         createLayout();
     }
@@ -421,7 +490,8 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
 {
     // Expects non-normalised values
 
-    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
+    needToUpdateM1EncodePoints.store(true); // need to call to update the m1encode obj for new point counts
+    uiReticleSnapshotDirty.store(true);
 
     if (parameterID == paramAzimuth)
     {
@@ -429,7 +499,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         pannerSettings.azimuth = newValue;
 
         // Only do coordinate conversion if azimuth is NOT currently owned by a UI control
-        if (!azimuthOwnedByUI)
+        if (!azimuthOwnedByUI.load())
         {
             convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge,
                             pannerSettings.x, pannerSettings.y);
@@ -439,7 +509,6 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         // Update internal state
         pannerSettings.elevation = newValue;
-        parameters.getParameter(paramElevation)->setValue(newValue);
     }
     else if (parameterID == paramDiverge)
     {
@@ -447,7 +516,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         pannerSettings.diverge = newValue;
 
         // Only do coordinate conversion if diverge is NOT currently owned by a UI control
-        if (!divergeOwnedByUI)
+        if (!divergeOwnedByUI.load())
         {
             convertRCtoXYRaw(pannerSettings.azimuth, pannerSettings.diverge, pannerSettings.x, pannerSettings.y);
         }
@@ -455,20 +524,19 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     else if (parameterID == paramGain)
     {
         pannerSettings.gain = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramGain)->setValue(newValue);
     }
     else if (parameterID == paramAutoOrbit)
     {
         if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Stereo)
         { // if stereo mode
             pannerSettings.autoOrbit = (bool)newValue; // update pannerSettings value from host
-            parameters.getParameter(paramAutoOrbit)->setValue((bool)newValue);
             // reset stereo params when auto orbit is disabled
             if (!pannerSettings.autoOrbit)
             {
-                parameters.getParameter(paramStereoOrbitAzimuth)->setValue(0.0f);
-                parameters.getParameter(paramStereoSpread)->setValue(0.0f);
-                parameters.getParameter(paramStereoInputBalance)->setValue(0.0f);
+                pannerSettings.stereoOrbitAzimuth = 0.0f;
+                pannerSettings.stereoSpread = 0.0f;
+                pannerSettings.stereoInputBalance = 0.0f;
+                pendingStereoParameterReset.store(true);
             }
         }
     }
@@ -476,39 +544,32 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
     {
         // Always update stereo orbit azimuth parameter regardless of input mode
         pannerSettings.stereoOrbitAzimuth = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramStereoOrbitAzimuth)->setValue(newValue);
     }
     else if (parameterID == paramStereoSpread)
     {
         // Always update stereo spread parameter regardless of input mode
         pannerSettings.stereoSpread = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramStereoSpread)->setValue(newValue);
     }
     else if (parameterID == paramStereoInputBalance)
     {
         // Always update stereo input balance parameter regardless of input mode
         pannerSettings.stereoInputBalance = newValue; // update pannerSettings value from host
-        parameters.getParameter(paramStereoInputBalance)->setValue(newValue);
     }
     else if (parameterID == paramIsotropicEncodeMode)
     {
         pannerSettings.isotropicMode = (bool)newValue; // update pannerSettings value from host
-        parameters.getParameter(paramIsotropicEncodeMode)->setValue((bool)newValue);
     }
     else if (parameterID == paramEqualPowerEncodeMode)
     {
         pannerSettings.equalpowerMode = (bool)newValue; // update pannerSettings value from host
-        parameters.getParameter(paramEqualPowerEncodeMode)->setValue((bool)newValue);
     }
     else if (parameterID == paramInputMode)
     {
         // stop pro tools from using plugin data to change input after creation
         if (!hostType.isProTools() || (hostType.isProTools() && (getTotalNumInputChannels() == 4 || getTotalNumInputChannels() == 6)))
         {
-            Mach1EncodeInputMode inputType = Mach1EncodeInputMode((int)newValue);
-            pannerSettings.m1Encode.setInputMode(inputType);
-            parameters.getParameter(paramInputMode)->setValue(parameters.getParameter(paramInputMode)->convertTo0to1(newValue));
-            layoutCreated = false;
+            requestedInputMode.store(static_cast<int>(newValue));
+            pendingModeChange.store(true);
         }
     }
     else if (parameterID == paramOutputMode)
@@ -516,33 +577,26 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         // stop pro tools from using plugin data to change output after creation
         if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8))
         {
-            Mach1EncodeOutputMode outputType = Mach1EncodeOutputMode((int)newValue);
-            pannerSettings.m1Encode.setOutputMode(outputType);
-            gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
-            parameters.getParameter(paramOutputMode)->setValue(parameters.getParameter(paramOutputMode)->convertTo0to1(newValue));
-            layoutCreated = false;
+            requestedOutputMode.store(static_cast<int>(newValue));
+            pendingModeChange.store(true);
         }
     }
     else if (parameterID == paramGainCompensationMode)
     {
         pannerSettings.gainCompensationMode = newValue;
-        parameters.getParameter(paramGainCompensationMode)->setValue(newValue);
     }
 #ifdef ITD_PARAMETERS
     else if (parameterID == paramITDActive)
     {
         pannerSettings.itdActive = (bool)newValue;
-        parameters.getParameter(paramITDActive)->setValue((bool)newValue);
     }
     else if (parameterID == paramDelayTime)
     {
         pannerSettings.delayTime = newValue;
-        parameters.getParameter(paramDelayTime)->setValue(newValue);
     }
     else if (parameterID == paramDelayDistance)
     {
         pannerSettings.delayDistance = newValue;
-        parameters.getParameter(paramDelayDistance)->setValue(newValue);
     }
 #endif
     else if (parameterID == "output_layout_lock")
@@ -550,17 +604,7 @@ void M1PannerAudioProcessor::parameterChanged(const juce::String& parameterID, f
         pannerSettings.lockOutputLayout = (bool)newValue;
         lockOutputLayout = (bool)newValue;
     }
-    // send a pannersettings update to helper since a parameter changed
-    try {
-        if (pannerOSC->isConnected())
-        {
-            std::string track_name = track_properties.name.has_value() ? track_properties.name->toStdString() : "";
-            pannerOSC->sendPannerSettings(pannerSettings.state, track_name, osc_colour, (int)pannerSettings.m1Encode.getInputMode(), pannerSettings.azimuth, pannerSettings.elevation, pannerSettings.diverge, pannerSettings.gain, (int)pannerSettings.m1Encode.getPannerMode(), pannerSettings.gainCompensationMode, pannerSettings.autoOrbit, pannerSettings.stereoOrbitAzimuth, pannerSettings.stereoSpread);
-        }
-    }
-    catch (...) {
-        // TODO: Add error handling
-    }
+    pendingPannerSettingsSend.store(true);
 }
 
 #ifndef CUSTOM_CHANNEL_LAYOUT
@@ -726,31 +770,9 @@ void M1PannerAudioProcessor::fillChannelOrderArray(int numM1OutputChannels)
 
 void M1PannerAudioProcessor::updateM1EncodePoints()
 {
-    float _diverge = pannerSettings.diverge;
-    float _gain = pannerSettings.gain;
-
-    if (monitorSettings.monitor_mode == 1)
-    { // StereoSafe mode is on
-        //store diverge for gain
-        float abs_diverge = fabsf((_diverge - -100.0f) / (100.0f - -100.0f));
-        //Setup for stereoSafe diverge range to gain
-        _gain = _gain - (abs_diverge * 6.0);
-        //Set Diverge to 0 after using Diverge for Gain
-        _diverge = 0;
-    }
-
-    // parameters that can be automated will get their values updated from PannerSettings->Parameter
-    pannerSettings.m1Encode.setAzimuthDegrees(pannerSettings.azimuth);
-    pannerSettings.m1Encode.setElevationDegrees(pannerSettings.elevation);
-    pannerSettings.m1Encode.setDiverge(_diverge / 100); // using _diverge in case monitorMode was used
-    pannerSettings.m1Encode.setOutputGain(pannerSettings.gain, true);
+    applyStateToEncode(pannerSettings.m1Encode, getUiReticleSnapshotState());
     float old_gain_comp = gain_comp_in_db;
     gain_comp_in_db = pannerSettings.m1Encode.getGainCompensation(true); // store new gain compensation
-
-    pannerSettings.m1Encode.setAutoOrbit(pannerSettings.autoOrbit);
-    pannerSettings.m1Encode.setOrbitRotationDegrees(pannerSettings.stereoOrbitAzimuth);
-    pannerSettings.m1Encode.setStereoSpread(pannerSettings.stereoSpread / 100.0); // Mach1Encode expects an unsigned normalized input
-    pannerSettings.m1Encode.setGainCompensationActive(pannerSettings.gainCompensationMode);
 
     // Debug output for gain compensation changes
     if (std::abs(old_gain_comp - gain_comp_in_db) > 0.1f)
@@ -758,24 +780,6 @@ void M1PannerAudioProcessor::updateM1EncodePoints()
         DBG("Gain compensation changed: " + juce::String(old_gain_comp, 2) + " -> " + juce::String(gain_comp_in_db, 2) +
             " dB (Az: " + juce::String(pannerSettings.azimuth, 1) + "°, Div: " + juce::String(pannerSettings.diverge, 1) + "%)");
     }
-
-    if (pannerSettings.isotropicMode)
-    {
-        if (pannerSettings.equalpowerMode)
-        {
-            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::IsotropicEqualPower);
-        }
-        else
-        {
-            pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::IsotropicLinear);
-        }
-    }
-    else
-    {
-        pannerSettings.m1Encode.setPannerMode(Mach1EncodePannerMode::PeriphonicLinear);
-    }
-
-    pannerSettings.m1Encode.generatePointResults();
 }
 
 void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -783,42 +787,16 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     juce::ScopedNoDenormals noDenormals;
 
     // Use this method as the place to do any pre-playback
-    if (!layoutCreated)
+    if (!layoutCreated.load())
     {
-        // Only attempt layout creation if buses are properly initialized
-        if (getBus(false, 0) && getBus(true, 0))
-        {
-            createLayout(); // this should only be called here after initialization to avoid threading issues
-        }
-        else
-        {
-            // Buses not ready yet - clear buffer and return early to avoid VST3 buffer mapping issues
-            DBG("[PANNER] Buses not ready in processBlock, clearing buffer");
-            buffer.clear();
-            return;
-        }
+        buffer.clear();
+        return;
     }
 
-    if (needToUpdateM1EncodePoints)
+    if (needToUpdateM1EncodePoints.load())
     {
         updateM1EncodePoints();
-        needToUpdateM1EncodePoints = false;
-    }
-
-    // this checks if there is a mismatch of expected values set somewhere unexpected and attempts to fix
-    if ((int)pannerSettings.m1Encode.getInputMode() != (int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue()))
-    {
-        DBG("Unexpected Input mismatch! Inputs=" + std::to_string((int)pannerSettings.m1Encode.getInputMode()) + "|" + std::to_string((int)parameters.getParameter(paramInputMode)->convertFrom0to1(parameters.getParameter(paramInputMode)->getValue())));
-        auto& params = getValueTreeState();
-        auto* param = params.getParameter(paramInputMode);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerSettings.m1Encode.getInputMode()));
-    }
-    if ((int)pannerSettings.m1Encode.getOutputMode() != (int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue()))
-    {
-        DBG("Unexpected Output mismatch! Outputs=" + std::to_string((int)pannerSettings.m1Encode.getOutputMode()) + "|" + std::to_string((int)parameters.getParameter(paramOutputMode)->convertFrom0to1(parameters.getParameter(paramOutputMode)->getValue())));
-        auto& params = getValueTreeState();
-        auto* param = params.getParameter(paramOutputMode);
-        param->setValueNotifyingHost(param->convertTo0to1(pannerSettings.m1Encode.getOutputMode()));
+        needToUpdateM1EncodePoints.store(false);
     }
 
     // Update the host playhead data external usage
@@ -1027,9 +1005,16 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
 void M1PannerAudioProcessor::timerCallback()
 {
-    // Added if we need to move the OSC stuff from the processorblock
+    applyPendingModeChange();
+    applyPendingStereoParameterReset();
+
     pannerOSC->update(); // test for connection
-        }
+
+    if (pendingPannerSettingsSend.load() && pannerOSC->isConnected() && sendCurrentPannerSettings())
+    {
+        pendingPannerSettingsSend.store(false);
+    }
+}
 
 //==============================================================================
 juce::AudioProcessorValueTreeState& M1PannerAudioProcessor::getValueTreeState()
@@ -1044,15 +1029,7 @@ bool M1PannerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* M1PannerAudioProcessor::createEditor()
 {
-    auto* editor = new M1PannerAudioProcessorEditor(*this);
-
-    // When the processor sees a new alert, tell the editor to display it
-    postAlertToUI = [editor](const Mach1::AlertData& a)
-    {
-        editor->pannerUIBaseComponent->postAlert(a);
-    };
-
-    return editor;
+    return new M1PannerAudioProcessorEditor(*this);
 }
 
 void M1PannerAudioProcessor::convertRCtoXYRaw(float r, float d, float& x, float& y)
@@ -1144,7 +1121,132 @@ void M1PannerAudioProcessor::m1EncodeChangeInputOutputMode(Mach1EncodeInputMode 
         }
     }
 
-    needToUpdateM1EncodePoints = true; // need to call to update the m1encode obj for new point counts
+    needToUpdateM1EncodePoints.store(true); // need to call to update the m1encode obj for new point counts
+    uiReticleSnapshotDirty.store(true);
+}
+
+M1PannerAudioProcessor::UiReticleSnapshotState M1PannerAudioProcessor::getUiReticleSnapshotState()
+{
+    UiReticleSnapshotState state;
+    state.azimuth = pannerSettings.azimuth;
+    state.elevation = pannerSettings.elevation;
+    state.diverge = pannerSettings.diverge;
+    state.gain = pannerSettings.gain;
+    state.stereoOrbitAzimuth = pannerSettings.stereoOrbitAzimuth;
+    state.stereoSpread = pannerSettings.stereoSpread;
+    state.autoOrbit = pannerSettings.autoOrbit;
+    state.isotropicMode = pannerSettings.isotropicMode;
+    state.equalpowerMode = pannerSettings.equalpowerMode;
+    state.gainCompensationMode = pannerSettings.gainCompensationMode;
+    state.monitorMode = monitorSettings.monitor_mode;
+    state.inputMode = static_cast<int>(pannerSettings.m1Encode.getInputMode());
+    state.outputMode = static_cast<int>(pannerSettings.m1Encode.getOutputMode());
+    return state;
+}
+
+void M1PannerAudioProcessor::applyStateToEncode(Mach1Encode<float>& encode, const UiReticleSnapshotState& state)
+{
+    float diverge = state.diverge;
+    float gain = state.gain;
+
+    encode.setInputMode(static_cast<Mach1EncodeInputMode>(state.inputMode));
+    encode.setOutputMode(static_cast<Mach1EncodeOutputMode>(state.outputMode));
+
+    if (state.monitorMode == 1)
+    {
+        const float absDiverge = fabsf((diverge - -100.0f) / (100.0f - -100.0f));
+        gain -= absDiverge * 6.0f;
+        diverge = 0.0f;
+    }
+
+    encode.setAzimuthDegrees(state.azimuth);
+    encode.setElevationDegrees(state.elevation);
+    encode.setDiverge(diverge / 100.0f);
+    encode.setOutputGain(gain, true);
+    encode.setAutoOrbit(state.autoOrbit);
+    encode.setOrbitRotationDegrees(state.stereoOrbitAzimuth);
+    encode.setStereoSpread(state.stereoSpread / 100.0f);
+    encode.setGainCompensationActive(state.gainCompensationMode);
+
+    if (state.isotropicMode)
+    {
+        if (state.equalpowerMode)
+        {
+            encode.setPannerMode(Mach1EncodePannerMode::IsotropicEqualPower);
+        }
+        else
+        {
+            encode.setPannerMode(Mach1EncodePannerMode::IsotropicLinear);
+        }
+    }
+    else
+    {
+        encode.setPannerMode(Mach1EncodePannerMode::PeriphonicLinear);
+    }
+
+    encode.generatePointResults();
+}
+
+void M1PannerAudioProcessor::refreshUiReticleSnapshotIfNeeded()
+{
+    const auto state = getUiReticleSnapshotState();
+    if (!uiReticleSnapshotDirty.load() && areUiReticleSnapshotStatesEqual(state, lastUiReticleSnapshotState))
+    {
+        return;
+    }
+
+    Mach1Encode<float> snapshotEncode;
+    applyStateToEncode(snapshotEncode, state);
+
+    auto points = snapshotEncode.getPoints();
+    auto names = snapshotEncode.getPointsNames();
+
+    {
+        const juce::ScopedLock snapshotLock(uiReticleSnapshotLock);
+        uiReticlePoints = std::move(points);
+        uiReticlePointNames = std::move(names);
+    }
+
+    lastUiReticleSnapshotState = state;
+    uiReticleSnapshotDirty.store(false);
+}
+
+void M1PannerAudioProcessor::getUiReticleSnapshot(std::vector<Mach1Point3D>& points, std::vector<std::string>& names)
+{
+    refreshUiReticleSnapshotIfNeeded();
+
+    const juce::ScopedLock snapshotLock(uiReticleSnapshotLock);
+    points = uiReticlePoints;
+    names = uiReticlePointNames;
+}
+
+bool M1PannerAudioProcessor::sendCurrentPannerSettings()
+{
+    try
+    {
+        const std::string track_name = track_properties.name.has_value() ? track_properties.name->toStdString() : "";
+        const int panner_mode = pannerSettings.isotropicMode
+            ? static_cast<int>(pannerSettings.equalpowerMode ? Mach1EncodePannerMode::IsotropicEqualPower
+                                                             : Mach1EncodePannerMode::IsotropicLinear)
+            : static_cast<int>(Mach1EncodePannerMode::PeriphonicLinear);
+        return pannerOSC->sendPannerSettings(pannerSettings.state,
+                                             track_name,
+                                             osc_colour,
+                                             static_cast<int>(pannerSettings.m1Encode.getInputMode()),
+                                             pannerSettings.azimuth,
+                                             pannerSettings.elevation,
+                                             pannerSettings.diverge,
+                                             pannerSettings.gain,
+                                             panner_mode,
+                                             pannerSettings.gainCompensationMode,
+                                             pannerSettings.autoOrbit,
+                                             pannerSettings.stereoOrbitAzimuth,
+                                             pannerSettings.stereoSpread);
+    }
+    catch (...)
+    {
+        return false;
+    }
 }
 
 //==============================================================================
@@ -1180,42 +1282,43 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
 
 void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // Store the parameters in the memory block.
-    juce::MemoryOutputStream stream(destData, false);
-    stream.writeString("M1-Panner");
+    auto state = parameters.copyState();
+    state.setProperty("trackColor_r", osc_colour.red, nullptr);
+    state.setProperty("trackColor_g", osc_colour.green, nullptr);
+    state.setProperty("trackColor_b", osc_colour.blue, nullptr);
+    state.setProperty("trackColor_a", osc_colour.alpha, nullptr);
+    state.setProperty("output_layout_lock", pannerSettings.lockOutputLayout, nullptr);
 
-    juce::XmlElement root("Root");
-    addXmlElement(root, paramAzimuth, juce::String(pannerSettings.azimuth));
-    addXmlElement(root, paramElevation, juce::String(pannerSettings.elevation));
-    addXmlElement(root, paramDiverge, juce::String(pannerSettings.diverge));
-    addXmlElement(root, paramGain, juce::String(pannerSettings.gain));
-    addXmlElement(root, paramStereoOrbitAzimuth, juce::String(pannerSettings.stereoOrbitAzimuth));
-    addXmlElement(root, paramStereoSpread, juce::String(pannerSettings.stereoSpread));
-    addXmlElement(root, paramStereoInputBalance, juce::String(pannerSettings.stereoInputBalance));
-    addXmlElement(root, paramAutoOrbit, juce::String(pannerSettings.autoOrbit ? 1 : 0));
-    addXmlElement(root, paramIsotropicEncodeMode, juce::String(pannerSettings.isotropicMode ? 1 : 0));
-    addXmlElement(root, paramEqualPowerEncodeMode, juce::String(pannerSettings.equalpowerMode ? 1 : 0));
-    addXmlElement(root, paramInputMode, juce::String(pannerSettings.m1Encode.getInputMode()));
-    addXmlElement(root, paramOutputMode, juce::String(pannerSettings.m1Encode.getOutputMode()));
-#ifdef ITD_PARAMETERS
-    addXmlElement(root, paramITDActive, juce::String(pannerSettings.itdActive));
-    addXmlElement(root, paramDelayTime, juce::String(pannerSettings.delayTime));
-    addXmlElement(root, paramDelayDistance, juce::String(pannerSettings.delayDistance));
-#endif
-
-    // Extras
-    addXmlElement(root, "trackColor_r", juce::String(osc_colour.red));
-    addXmlElement(root, "trackColor_g", juce::String(osc_colour.green));
-    addXmlElement(root, "trackColor_b", juce::String(osc_colour.blue));
-    addXmlElement(root, "trackColor_a", juce::String(osc_colour.alpha));
-    addXmlElement(root, "output_layout_lock", juce::String(pannerSettings.lockOutputLayout ? 1 : 0));
-
-    juce::String strDoc = root.createDocument(juce::String(""), false, false);
-    stream.writeString(strDoc);
+    if (auto xml = state.createXml())
+    {
+        copyXmlToBinary(*xml, destData);
+    }
 }
 
 void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    if (auto xml = getXmlFromBinary(data, sizeInBytes))
+    {
+        auto restoredState = juce::ValueTree::fromXml(*xml);
+
+        if (restoredState.isValid() && restoredState.hasType(parameters.state.getType()))
+        {
+            parameters.replaceState(restoredState);
+
+            osc_colour.red = (int) restoredState.getProperty("trackColor_r", osc_colour.red);
+            osc_colour.green = (int) restoredState.getProperty("trackColor_g", osc_colour.green);
+            osc_colour.blue = (int) restoredState.getProperty("trackColor_b", osc_colour.blue);
+            osc_colour.alpha = (int) restoredState.getProperty("trackColor_a", osc_colour.alpha);
+            pannerSettings.lockOutputLayout = (bool) restoredState.getProperty("output_layout_lock", pannerSettings.lockOutputLayout);
+            lockOutputLayout = pannerSettings.lockOutputLayout;
+
+            needToUpdateM1EncodePoints.store(true);
+            uiReticleSnapshotDirty.store(true);
+            pendingPannerSettingsSend.store(true);
+            return;
+        }
+    }
+
     // Restore the parameters from the memory block,
     // whose contents will have been created by the getStateInformation() call.
     juce::MemoryInputStream input(data, sizeInBytes, false);
@@ -1232,23 +1335,40 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         std::unique_ptr<juce::XmlElement> root(doc.getDocumentElement());
         auto& params = getValueTreeState();
 
+        const auto restoredAzimuth = (float) getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth);
+        const auto restoredElevation = (float) getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation);
+        const auto restoredDiverge = (float) getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge);
+        const auto restoredGain = (float) getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain);
+        const auto restoredStereoOrbitAzimuth = (float) getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth);
+        const auto restoredStereoSpread = (float) getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread);
+        const auto restoredStereoInputBalance = (float) getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance);
+        const auto restoredAutoOrbit = (bool) getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit);
+        const auto restoredIsotropicMode = (bool) getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode);
+        const auto restoredEqualPowerMode = (bool) getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode);
+        const auto restoredGainCompensationMode = (float) getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode);
+        const auto restoredInputMode = getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode());
+        const auto restoredOutputMode = getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode());
+
         // update local parameters first
-        parameterChanged(paramAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramAzimuth, pannerSettings.azimuth));
-        parameterChanged(paramElevation, (float)getParameterDoubleFromXmlElement(root.get(), paramElevation, pannerSettings.elevation));
-        parameterChanged(paramDiverge, (float)getParameterDoubleFromXmlElement(root.get(), paramDiverge, pannerSettings.diverge));
-        parameterChanged(paramGain, (float)getParameterDoubleFromXmlElement(root.get(), paramGain, pannerSettings.gain));
-        parameterChanged(paramStereoOrbitAzimuth, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoOrbitAzimuth, pannerSettings.stereoOrbitAzimuth));
-        parameterChanged(paramStereoSpread, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoSpread, pannerSettings.stereoSpread));
-        parameterChanged(paramStereoInputBalance, (float)getParameterDoubleFromXmlElement(root.get(), paramStereoInputBalance, pannerSettings.stereoInputBalance));
-        parameterChanged(paramAutoOrbit, (int)getParameterIntFromXmlElement(root.get(), paramAutoOrbit, pannerSettings.autoOrbit));
-        parameterChanged(paramIsotropicEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramIsotropicEncodeMode, pannerSettings.isotropicMode));
-        parameterChanged(paramEqualPowerEncodeMode, (int)getParameterIntFromXmlElement(root.get(), paramEqualPowerEncodeMode, pannerSettings.equalpowerMode));
-        parameterChanged(paramGainCompensationMode, (float)getParameterDoubleFromXmlElement(root.get(), paramGainCompensationMode, pannerSettings.gainCompensationMode));
+        parameterChanged(paramAzimuth, restoredAzimuth);
+        parameterChanged(paramElevation, restoredElevation);
+        parameterChanged(paramDiverge, restoredDiverge);
+        parameterChanged(paramGain, restoredGain);
+        parameterChanged(paramStereoOrbitAzimuth, restoredStereoOrbitAzimuth);
+        parameterChanged(paramStereoSpread, restoredStereoSpread);
+        parameterChanged(paramStereoInputBalance, restoredStereoInputBalance);
+        parameterChanged(paramAutoOrbit, restoredAutoOrbit);
+        parameterChanged(paramIsotropicEncodeMode, restoredIsotropicMode);
+        parameterChanged(paramEqualPowerEncodeMode, restoredEqualPowerMode);
+        parameterChanged(paramGainCompensationMode, restoredGainCompensationMode);
 
 #ifdef ITD_PARAMETERS
-        parameterChanged(paramITDActive, (int)getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive));
-        parameterChanged(paramDelayTime, (int)getParameterIntFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime));
-        parameterChanged(paramDelayDistance, (float)getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance));
+        const auto restoredITDActive = (bool) getParameterIntFromXmlElement(root.get(), paramITDActive, pannerSettings.itdActive);
+        const auto restoredDelayTime = (float) getParameterDoubleFromXmlElement(root.get(), paramDelayTime, pannerSettings.delayTime);
+        const auto restoredDelayDistance = (float) getParameterDoubleFromXmlElement(root.get(), paramDelayDistance, pannerSettings.delayDistance);
+        parameterChanged(paramITDActive, restoredITDActive);
+        parameterChanged(paramDelayTime, restoredDelayTime);
+        parameterChanged(paramDelayDistance, restoredDelayDistance);
 #endif
 
         // Extras
@@ -1259,28 +1379,28 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
         parameterChanged("output_layout_lock", (bool)getParameterIntFromXmlElement(root.get(), "output_layout_lock", pannerSettings.lockOutputLayout));
 
         // if the parsed input from xml is not the default value
-        parameterChanged(paramInputMode, Mach1EncodeInputMode(getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-        parameterChanged(paramOutputMode, Mach1EncodeOutputMode(getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
-        params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramInputMode, pannerSettings.m1Encode.getInputMode())));
-        params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1((int)getParameterIntFromXmlElement(root.get(), paramOutputMode, pannerSettings.m1Encode.getOutputMode())));
+        parameterChanged(paramInputMode, Mach1EncodeInputMode(restoredInputMode));
+        parameterChanged(paramOutputMode, Mach1EncodeOutputMode(restoredOutputMode));
+        params.getParameter(paramInputMode)->setValueNotifyingHost(params.getParameter(paramInputMode)->convertTo0to1(restoredInputMode));
+        params.getParameter(paramOutputMode)->setValueNotifyingHost(params.getParameter(paramOutputMode)->convertTo0to1(restoredOutputMode));
 
         // Update all parameters through the value tree
-        params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1(pannerSettings.azimuth));
-        params.getParameter(paramElevation)->setValueNotifyingHost(params.getParameter(paramElevation)->convertTo0to1(pannerSettings.elevation));
-        params.getParameter(paramDiverge)->setValueNotifyingHost(params.getParameter(paramDiverge)->convertTo0to1(pannerSettings.diverge));
-        params.getParameter(paramGain)->setValueNotifyingHost(params.getParameter(paramGain)->convertTo0to1(pannerSettings.gain));
-        params.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(params.getParameter(paramStereoOrbitAzimuth)->convertTo0to1(pannerSettings.stereoOrbitAzimuth));
-        params.getParameter(paramStereoSpread)->setValueNotifyingHost(params.getParameter(paramStereoSpread)->convertTo0to1(pannerSettings.stereoSpread));
-        params.getParameter(paramStereoInputBalance)->setValueNotifyingHost(params.getParameter(paramStereoInputBalance)->convertTo0to1(pannerSettings.stereoInputBalance));
-        params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1(pannerSettings.autoOrbit));
-        params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1(pannerSettings.isotropicMode));
-        params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1(pannerSettings.equalpowerMode));
-        params.getParameter(paramGainCompensationMode)->setValueNotifyingHost(params.getParameter(paramGainCompensationMode)->convertTo0to1(pannerSettings.gainCompensationMode));
+        params.getParameter(paramAzimuth)->setValueNotifyingHost(params.getParameter(paramAzimuth)->convertTo0to1(restoredAzimuth));
+        params.getParameter(paramElevation)->setValueNotifyingHost(params.getParameter(paramElevation)->convertTo0to1(restoredElevation));
+        params.getParameter(paramDiverge)->setValueNotifyingHost(params.getParameter(paramDiverge)->convertTo0to1(restoredDiverge));
+        params.getParameter(paramGain)->setValueNotifyingHost(params.getParameter(paramGain)->convertTo0to1(restoredGain));
+        params.getParameter(paramStereoOrbitAzimuth)->setValueNotifyingHost(params.getParameter(paramStereoOrbitAzimuth)->convertTo0to1(restoredStereoOrbitAzimuth));
+        params.getParameter(paramStereoSpread)->setValueNotifyingHost(params.getParameter(paramStereoSpread)->convertTo0to1(restoredStereoSpread));
+        params.getParameter(paramStereoInputBalance)->setValueNotifyingHost(params.getParameter(paramStereoInputBalance)->convertTo0to1(restoredStereoInputBalance));
+        params.getParameter(paramAutoOrbit)->setValueNotifyingHost(params.getParameter(paramAutoOrbit)->convertTo0to1(restoredAutoOrbit));
+        params.getParameter(paramIsotropicEncodeMode)->setValueNotifyingHost(params.getParameter(paramIsotropicEncodeMode)->convertTo0to1(restoredIsotropicMode));
+        params.getParameter(paramEqualPowerEncodeMode)->setValueNotifyingHost(params.getParameter(paramEqualPowerEncodeMode)->convertTo0to1(restoredEqualPowerMode));
+        params.getParameter(paramGainCompensationMode)->setValueNotifyingHost(params.getParameter(paramGainCompensationMode)->convertTo0to1(restoredGainCompensationMode));
 
 #ifdef ITD_PARAMETERS
-        params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1(pannerSettings.itdActive));
-        params.getParameter(paramDelayTime)->setValueNotifyingHost(params.getParameter(paramDelayTime)->convertTo0to1(pannerSettings.delayTime));
-        params.getParameter(paramDelayDistance)->setValueNotifyingHost(params.getParameter(paramDelayDistance)->convertTo0to1(pannerSettings.delayDistance));
+        params.getParameter(paramITDActive)->setValueNotifyingHost(params.getParameter(paramITDActive)->convertTo0to1(restoredITDActive));
+        params.getParameter(paramDelayTime)->setValueNotifyingHost(params.getParameter(paramDelayTime)->convertTo0to1(restoredDelayTime));
+        params.getParameter(paramDelayDistance)->setValueNotifyingHost(params.getParameter(paramDelayDistance)->convertTo0to1(restoredDelayDistance));
 #endif
     }
 }

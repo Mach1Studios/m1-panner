@@ -266,19 +266,6 @@ bool PannerOSC::sendPannerSettings(int state)
     if (!isConnected() || port <= 0)
         return false;
 
-    // Try to reconnect if needed - this will return false if connection fails
-    try {
-        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
-        {
-            is_connected = false;
-            return false;
-        }
-    }
-    catch (...) {
-        is_connected = false;
-        return false;
-    }
-
     // Build message
     juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));
     try {
@@ -308,19 +295,6 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
 {
     if (!isConnected() || port <= 0)
         return false;
-
-    // Try to reconnect if needed - this will return false if connection fails
-    try {
-        if (!juce::OSCSender::connect("127.0.0.1", helperPort))
-        {
-            is_connected = false;
-            return false;
-        }
-    }
-    catch (...) {
-        is_connected = false;
-        return false;
-    }
 
     // Build message
     juce::OSCMessage m = juce::OSCMessage(juce::OSCAddressPattern("/panner-settings"));

@@ -67,6 +67,9 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 {
+    if (processor != nullptr)
+        processor->postAlertToUI = {};
+
     overlayWindow = nullptr;
     stopTimer();
     pannerUIBaseComponent->shutdownOpenGL();
