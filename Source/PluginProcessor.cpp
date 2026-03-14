@@ -437,6 +437,9 @@ void M1PannerAudioProcessor::createLayout()
     requestedOutputMode.store(static_cast<int>(pannerSettings.m1Encode.getOutputMode()));
    #endif
 
+    lastKnownInputBusChannels = getBus(true, 0)->getCurrentLayout().size();
+    lastKnownOutputBusChannels = getBus(false, 0)->getCurrentLayout().size();
+
     layoutCreated.store(true); // flow control for static i/o
     updateHostDisplay();
 }
@@ -456,7 +459,7 @@ void M1PannerAudioProcessor::applyPendingModeChange()
     if (!hostType.isProTools() || (hostType.isProTools() && getTotalNumOutputChannels() > 8))
         pannerSettings.m1Encode.setOutputMode(requestedOutput);
 
-    createLayout();
+    layoutCreated.store(false);
     pendingPannerSettingsSend.store(true);
 #endif
 }
@@ -540,6 +543,8 @@ void M1PannerAudioProcessor::releaseResources()
     
     // Reset layout state to ensure clean re-initialization on next prepareToPlay
     layoutCreated = false;
+    lastKnownInputBusChannels = -1;
+    lastKnownOutputBusChannels = -1;
     
     // Clean up memory sharing
 #if M1_ENABLE_EXTERNAL_RENDERER
@@ -890,6 +895,21 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
+    // Rebuild the layout on the audio thread before touching per-channel state.
+    applyPendingModeChange();
+
+    if (getBus(false, 0) && getBus(true, 0))
+    {
+        const auto currentInputBusChannels = getBus(true, 0)->getCurrentLayout().size();
+        const auto currentOutputBusChannels = getBus(false, 0)->getCurrentLayout().size();
+
+        if (currentInputBusChannels != lastKnownInputBusChannels
+            || currentOutputBusChannels != lastKnownOutputBusChannels)
+        {
+            layoutCreated.store(false);
+        }
+    }
+
     // Use this method as the place to do any pre-playback
     if (!layoutCreated.load())
     {
@@ -905,6 +925,36 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             buffer.clear();
             return;
         }
+    }
+
+    const auto coeffLayoutMatchesCurrentMode = [this]()
+    {
+        const auto inputChannelsCount = static_cast<size_t>(pannerSettings.m1Encode.getInputChannelsCount());
+        const auto outputChannelsCount = static_cast<size_t>(pannerSettings.m1Encode.getOutputChannelsCount());
+
+        if (smoothedChannelCoeffs.size() != inputChannelsCount)
+            return false;
+
+        for (size_t input_channel = 0; input_channel < inputChannelsCount; ++input_channel)
+        {
+            if (smoothedChannelCoeffs[input_channel].size() != outputChannelsCount)
+                return false;
+        }
+
+        return true;
+    };
+
+    if (!coeffLayoutMatchesCurrentMode())
+    {
+        DBG("[PANNER] Rebuilding coefficient state for updated channel layout");
+        m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
+    }
+
+    if (!coeffLayoutMatchesCurrentMode())
+    {
+        DBG("[PANNER] Warning: coefficient layout mismatch after rebuild, clearing buffer");
+        buffer.clear();
+        return;
     }
 
     // Initialize memory sharing if external spatial mixer is active
@@ -941,14 +991,27 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
+    const auto inputChannelsCount = pannerSettings.m1Encode.getInputChannelsCount();
+    const auto outputChannelsCount = pannerSettings.m1Encode.getOutputChannelsCount();
+
     // Set m1Encode obj values for processing
     auto gainCoeffs = pannerSettings.m1Encode.getGains();
 
-    if (gainCoeffs.empty() || gainCoeffs.size() == 0)
+    if (gainCoeffs.size() != static_cast<size_t>(inputChannelsCount))
     {
-        DBG("[PANNER] Warning: gainCoeffs not initialized, clearing buffer");
+        DBG("[PANNER] Warning: gainCoeffs input size mismatch, clearing buffer");
         buffer.clear();
         return;
+    }
+
+    for (int input_channel = 0; input_channel < inputChannelsCount; ++input_channel)
+    {
+        if (gainCoeffs[input_channel].size() != static_cast<size_t>(outputChannelsCount))
+        {
+            DBG("[PANNER] Warning: gainCoeffs output size mismatch, clearing buffer");
+            buffer.clear();
+            return;
+        }
     }
 
     // vector of input channel buffers
@@ -996,12 +1059,12 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     // input channel setup loop
-    for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++)
+    for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++)
     {
         if (input_channel > mainInput.getNumChannels() - 1)
         {
             // Input channel is missing, set its gains to zero
-            for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
+            for (int output_channel = 0; output_channel < outputChannelsCount; output_channel++)
             {
                 smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(0.0f);
             }
@@ -1012,7 +1075,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             memcpy(audioDataIn[input_channel].data(), mainInput.getReadPointer(input_channel), sizeof(float) * buffer.getNumSamples());
 
             // output channel setup loop
-            for (int output_channel = 0; output_channel < pannerSettings.m1Encode.getOutputChannelsCount(); output_channel++)
+            for (int output_channel = 0; output_channel < outputChannelsCount; output_channel++)
             {
                 // Set coefficients using M1 channel order (reordering applied later)
                 smoothedChannelCoeffs[input_channel][output_channel].setTargetValue(gainCoeffs[input_channel][output_channel]);
@@ -1022,7 +1085,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // multichannel temp buffer (also used for informing meters even when not processing to write pointers
     // Note: Use buf.getNumChannels() for output size from this point on to not mismatch from new m1Encode size requests
-    juce::AudioBuffer<float> buf(pannerSettings.m1Encode.getOutputChannelsCount(), buffer.getNumSamples());
+    juce::AudioBuffer<float> buf(outputChannelsCount, buffer.getNumSamples());
     buf.clear();
     // multichannel output buffer (if internal processing is active this will have the above copy into it)
     float* const* outBuffer = mainOutput.getArrayOfWritePointers();
@@ -1031,7 +1094,7 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     mainOutput.clear();
 
     // processing loop
-    for (int input_channel = 0; input_channel < pannerSettings.m1Encode.getInputChannelsCount(); input_channel++)
+    for (int input_channel = 0; input_channel < inputChannelsCount; input_channel++)
     {
         if (input_channel > mainInput.getNumChannels() - 1)
         {
@@ -1087,9 +1150,9 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 #ifdef ITD_PARAMETERS
                         //SIMPLE DELAY
                         // scale delayCoeffs to be normalized
-                        for (int i = 0; i < pannerSettings.m1Encode.getInputChannelsCount(); i++)
+                        for (int i = 0; i < inputChannelsCount; i++)
                         {
-                            for (int o = 0; o < pannerSettings.m1Encode.getOutputChannelsCount(); o++)
+                            for (int o = 0; o < outputChannelsCount; o++)
                             {
                                 delayCoeffs[i][o] = std::min(0.25f, delayCoeffs[i][o]); // clamp maximum to .25f
                                 delayCoeffs[i][o] *= 4.0f; // rescale range to 0.0->1.0
@@ -1173,7 +1236,6 @@ void M1PannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
 void M1PannerAudioProcessor::timerCallback()
 {
-    applyPendingModeChange();
     applyPendingStereoParameterReset();
 
     pannerOSC->update(); // test for connection
@@ -1197,6 +1259,13 @@ void M1PannerAudioProcessor::timerCallback()
             helperManager.requestHelperService("M1-Panner");
         }
     }
+}
+
+void M1PannerAudioProcessor::setUiInteractionState(int newState)
+{
+    const int previousState = pannerSettings.state.exchange(newState);
+    if (previousState != newState)
+        pendingPannerSettingsSend.store(true);
 }
 
 //==============================================================================

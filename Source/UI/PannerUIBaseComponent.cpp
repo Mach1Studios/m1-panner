@@ -1351,11 +1351,11 @@ void PannerUIBaseComponent::draw()
     // update the panner state if a user is interacting with the UI
     if (azLabel.highlighted || dLabel.highlighted || zLabel.highlighted || xLabel.highlighted || yLabel.highlighted || srLabel.highlighted || ssLabel.highlighted || spLabel.highlighted || gLabel.highlighted)
     {
-        processor->pannerSettings.state = 2;
+        processor->setUiInteractionState(2);
     }
     else
     {
-        processor->pannerSettings.state = 1;
+        processor->setUiInteractionState(1);
     }
 
     // Draw the alert if active

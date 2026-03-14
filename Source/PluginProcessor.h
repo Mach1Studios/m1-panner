@@ -256,6 +256,7 @@ public:
 
     void convertRCtoXYRaw(float r, float d, float& x, float& y);
     void convertXYtoRCRaw(float x, float y, float& r, float& d);
+    void setUiInteractionState(int newState);
 
     // Add mute states vector for each input channel
     std::vector<bool> channelMuteStates;
@@ -322,6 +323,8 @@ private:
     std::atomic<bool> pendingStereoParameterReset { false };
     std::atomic<int> requestedInputMode { 0 };
     std::atomic<int> requestedOutputMode { 0 };
+    int lastKnownInputBusChannels = -1;
+    int lastKnownOutputBusChannels = -1;
     UiReticleSnapshotState lastUiReticleSnapshotState {};
     juce::CriticalSection uiReticleSnapshotLock;
     std::vector<Mach1Point3D> uiReticlePoints;
