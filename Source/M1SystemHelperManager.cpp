@@ -1,6 +1,5 @@
 #include "M1SystemHelperManager.h"
 #include <iostream>
-#include <sstream>
 #include <cstdlib>
 #include <thread>
 #include <chrono>
@@ -12,6 +11,7 @@
     #include <unistd.h>
 #elif defined(_WIN32)
     #include <windows.h>
+    #include <TlHelp32.h>
     #include <winsvc.h>
     #include <tchar.h>
 #else  // Linux
@@ -21,6 +21,75 @@
 #endif
 
 namespace Mach1 {
+
+namespace
+{
+#ifdef _WIN32
+bool isHelperProcessRunning()
+{
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE)
+        return false;
+
+    PROCESSENTRY32W entry{};
+    entry.dwSize = sizeof(entry);
+
+    bool running = false;
+    if (Process32FirstW(snapshot, &entry))
+    {
+        do
+        {
+            if (lstrcmpiW(entry.szExeFile, L"m1-system-helper.exe") == 0)
+            {
+                running = true;
+                break;
+            }
+        }
+        while (Process32NextW(snapshot, &entry));
+    }
+
+    CloseHandle(snapshot);
+    return running;
+}
+
+bool launchHelperApplicationDirectly()
+{
+    constexpr const wchar_t* executableCandidates[] = {
+        L"C:\\Program Files\\Mach1\\m1-system-helper.exe",
+        L"C:\\ProgramData\\Mach1\\m1-system-helper.exe",
+    };
+
+    for (const auto* path : executableCandidates)
+    {
+        if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES)
+            continue;
+
+        STARTUPINFOW startupInfo{};
+        startupInfo.cb = sizeof(startupInfo);
+
+        PROCESS_INFORMATION processInfo{};
+        std::wstring commandLine = std::wstring(L"\"") + path + L"\"";
+        if (CreateProcessW(path,
+                           commandLine.data(),
+                           NULL,
+                           NULL,
+                           FALSE,
+                           DETACHED_PROCESS | CREATE_NO_WINDOW,
+                           NULL,
+                           NULL,
+                           &startupInfo,
+                           &processInfo))
+        {
+            CloseHandle(processInfo.hProcess);
+            CloseHandle(processInfo.hThread);
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif
+}
 
 // =============================================================================
 // PLATFORM-SPECIFIC CONSTANTS
@@ -153,6 +222,14 @@ bool M1SystemHelperManager::startHelperService()
     return connectionResult;
 
 #elif defined(_WIN32)
+    if (launchHelperApplicationDirectly()) {
+        for (int attempt = 0; attempt < 8; ++attempt) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            if (triggerNamedPipeActivation())
+                return true;
+        }
+    }
+
     return executeServiceCommand("start");
 
 #else  // Linux
@@ -310,34 +387,7 @@ bool M1SystemHelperManager::isServiceInstalled() const
 
 bool M1SystemHelperManager::triggerNamedPipeActivation() const
 {
-    HANDLE pipe = CreateFile(
-        PIPE_NAME,
-        GENERIC_READ | GENERIC_WRITE,
-        0,
-        NULL,
-        OPEN_EXISTING,
-        0,
-        NULL
-    );
-
-    if (pipe == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-
-    // Send ping message
-    const char* message = "PING";
-    DWORD bytesWritten;
-    bool success = WriteFile(pipe, message, strlen(message), &bytesWritten, NULL);
-
-    if (success) {
-        // Read response
-        char buffer[256];
-        DWORD bytesRead;
-        ReadFile(pipe, buffer, sizeof(buffer) - 1, &bytesRead, NULL);
-    }
-
-    CloseHandle(pipe);
-    return success;
+    return isHelperProcessRunning();
 }
 
 #endif
