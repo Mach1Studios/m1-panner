@@ -1490,6 +1490,7 @@ bool M1PannerAudioProcessor::sendCurrentPannerSettings()
                                              track_name,
                                              osc_colour,
                                              static_cast<int>(pannerSettings.m1Encode.getInputMode()),
+                                             static_cast<int>(pannerSettings.m1Encode.getOutputMode()),
                                              pannerSettings.azimuth,
                                              pannerSettings.elevation,
                                              pannerSettings.diverge,
