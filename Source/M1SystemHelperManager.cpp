@@ -24,7 +24,80 @@ namespace Mach1 {
 
 namespace
 {
-#ifdef _WIN32
+#ifdef __APPLE__
+bool pathExists(const char* path)
+{
+    return access(path, F_OK) == 0;
+}
+
+bool launchHelperApplicationDirectly()
+{
+    constexpr const char* appCandidates[] = {
+        "/Library/Application Support/Mach1/m1-system-helper.app",
+    };
+
+    for (const auto* path : appCandidates)
+    {
+        if (pathExists(path))
+        {
+            const std::string command = "open -g \"" + std::string(path) + "\" >/dev/null 2>&1";
+            if (std::system(command.c_str()) == 0)
+                return true;
+        }
+    }
+
+    constexpr const char* binaryCandidates[] = {
+        "/Library/Application Support/Mach1/m1-system-helper",
+    };
+
+    for (const auto* path : binaryCandidates)
+    {
+        if (pathExists(path))
+        {
+            const std::string command = "\"" + std::string(path) + "\" >/dev/null 2>&1 &";
+            if (std::system(command.c_str()) == 0)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool openHelperWindowDirectly()
+{
+    constexpr const char* binaryCandidates[] = {
+        "/Library/Application Support/Mach1/m1-system-helper.app/Contents/MacOS/m1-system-helper",
+        "/Library/Application Support/Mach1/m1-system-helper",
+    };
+
+    for (const auto* path : binaryCandidates)
+    {
+        if (pathExists(path))
+        {
+            const std::string command = "\"" + std::string(path) + "\" --keep-alive --show-window >/dev/null 2>&1 &";
+            if (std::system(command.c_str()) == 0)
+                return true;
+        }
+    }
+
+    constexpr const char* appCandidates[] = {
+        "/Library/Application Support/Mach1/m1-system-helper.app",
+    };
+
+    for (const auto* path : appCandidates)
+    {
+        if (pathExists(path))
+        {
+            const std::string command = "open \"" + std::string(path)
+                                        + "\" --args --keep-alive --show-window >/dev/null 2>&1";
+            if (std::system(command.c_str()) == 0)
+                return true;
+        }
+    }
+
+    return false;
+}
+#elif defined(_WIN32)
 bool isHelperProcessRunning()
 {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -75,6 +148,45 @@ bool launchHelperApplicationDirectly()
                            NULL,
                            FALSE,
                            DETACHED_PROCESS | CREATE_NO_WINDOW,
+                           NULL,
+                           NULL,
+                           &startupInfo,
+                           &processInfo))
+        {
+            CloseHandle(processInfo.hProcess);
+            CloseHandle(processInfo.hThread);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool openHelperWindowDirectly()
+{
+    constexpr const wchar_t* executableCandidates[] = {
+        L"C:\\Program Files\\Mach1\\m1-system-helper.exe",
+        L"C:\\ProgramData\\Mach1\\m1-system-helper.exe",
+    };
+
+    for (const auto* path : executableCandidates)
+    {
+        if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES)
+            continue;
+
+        STARTUPINFOW startupInfo{};
+        startupInfo.cb = sizeof(startupInfo);
+        startupInfo.dwFlags = STARTF_USESHOWWINDOW;
+        startupInfo.wShowWindow = SW_SHOWNORMAL;
+
+        PROCESS_INFORMATION processInfo{};
+        std::wstring commandLine = std::wstring(L"\"") + path + L"\" --keep-alive --show-window";
+        if (CreateProcessW(path,
+                           commandLine.data(),
+                           NULL,
+                           NULL,
+                           FALSE,
+                           0,
                            NULL,
                            NULL,
                            &startupInfo,
@@ -180,6 +292,19 @@ bool M1SystemHelperManager::isHelperServiceRunning() const
 #else  // Linux
     return triggerSocketActivation();
 #endif
+}
+
+bool M1SystemHelperManager::openHelperWindow(const std::string& appName)
+{
+#if defined(__APPLE__) || defined(_WIN32)
+    if (openHelperWindowDirectly())
+        return true;
+#endif
+
+    if (!requestHelperService(appName))
+        return false;
+
+    return isHelperServiceRunning();
 }
 
 bool M1SystemHelperManager::startHelperService()

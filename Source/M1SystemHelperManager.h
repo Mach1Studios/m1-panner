@@ -54,6 +54,13 @@ public:
     bool isHelperServiceRunning() const;
 
     /**
+     * @brief Open or reveal the helper GUI window
+     * @param appName Name of the requesting application
+     * @return true if the helper GUI request was issued successfully
+     */
+    bool openHelperWindow(const std::string& appName);
+
+    /**
      * @brief Force start the helper service
      * @return true on success, false on error
      */
