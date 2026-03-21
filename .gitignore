@@ -355,6 +355,7 @@ m1stereospatialize/m1-stereospatialize/Builds/*
 */Makefile
 *.xcconfig
 *.plist
+!Resources/entitlements.mac.plist
 */*.app/*
 *.app
 *.xcworkspacedata

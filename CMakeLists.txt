@@ -59,6 +59,7 @@ set(RBRACKET_LITERAL "}")
 set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
 set(CUSTOM_BUNDLE_ID "com.mach1.spatial.panner")
 set(CUSTOM_PLUGIN_CODE "M1Pn")
+set(MACH1_SHARED_APP_GROUP_ID "group.com.mach1.spatial.shared")
 
 if(ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
@@ -139,6 +140,7 @@ target_compile_definitions(${PLUGIN_NAME}
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=$<IF:$<BOOL:${ENABLE_VST2_COMPATIBILITY}>,1,0>
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
+    MACH1_SHARED_APP_GROUP_ID="${MACH1_SHARED_APP_GROUP_ID}"
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.
@@ -226,9 +228,13 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Modules/m1-sdk/libmach1
 
 ### setup info.plist and entitlements for macos
 if(APPLE)
-  set_target_properties(${PLUGIN_NAME} PROPERTIES
-    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist"
-  )
+  foreach(format_target ${FORMATS})
+    if(TARGET ${PLUGIN_NAME}_${format_target})
+      set_target_properties(${PLUGIN_NAME}_${format_target} PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist"
+      )
+    endif()
+  endforeach()
 endif()
 
 ### IDE Generator post-config ###

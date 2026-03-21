@@ -6,12 +6,20 @@
     // Foundation framework will be properly linked during build
 #endif
 
+#ifndef MACH1_SHARED_APP_GROUP_ID
+#define MACH1_SHARED_APP_GROUP_ID "group.com.mach1.spatial.shared"
+#endif
+
 namespace Mach1 {
 
 #ifdef __APPLE__
 // Forward declaration for Objective-C++ implementation in SharedMemoryPaths.mm
 std::string getAppGroupContainerForPanner(const std::string& groupIdentifier);
 #endif
+
+namespace {
+constexpr const char* kSharedAppGroupId = MACH1_SHARED_APP_GROUP_ID;
+}
 
 std::string SharedMemoryPaths::getMemoryFileDirectory() {
     auto directories = getAllPossibleDirectories();
@@ -62,7 +70,7 @@ bool SharedMemoryPaths::ensureDirectoryExists(const std::string& dirPath) {
 
 std::string SharedMemoryPaths::getAppGroupContainer() {
 #ifdef __APPLE__
-    return getAppGroupContainerForPanner("group.com.mach1.spatial.shared");
+    return getAppGroupContainerForPanner(kSharedAppGroupId);
 
     // Placeholder implementation:
     // @autoreleasepool {
