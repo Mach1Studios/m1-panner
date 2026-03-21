@@ -65,8 +65,11 @@ public:
 
         if (v > 0.795)
         {
-            // reds
-            m.setColor(METER_RED);
+            // reds - dimmed for external meters
+            if (isExternalMeter)
+                m.setColor(METER_RED_DIM);
+            else
+                m.setColor(METER_RED);
             m.drawRectangle(shape.size.x / 2 - 2,
                 shape.size.y - v * shape.size.y,
                 4,
@@ -75,22 +78,28 @@ public:
 
         if (v > 0.68)
         {
-            // yellows
+            // yellows - dimmed for external meters
             float f = v;
             if (f > 0.795)
                 f = 0.795;
-            m.setColor(METER_YELLOW);
+            if (isExternalMeter)
+                m.setColor(METER_YELLOW_DIM);
+            else
+                m.setColor(METER_YELLOW);
             m.drawRectangle(shape.size.x / 2 - 2,
                 shape.size.y - f * shape.size.y,
                 4,
                 f * shape.size.y);
         }
 
-        // greens
+        // greens - dimmed for external meters
         float g = v;
         if (g > 0.68)
             g = 0.68;
-        m.setColor(METER_GREEN);
+        if (isExternalMeter)
+            m.setColor(METER_GREEN_DIM);
+        else
+            m.setColor(METER_GREEN);
         m.drawRectangle(shape.size.x / 2 - 2,
             shape.size.y - g * shape.size.y,
             4,
@@ -140,5 +149,12 @@ public:
         volume, // parameter variable name
         withVolume, // setter
         0.0 // default
+    )
+
+    MURKA_PARAMETER(M1VolumeDisplayLine, // class name
+        bool, // parameter type
+        isExternalMeter, // parameter variable name
+        withExternalMeter, // setter
+        false // default
     )
 };

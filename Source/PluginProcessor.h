@@ -9,6 +9,10 @@
 #include "AlertData.h"
 #include "PannerOSC.h"
 #include "TypesForDataExchange.h"
+#include "M1SystemHelperManager.h"
+#if M1_ENABLE_EXTERNAL_RENDERER
+#include "M1MemoryShare.h"
+#endif
 
 #ifdef ITD_PARAMETERS
     #include "RingBuffer.h"
@@ -174,8 +178,46 @@ public:
     std::unique_ptr<PannerOSC> pannerOSC;
     juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
-    // TODO: change this
-    bool external_spatialmixer_active = false; // global detect spatialmixer
+    // External spatial mixer mode management (requires M1_ENABLE_EXTERNAL_RENDERER)
+#if M1_ENABLE_EXTERNAL_RENDERER
+    bool external_spatialmixer_active = false;
+#else
+    static constexpr bool external_spatialmixer_active = false;
+#endif
+
+    // Global functions for external mixer mode
+    static bool getExternalSpatialMixerActive() { return s_globalExternalMixerActive; }
+    static void setExternalSpatialMixerActive(bool active) { s_globalExternalMixerActive = active; }
+    bool isExternalSpatialMixerActive() const { return external_spatialmixer_active; }
+#if M1_ENABLE_EXTERNAL_RENDERER
+    void setInstanceExternalMixerActive(bool active) { external_spatialmixer_active = active; }
+#else
+    void setInstanceExternalMixerActive(bool) {}
+#endif
+
+#if M1_ENABLE_EXTERNAL_RENDERER
+    // IPC Memory sharing for external spatial mixer
+    std::unique_ptr<M1MemoryShare> m_memoryShare;
+    bool m_memoryShareInitialized = false;
+    juce::String m_instanceBaseName;
+    void initializeMemorySharing();
+    void updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer);
+    void updateMemorySharingParametersOnly();
+
+    // Pre-allocated parameter map for RT-safe memory sharing
+    ParameterMap m_rtParameterMap;
+    std::atomic<int> m_cachedInputMode{0};
+    std::atomic<int> m_cachedOutputMode{0};
+
+    bool applyExternalSettingsUpdate(const ParameterMap& parameters, ParameterUpdateSource updateSource);
+
+    juce::String generateUniqueInstanceName() const;
+    juce::String getMemoryInstanceName() const { return m_instanceBaseName; }
+
+    // On-demand helper service
+    bool isHelperServiceAvailable() const;
+    juce::String m_uniqueInstanceId;
+#endif
 
     // UI related utility functions
     struct Line2D
@@ -214,6 +256,7 @@ public:
 
     void convertRCtoXYRaw(float r, float d, float& x, float& y);
     void convertXYtoRCRaw(float x, float y, float& r, float& d);
+    void setUiInteractionState(int newState);
 
     // Add mute states vector for each input channel
     std::vector<bool> channelMuteStates;
@@ -268,6 +311,9 @@ private:
     void applyStateToEncode(Mach1Encode<float>& encode, const UiReticleSnapshotState& state);
     bool sendCurrentPannerSettings();
 
+    // Static variable for global external mixer state
+    static bool s_globalExternalMixerActive;
+
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
 
@@ -277,6 +323,8 @@ private:
     std::atomic<bool> pendingStereoParameterReset { false };
     std::atomic<int> requestedInputMode { 0 };
     std::atomic<int> requestedOutputMode { 0 };
+    int lastKnownInputBusChannels = -1;
+    int lastKnownOutputBusChannels = -1;
     UiReticleSnapshotState lastUiReticleSnapshotState {};
     juce::CriticalSection uiReticleSnapshotLock;
     std::vector<Mach1Point3D> uiReticlePoints;

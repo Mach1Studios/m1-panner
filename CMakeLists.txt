@@ -41,6 +41,7 @@ else()
 endif()
 
 option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF)
+option(ENABLE_EXTERNAL_RENDERER "Enable external multichannel rendering via M1MemoryShare to m1-system-helper" OFF)
 option(BUILD_VST3 "Compile VST3 plugin type" ON)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)
@@ -58,11 +59,20 @@ set(RBRACKET_LITERAL "}")
 set(PLUGIN_NAME "${CMAKE_PROJECT_NAME}")
 set(CUSTOM_BUNDLE_ID "com.mach1.spatial.panner")
 set(CUSTOM_PLUGIN_CODE "M1Pn")
+set(MACH1_SHARED_APP_GROUP_ID "group.com.mach1.spatial.shared")
 
 if(ITD_PARAMETERS)
     add_definitions(-DITD_PARAMETERS)
     message(STATUS "Compiling with experimental ITD parameters.")
 endif(ITD_PARAMETERS)
+
+if(ENABLE_EXTERNAL_RENDERER)
+    add_definitions(-DM1_ENABLE_EXTERNAL_RENDERER=1)
+    message(STATUS "External renderer via M1MemoryShare: ENABLED")
+else()
+    add_definitions(-DM1_ENABLE_EXTERNAL_RENDERER=0)
+    message(STATUS "External renderer via M1MemoryShare: DISABLED (standard multichannel mode)")
+endif()
 
 # check which formats we want to build
 if(BUILD_AAX)
@@ -130,6 +140,7 @@ target_compile_definitions(${PLUGIN_NAME}
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=$<IF:$<BOOL:${ENABLE_VST2_COMPATIBILITY}>,1,0>
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
+    MACH1_SHARED_APP_GROUP_ID="${MACH1_SHARED_APP_GROUP_ID}"
     JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Set the C++ language standard requirenment for the "shared code" library target.
@@ -214,6 +225,17 @@ set(JucePlugin_Desc ${PLUGIN_NAME})
 # link m1-sdk
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE M1Encode)
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Modules/m1-sdk/libmach1spatial/api_common/include Modules/m1-sdk/libmach1spatial/api_encode/include Modules/m1-sdk/libmach1spatial/deps)
+
+### setup info.plist and entitlements for macos
+if(APPLE)
+  foreach(format_target ${FORMATS})
+    if(TARGET ${PLUGIN_NAME}_${format_target})
+      set_target_properties(${PLUGIN_NAME}_${format_target} PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist"
+      )
+    endif()
+  endforeach()
+endif()
 
 ### IDE Generator post-config ###
 # IDEs:  Move the "shared code" source group (main target) out of the "Targets" folder

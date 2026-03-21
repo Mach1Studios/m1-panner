@@ -12,6 +12,12 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     RingBuffer.h
                                     WindowUtil.h
                                     WindowUtil.cpp
+                                    M1MemoryShare.h
+                                    M1MemoryShare.cpp
+                                    M1SystemHelperManager.h
+                                    M1SystemHelperManager.cpp
+                                    Utility/SharedMemoryPaths.h
+                                    Utility/SharedMemoryPaths.cpp
                                     UI/M1Label.h
                                     UI/M1Checkbox.h
                                     UI/M1DropdownButton.h
@@ -28,5 +34,6 @@ target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     UI/PannerUIBaseComponent.cpp)
 
 if(APPLE)
-    target_sources(${PLUGIN_NAME} PRIVATE WindowUtil.mm)
+    target_sources(${PLUGIN_NAME} PRIVATE WindowUtil.mm
+                                         Utility/SharedMemoryPaths.mm)
 endif(APPLE)

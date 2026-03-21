@@ -291,7 +291,7 @@ bool PannerOSC::sendPannerSettings(int state)
     }
 }
 
-bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool gain_comp_active, bool st_auto_orbit, float st_azimuth, float st_spread)
+bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSCColour colour, int input_mode, int output_mode, float azimuth, float elevation, float diverge, float gain, int panner_mode, bool gain_comp_active, bool st_auto_orbit, float st_azimuth, float st_spread)
 {
     if (!isConnected() || port <= 0)
         return false;
@@ -304,18 +304,19 @@ bool PannerOSC::sendPannerSettings(int state, std::string displayName, juce::OSC
         m.addString(displayName); // [msg[2]]: string for track name (when available)
         m.addColour(colour); // [msg[3]]: hex for track color (when available)
         m.addInt32(input_mode); // [msg[4]]: int of enum `Mach1EncodeInputModeType`
-        m.addFloat32(azimuth); // [msg[5]]: expected degrees -180->180
-        m.addFloat32(elevation); // [msg[6]]: expected degrees -90->90
-        m.addFloat32(diverge); // [msg[7]]: expected normalized -100->100
-        m.addFloat32(gain); // [msg[8]]: expected as dB value -90->24
-        m.addInt32(panner_mode); // [msg[9]]: int of enum `Mach1EncodePannerModeType`
-        m.addInt32(gain_comp_active); // [msg[13]: bool
+        m.addInt32(output_mode); // [msg[5]]: int of enum `Mach1EncodeOutputModeType`
+        m.addFloat32(azimuth); // [msg[6]]: expected degrees -180->180
+        m.addFloat32(elevation); // [msg[7]]: expected degrees -90->90
+        m.addFloat32(diverge); // [msg[8]]: expected normalized -100->100
+        m.addFloat32(gain); // [msg[9]]: expected as dB value -90->24
+        m.addInt32(panner_mode); // [msg[10]]: int of enum `Mach1EncodePannerModeType`
+        m.addInt32(gain_comp_active); // [msg[11]]: bool
         if (input_mode == 1)
         {
             // send stereo parameters
-            m.addInt32(st_auto_orbit); // [msg[10]]: bool
-            m.addFloat32(st_azimuth); // [msg[11]]: expected degrees -180->180
-            m.addFloat32(st_spread); // [msg[12]]: expected normalized -100->100
+            m.addInt32(st_auto_orbit); // [msg[12]]: bool
+            m.addFloat32(st_azimuth); // [msg[13]]: expected degrees -180->180
+            m.addFloat32(st_spread); // [msg[14]]: expected normalized -100->100
         }
     }
     catch (...) {
