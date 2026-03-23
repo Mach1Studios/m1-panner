@@ -1,12 +1,16 @@
 #include "M1MemoryShare.h"
 #include "TypesForDataExchange.h"
 #include "Utility/SharedMemoryPaths.h"
+#include <algorithm>
 #include <iostream>
 #include <cstring>
 #include <filesystem>
 #include <chrono>
 
 #if JUCE_WINDOWS
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
@@ -107,7 +111,7 @@ bool M1MemoryShare::createSharedMemoryFile()
     size_t bytesWritten = 0;
     while (bytesWritten < m_totalSize)
     {
-        size_t bytesToWrite = std::min(buffer.size(), m_totalSize - bytesWritten);
+        size_t bytesToWrite = (std::min)(buffer.size(), m_totalSize - bytesWritten);
         outputStream.write(buffer.data(), bytesToWrite);
         bytesWritten += bytesToWrite;
     }
@@ -688,7 +692,7 @@ juce::String M1MemoryShare::readString()
 
     // Ensure null termination
     char* stringData = reinterpret_cast<char*>(m_dataBuffer);
-    size_t maxLen = std::min(static_cast<size_t>(m_header->dataSize), m_dataBufferSize - 1);
+    size_t maxLen = (std::min)(static_cast<size_t>(m_header->dataSize), m_dataBufferSize - 1);
     stringData[maxLen] = '\0';
 
     ++m_readCount;
@@ -719,7 +723,7 @@ size_t M1MemoryShare::readData(void* buffer, size_t maxSize)
         return 0;
     }
 
-    size_t bytesToRead = std::min(maxSize, static_cast<size_t>(m_header->dataSize));
+    size_t bytesToRead = (std::min)(maxSize, static_cast<size_t>(m_header->dataSize));
     memcpy(buffer, m_dataBuffer, bytesToRead);
 
     ++m_readCount;
