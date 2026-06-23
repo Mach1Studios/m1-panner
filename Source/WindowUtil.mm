@@ -30,7 +30,41 @@ std::vector<std::string> WindowUtil::videoPlayerNames = {
     "Cubase Video Player"
 };
 
+std::vector<std::string> WindowUtil::videoPlayerOwnerNames = {
+    "Avid Video Engine"
+};
+
+static constexpr float minVideoWindowWidth = 100.0f;
+static constexpr float minVideoWindowHeight = 100.0f;
+
+static std::string NSStringToString(NSString *value) {
+    if (value == nil) {
+        return std::string();
+    }
+
+    const char *utf8Value = [value UTF8String];
+    return utf8Value != nullptr ? std::string(utf8Value) : std::string();
+}
+
+static bool containsAny(const std::string& value, const std::vector<std::string>& candidates) {
+    for (const auto& candidate : candidates) {
+        if (value.find(candidate) != std::string::npos) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool isUsableVideoWindowBounds(const CGRect& bounds) {
+    return bounds.size.width >= minVideoWindowWidth && bounds.size.height >= minVideoWindowHeight;
+}
+
 void WindowListApplierFunction(const void *inputDictionary, void *context) {
+    if (WindowUtil::isFound) {
+        return;
+    }
+
     NSDictionary *entry = (__bridge NSDictionary*)inputDictionary;
 
     // The flags that we pass to CGWindowListCopyWindowInfo will automatically filter out most undesirable windows.
@@ -48,27 +82,29 @@ void WindowListApplierFunction(const void *inputDictionary, void *context) {
             if(applicationName != NULL) {
                 NSLog(@"Found window - App: %@ | Window: %@", applicationName, windowName);
 
-                // Convert NSString to std::string for comparison
-                std::string windowNameStr = std::string([windowName UTF8String]);
+                std::string applicationNameStr = NSStringToString(applicationName);
+                std::string windowNameStr = NSStringToString(windowName);
 
-                // Check if the window name matches any in our list
-                for (const auto& videoPlayerName : WindowUtil::videoPlayerNames) {
-                    if (windowNameStr.find(videoPlayerName) != std::string::npos) {
-                        // Grab the Window Bounds
-                        CGRect bounds;
-                        CGRectMakeWithDictionaryRepresentation((CFDictionaryRef)[entry objectForKey:(id)kCGWindowBounds], &bounds);
+                bool matchesWindowTitle = containsAny(windowNameStr, WindowUtil::videoPlayerNames);
+                bool matchesOwnerName = containsAny(applicationNameStr, WindowUtil::videoPlayerOwnerNames);
 
-                        WindowUtil::x = bounds.origin.x;
-                        WindowUtil::y = bounds.origin.y + 15;
-                        WindowUtil::width = bounds.size.width;
-                        WindowUtil::height = bounds.size.height - 15;
-                        WindowUtil::isFound = true;
+                if (matchesWindowTitle || matchesOwnerName) {
+                    // Grab the Window Bounds
+                    CGRect bounds = CGRectZero;
+                    CGRectMakeWithDictionaryRepresentation((CFDictionaryRef)[entry objectForKey:(id)kCGWindowBounds], &bounds);
 
-                        // Debug: Print when we find a match
-                        NSLog(@"Found matching window: %@", windowName);
-
-                        break;  // Exit the loop once we find a match
+                    if (!isUsableVideoWindowBounds(bounds)) {
+                        return;
                     }
+
+                    WindowUtil::x = bounds.origin.x;
+                    WindowUtil::y = bounds.origin.y + 15;
+                    WindowUtil::width = bounds.size.width;
+                    WindowUtil::height = bounds.size.height - 15;
+                    WindowUtil::isFound = true;
+
+                    // Debug: Print when we find a match
+                    NSLog(@"Found matching window - App: %@ | Window: %@", applicationName, windowName);
                 }
             }
         }

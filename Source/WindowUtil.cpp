@@ -22,11 +22,19 @@ std::vector<std::string> WindowUtil::videoPlayerNames = {
     "Avid Video Engine",
     "Video Engine",
     "Video",
+    "Video Player",
     "FL Studio Video Player",
     "Logic Pro Video",
     "Studio One Video Player",
     "Cubase Video Player"
 };
+
+std::vector<std::string> WindowUtil::videoPlayerOwnerNames = {
+    "Avid Video Engine"
+};
+
+static constexpr float minVideoWindowWidth = 100.0f;
+static constexpr float minVideoWindowHeight = 100.0f;
 
 // Helper function to convert wide string to string
 std::string WideStringToString(const std::wstring& wstr) {
@@ -52,12 +60,18 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
             // Get window rect
             RECT rect;
             DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(RECT));
+            float width = static_cast<float>(rect.right - rect.left);
+            float height = static_cast<float>(rect.bottom - rect.top);
+
+            if (width < minVideoWindowWidth || height < minVideoWindowHeight) {
+                return TRUE;
+            }
 
             // Update WindowUtil static members
             WindowUtil::x = static_cast<float>(rect.left);
             WindowUtil::y = static_cast<float>(rect.top) + 15;  // Adding 15 to match macOS behavior
-            WindowUtil::width = static_cast<float>(rect.right - rect.left);
-            WindowUtil::height = static_cast<float>(rect.bottom - rect.top) - 15;  // Subtracting 15 to match macOS behavior
+            WindowUtil::width = width;
+            WindowUtil::height = height - 15;  // Subtracting 15 to match macOS behavior
             WindowUtil::isFound = true;
             return FALSE;  // Stop enumeration since we found our window
         }

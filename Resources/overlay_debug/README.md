@@ -4,7 +4,7 @@ This directory contains tools for debugging the video window overlay functionali
 
 ## Window Lister
 
-The window lister (`list_windows.py`) prints on-screen macOS windows using the same filters and title matching as `WindowUtil.mm`. Use it to discover the exact window title a DAW uses for its video player.
+The window lister (`list_windows.py`) prints on-screen macOS windows using the same filters and title/owner matching as `WindowUtil.mm`. Use it to discover the exact window title or owner a DAW uses for its video player.
 
 ### Requirements
 - Python 3.x
@@ -19,7 +19,7 @@ From this directory:
 # List windows the plugin can see (default)
 ./run_list_windows.sh
 
-# Only show known DAW video window titles
+# Only show known DAW video window title or owner matches
 ./run_list_windows.sh --video-only
 
 # Search for a DAW or window title substring
@@ -39,12 +39,13 @@ make overlay-debug-list ARGS='--grep "Logic"'
 
 ### Command Line Arguments
 
-- `--video-only`: Only show windows whose title matches a known video player name
+- `--video-only`: Only show windows whose title or owner matches a known video player name
 - `--grep TEXT`: Filter by app or window title substring (case-insensitive)
 - `--all`: Include windows hidden from the plugin
 - `--no-highlight`: Do not mark known video player matches with `*`
 
 When a match is found, the tool also prints the overlay bounds the plugin would use (`y + 15`, `height - 15`).
+Known matches smaller than `100 x 100` are ignored so menu-bar and control-center items with names like `AudioVideoModule` are not treated as video windows.
 
 ## Video Window Simulator
 
@@ -78,7 +79,7 @@ From this directory:
 - `--width`: Initial window width in pixels (default: 640)
 - `--height`: Initial window height in pixels (default: 480)
 
-### Supported Window Titles
+### Supported Window Titles And Owners
 
 The plugin looks for windows with these titles:
 - "Avid Video Engine"
@@ -89,6 +90,9 @@ The plugin looks for windows with these titles:
 - "Logic Pro Video"
 - "Studio One Video Player"
 - "Cubase Video Player"
+
+The plugin also matches these macOS window owners, which catches newer Pro Tools video windows that report an empty title:
+- "Avid Video Engine"
 
 ### Features
 
@@ -106,6 +110,6 @@ The plugin looks for windows with these titles:
 5. Verify that the overlay properly tracks the simulator window
 
 If the overlay isn't tracking properly:
-- Check if the window title exactly matches one in the supported list
+- Check if the window title or owner matches one in the supported list
 - Monitor the simulator's position/size display vs the overlay position
 - Try different window titles to test the detection logic

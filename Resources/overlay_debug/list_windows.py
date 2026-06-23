@@ -3,7 +3,7 @@
 List on-screen macOS windows to help debug M1-Panner overlay video-window detection.
 
 Mirrors WindowUtil.mm: same CGWindowList options, sharing-state filter, and
-substring matching against known DAW video window titles.
+substring matching against known DAW video window titles and owners.
 """
 
 import argparse
@@ -45,11 +45,25 @@ VIDEO_PLAYER_NAMES = [
     "Cubase Video Player",
 ]
 
+VIDEO_PLAYER_OWNER_NAMES = [
+    "Avid Video Engine",
+]
+
+MIN_VIDEO_WINDOW_WIDTH = 100
+MIN_VIDEO_WINDOW_HEIGHT = 100
+
 
 def matches_video_player(window_name: str) -> Optional[str]:
     for candidate in VIDEO_PLAYER_NAMES:
         if candidate in window_name:
-            return candidate
+            return f"title:{candidate}"
+    return None
+
+
+def matches_video_owner(owner_name: str) -> Optional[str]:
+    for candidate in VIDEO_PLAYER_OWNER_NAMES:
+        if candidate in owner_name:
+            return f"owner:{candidate}"
     return None
 
 
@@ -68,6 +82,14 @@ def parse_bounds(bounds_dict):
     return x, y, width, height
 
 
+def has_usable_video_bounds(bounds) -> bool:
+    if not bounds:
+        return False
+
+    _, _, width, height = bounds
+    return width >= MIN_VIDEO_WINDOW_WIDTH and height >= MIN_VIDEO_WINDOW_HEIGHT
+
+
 def passes_plugin_filters(entry) -> bool:
     sharing_state = entry.get(kCGWindowSharingState, kCGWindowSharingNone)
     if sharing_state == kCGWindowSharingNone:
@@ -84,7 +106,9 @@ def collect_windows(args):
         title = entry.get(kCGWindowName) or ""
         bounds = parse_bounds(entry.get(kCGWindowBounds))
         plugin_visible = passes_plugin_filters(entry)
-        video_match = matches_video_player(title) if title else None
+        video_match = None
+        if has_usable_video_bounds(bounds):
+            video_match = (matches_video_player(title) if title else None) or matches_video_owner(owner)
 
         haystack = f"{owner} {title}".lower()
         if args.grep and args.grep.lower() not in haystack:
@@ -126,7 +150,7 @@ def print_windows(windows, args):
     print(f"\nFound {len(windows)} window(s)")
     print("-" * 120)
     print(
-        f"{'Match':<18} | {'Application':<24} | {'Window Title':<32} | "
+        f"{'Match':<24} | {'Application':<24} | {'Window Title':<32} | "
         f"{'Bounds (x,y wxh)':<22} | {'ID':<8} | {'Layer':<5}"
     )
     print("-" * 120)
@@ -143,7 +167,7 @@ def print_windows(windows, args):
         layer = window["layer"]
 
         print(
-            f"{match:<18} | {owner[:24]:<24} | {title[:32]:<32} | "
+            f"{match:<24} | {owner[:24]:<24} | {title[:32]:<32} | "
             f"{bounds:<22} | {str(window_id):<8} | {str(layer):<5}"
         )
 
@@ -159,13 +183,13 @@ def print_windows(windows, args):
                 overlay_w = width
                 overlay_h = height - 15
                 print(
-                    f"  {window['title']!r} -> "
+                    f"  app={window['owner']!r}, title={window['title']!r} -> "
                     f"x={overlay_x:.0f}, y={overlay_y:.0f}, "
                     f"w={overlay_w:.0f}, h={overlay_h:.0f}"
                 )
     elif not args.video_only:
         print(
-            "\nNo known video window titles found. "
+            "\nNo known video window title or owner matches found. "
             "Try --all or --grep to inspect more windows."
         )
 
@@ -182,7 +206,7 @@ def main():
     parser.add_argument(
         "--video-only",
         action="store_true",
-        help="Only show windows whose title matches a known DAW video player name",
+        help="Only show windows whose title or owner matches a known DAW video player name",
     )
     parser.add_argument(
         "--grep",
@@ -199,6 +223,8 @@ def main():
 
     print("Known video window title substrings:")
     print("  " + ", ".join(f'"{name}"' for name in VIDEO_PLAYER_NAMES))
+    print("Known video window owner substrings:")
+    print("  " + ", ".join(f'"{name}"' for name in VIDEO_PLAYER_OWNER_NAMES))
 
     windows = collect_windows(args)
     print_windows(windows, args)
