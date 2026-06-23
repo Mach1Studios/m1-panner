@@ -2,6 +2,50 @@
 
 This directory contains tools for debugging the video window overlay functionality of the M1-Panner plugin.
 
+## Window Lister
+
+The window lister (`list_windows.py`) prints on-screen macOS windows using the same filters and title matching as `WindowUtil.mm`. Use it to discover the exact window title a DAW uses for its video player.
+
+### Requirements
+- Python 3.x
+- pyobjc-framework-Quartz (`pip3 install pyobjc-framework-Quartz`)
+- Screen Recording permission (System Settings → Privacy & Security → Screen Recording) if window titles appear blank
+
+### Usage
+
+From this directory:
+
+```bash
+# List windows the plugin can see (default)
+./run_list_windows.sh
+
+# Only show known DAW video window titles
+./run_list_windows.sh --video-only
+
+# Search for a DAW or window title substring
+./run_list_windows.sh --grep "Pro Tools"
+./run_list_windows.sh --grep "Video"
+
+# Include windows the plugin ignores (sharing disabled, etc.)
+./run_list_windows.sh --all
+```
+
+From the project root:
+
+```bash
+make overlay-debug-list
+make overlay-debug-list ARGS='--grep "Logic"'
+```
+
+### Command Line Arguments
+
+- `--video-only`: Only show windows whose title matches a known video player name
+- `--grep TEXT`: Filter by app or window title substring (case-insensitive)
+- `--all`: Include windows hidden from the plugin
+- `--no-highlight`: Do not mark known video player matches with `*`
+
+When a match is found, the tool also prints the overlay bounds the plugin would use (`y + 15`, `height - 15`).
+
 ## Video Window Simulator
 
 The video window simulator (`video_window_simulator.py`) creates a test window that simulates a DAW's video player window. This helps debug the overlay window detection and tracking functionality.
@@ -12,7 +56,7 @@ The video window simulator (`video_window_simulator.py`) creates a test window t
 
 ### Usage
 
-From the project root directory:
+From this directory:
 
 ```bash
 # Basic usage with defaults
