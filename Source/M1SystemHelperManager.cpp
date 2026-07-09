@@ -417,6 +417,18 @@ bool M1SystemHelperManager::triggerSocketActivation() const
         return false;
     }
 
+#ifdef __APPLE__
+    // Pro Tools can terminate the host process on SIGPIPE if the helper socket
+    // closes while we probe it. Keep the protection per-socket.
+    int noSigPipe = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, sizeof(noSigPipe)) != 0) {
+        std::cerr << "[M1SystemHelperManager] Failed to disable SIGPIPE on helper socket: "
+                  << strerror(errno) << std::endl;
+        close(sockfd);
+        return false;
+    }
+#endif
+
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
@@ -424,17 +436,20 @@ bool M1SystemHelperManager::triggerSocketActivation() const
 
     bool success = false;
     if (connect(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
-        success = true;
         const char* ping = "PING\n";
         ssize_t sent = send(sockfd, ping, strlen(ping), 0);
 
         if (sent > 0) {
+            success = true;
             char buffer[256] = {0};
             ssize_t received = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
             if (received > 0 && !hasLoggedSuccess) {
                 std::cout << "[M1SystemHelperManager] Socket connection established and verified" << std::endl;
                 hasLoggedSuccess = true;
             }
+        } else {
+            std::cerr << "[M1SystemHelperManager] Failed to ping helper socket: "
+                      << strerror(errno) << std::endl;
         }
     } else {
         // Only log connection failures during startup attempts
