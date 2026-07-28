@@ -229,6 +229,27 @@ M1SystemHelperManager& M1SystemHelperManager::getInstance()
     return instance;
 }
 
+void M1SystemHelperManager::ensureHelperServiceAsync(const std::string& appName)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_activeInstances.insert(appName);
+    }
+
+    // Only run one background check/start at a time. With many plugin
+    // instances calling this from their timers, extra requests are redundant.
+    bool expected = false;
+    if (!m_ensureInProgress.compare_exchange_strong(expected, true))
+        return;
+
+    std::thread([this, appName]() {
+        if (!isHelperServiceRunning()) {
+            requestHelperService(appName);
+        }
+        m_ensureInProgress.store(false);
+    }).detach();
+}
+
 bool M1SystemHelperManager::requestHelperService(const std::string& appName)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -429,6 +450,14 @@ bool M1SystemHelperManager::triggerSocketActivation() const
     }
 #endif
 
+    // Bound the probe: without these a wedged helper would block the caller in
+    // send()/recv() indefinitely (previously observed as frozen plugin UIs).
+    struct timeval probeTimeout;
+    probeTimeout.tv_sec = 0;
+    probeTimeout.tv_usec = 500000; // 500ms
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &probeTimeout, sizeof(probeTimeout));
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &probeTimeout, sizeof(probeTimeout));
+
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
@@ -563,6 +592,13 @@ bool M1SystemHelperManager::triggerSocketActivation() const
 {
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockfd < 0) return false;
+
+    // Bound the probe so a wedged helper cannot block the caller indefinitely.
+    struct timeval probeTimeout;
+    probeTimeout.tv_sec = 0;
+    probeTimeout.tv_usec = 500000; // 500ms
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &probeTimeout, sizeof(probeTimeout));
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &probeTimeout, sizeof(probeTimeout));
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));

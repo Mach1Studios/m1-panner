@@ -269,3 +269,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
    add_compile_options(-fcolor-diagnostics)
 endif()
+
+option(BUILD_UNIT_TESTS "Build unit/regression tests" OFF)
+
+if (BUILD_UNIT_TESTS)
+    enable_testing()
+    add_subdirectory(Tests/unit)
+endif()

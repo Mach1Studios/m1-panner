@@ -61,7 +61,10 @@ bool PannerOSC::init(int helperPort_)
     socket.setEnablePortReuse(false);
 
     while (!receiverConnected && attempts < maxAttempts) {
-        port = 10000 + juce::Random::getSystemRandom().nextInt(1000);
+        // 10400-10999: keep clear of the M1-Monitor (10201-10299) and
+        // M1-Player (10301-10399) receiver ranges so many panner instances
+        // cannot exhaust those pools.
+        port = 10400 + juce::Random::getSystemRandom().nextInt(600);
         if (socket.bindToPort(port)) {
             socket.shutdown(); // shutdown port to not block the juce::OSCReceiver::connect return
             receiverConnected = juce::OSCReceiver::connect(port);

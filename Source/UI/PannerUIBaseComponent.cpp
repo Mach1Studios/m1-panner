@@ -14,9 +14,11 @@ PannerUIBaseComponent::PannerUIBaseComponent(M1PannerAudioProcessor* processor_)
     monitorState = &processor->monitorSettings;
 
     {
+        // Non-blocking: the running-check and any service start happen on a
+        // background thread. A synchronous request here previously blocked the
+        // message thread for seconds per editor while the helper started.
         auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
-        if (!helperManager.requestHelperService("M1-Panner"))
-            DBG("[M1-Panner] Warning: Failed to request helper service");
+        helperManager.ensureHelperServiceAsync("M1-Panner");
     }
 
     // Set up alert dismiss callback

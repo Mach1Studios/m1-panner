@@ -314,6 +314,9 @@ private:
     // Static variable for global external mixer state
     static bool s_globalExternalMixerActive;
 
+    // Per-instance counter for the periodic helper-service health check
+    int helperHealthCheckCounter = 0;
+
     juce::UndoManager mUndoManager;
     juce::AudioProcessorValueTreeState parameters;
 

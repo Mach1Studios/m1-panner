@@ -38,8 +38,21 @@ public:
      * @brief Request the helper service to start (if not already running)
      * @param appName Name of the requesting application (e.g., "M1-Panner")
      * @return true if service is now running, false on error
+     *
+     * WARNING: This call can block for several seconds (launchctl + startup
+     * waits). Do not call it from the message thread; prefer
+     * ensureHelperServiceAsync() from UI/timer code.
      */
     bool requestHelperService(const std::string& appName);
+
+    /**
+     * @brief Non-blocking check/start of the helper service.
+     *
+     * Registers the app as an active instance and performs the running-check
+     * and (if needed) service start on a background thread. Safe to call from
+     * the message thread; concurrent calls collapse into a single worker.
+     */
+    void ensureHelperServiceAsync(const std::string& appName);
 
     /**
      * @brief Release the helper service (may stop if no other apps need it)
@@ -135,6 +148,7 @@ private:
 
     mutable std::mutex m_mutex;
     std::set<std::string> m_activeInstances;  // Apps currently using the service
+    std::atomic<bool> m_ensureInProgress { false };  // Collapses concurrent async checks
 };
 
 } // namespace Mach1

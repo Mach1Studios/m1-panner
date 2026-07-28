@@ -7,6 +7,7 @@
 */
 
 #include "PluginProcessor.h"
+#include "ChannelConfigPolicy.h"
 #include "PluginEditor.h"
 
 // Platform-specific includes for process ID.
@@ -155,25 +156,26 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
         else if (msg.getAddressPattern() == "/m1-channel-config")
         {
             DBG("[OSC] Recieved msg | Channel Config: " + std::to_string(msg[0].getInt32()));
-            // Capturing monitor active state
-            int channel_count = msg[0].getInt32();
-            if (!pannerSettings.lockOutputLayout && channel_count != pannerSettings.m1Encode.getInputChannelsCount()) // got a request for a different config
+            const int channel_count = msg[0].getInt32();
+            const int targetOutputMode = Mach1::ChannelConfigPolicy::outputModeForChannelCount(channel_count);
+            if (targetOutputMode == Mach1::ChannelConfigPolicy::kNoOutputMode)
             {
-                if (channel_count == 4)
+                DBG("[OSC] Error with received channel config!");
+            }
+            else
+            {
+                auto* outputModeParam = parameters.getParameter(paramOutputMode);
+                const float targetNormalizedValue = outputModeParam->convertTo0to1((float)targetOutputMode);
+                // Only notify the host when the parameter actually changes; the
+                // helper broadcasts this message on every plugin registration and
+                // redundant setValueNotifyingHost calls across many instances
+                // flood the host's message thread and automation system.
+                if (Mach1::ChannelConfigPolicy::shouldApplyChannelConfig(pannerSettings.lockOutputLayout,
+                                                                         targetOutputMode,
+                                                                         outputModeParam->getValue(),
+                                                                         targetNormalizedValue))
                 {
-                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_4));
-                }
-                else if (channel_count == 8)
-                {
-                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_8));
-                }
-                else if (channel_count == 14)
-                {
-                    parameters.getParameter(paramOutputMode)->setValueNotifyingHost(parameters.getParameter(paramOutputMode)->convertTo0to1(Mach1EncodeOutputMode::M1Spatial_14));
-                }
-                else
-                {
-                    DBG("[OSC] Error with received channel config!");
+                    outputModeParam->setValueNotifyingHost(targetNormalizedValue);
                 }
             }
         }
@@ -1250,14 +1252,14 @@ void M1PannerAudioProcessor::timerCallback()
         pendingPannerSettingsSend.store(false);
     }
 
-    // Periodic health check: ensure helper is running (every ~10s at 200ms timer)
-    static int healthCheckCounter = 0;
-    if (++healthCheckCounter >= 50) {
-        healthCheckCounter = 0;
-        auto& helperManager = Mach1::M1SystemHelperManager::getInstance();
-        if (!helperManager.isHelperServiceRunning()) {
-            helperManager.requestHelperService("M1-Panner");
-        }
+    // Periodic health check: ensure helper is running (every ~10s at 50ms timer).
+    // Note: the counter must be per-instance (not static); a static counter is
+    // shared by every plugin instance in the host process, so with N instances
+    // the check ran N times more often than intended.
+    if (++helperHealthCheckCounter >= 200) {
+        helperHealthCheckCounter = 0;
+        // Non-blocking; the check/start happens on a background thread.
+        Mach1::M1SystemHelperManager::getInstance().ensureHelperServiceAsync("M1-Panner");
     }
 }
 
