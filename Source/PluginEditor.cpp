@@ -63,12 +63,24 @@ M1PannerAudioProcessorEditor::M1PannerAudioProcessorEditor(M1PannerAudioProcesso
         pannerUIBaseComponent->postAlert(alert);
     }
     processor->pendingAlerts.clear();
+
+    // Tell the helper the editor is visible so it resumes sending the
+    // monitor-orientation UI updates (and refreshes the current state).
+    if (processor->pannerOSC)
+        processor->pannerOSC->sendStatusPulse(true);
 }
 
 M1PannerAudioProcessorEditor::~M1PannerAudioProcessorEditor()
 {
     if (processor != nullptr)
+    {
         processor->postAlertToUI = {};
+
+        // Tell the helper the editor is gone; high-rate monitor-orientation
+        // updates for the UI overlay are skipped until it reopens.
+        if (processor->pannerOSC)
+            processor->pannerOSC->sendStatusPulse(false);
+    }
 
     overlayWindow = nullptr;
     stopTimer();

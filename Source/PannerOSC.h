@@ -22,6 +22,10 @@ public:
     void update();
     void AddListener(std::function<void(juce::OSCMessage msg)> messageReceived);
     bool Send(const juce::OSCMessage& msg);
+    // Sends "/m1-status-plugin [port, editorOpen]" to the helper. Called for
+    // every ping reply (self-healing) and on editor open/close so the helper
+    // can skip high-rate UI-only broadcasts to instances with closed editors.
+    bool sendStatusPulse(bool editorOpen);
     bool isConnected();
     bool sendRequestForCurrentChannelConfig();
     bool sendPannerSettings(int state);

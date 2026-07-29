@@ -143,23 +143,11 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
     {
         if (msg.getAddressPattern() == "/m1-ping")
         {
-            try
-            {
-                // Create a temporary sender for the ping response to avoid disturbing main connection
-                juce::OSCSender tempSender;
-                if (tempSender.connect("127.0.0.1", helperPort))
-                {
-                    juce::OSCMessage response = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
-                    response.addInt32(port);
-                    is_connected = tempSender.send(response);
-                    //DBG("[OSC] Ping responded: " + std::to_string(port));
-                }
-            }
-            catch (...)
-            {
-                DBG("[OSC] Failed to respond to ping");
-                is_connected = false;
-            }
+            // Ping replies arrive on the message thread, so querying the
+            // active editor is safe. Reporting it every pulse keeps the
+            // helper's editor-open state self-healing.
+            const bool editorOpen = (processor != nullptr) && (processor->getActiveEditor() != nullptr);
+            is_connected = sendStatusPulse(editorOpen);
         }
         else
         {
@@ -167,6 +155,30 @@ void PannerOSC::oscMessageReceived(const juce::OSCMessage& msg)
         }
     }
     lastMessageTime = juce::Time::getMillisecondCounter();
+}
+
+bool PannerOSC::sendStatusPulse(bool editorOpen)
+{
+    if (port <= 0 || helperPort <= 0)
+        return false;
+
+    try
+    {
+        // Create a temporary sender to avoid disturbing the main connection
+        juce::OSCSender tempSender;
+        if (!tempSender.connect("127.0.0.1", helperPort))
+            return false;
+
+        juce::OSCMessage response = juce::OSCMessage(juce::OSCAddressPattern("/m1-status-plugin"));
+        response.addInt32(port);
+        response.addInt32(editorOpen ? 1 : 0);
+        return tempSender.send(response);
+    }
+    catch (...)
+    {
+        DBG("[OSC] Failed to send status pulse");
+        return false;
+    }
 }
 
 void PannerOSC::update()

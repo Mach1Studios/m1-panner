@@ -37,7 +37,11 @@ jobs:
             extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DENABLE_VST2_COMPATIBILITY=OFF
             extra-build-flags: --parallel 4
           - name: Windows
-            os: windows-latest
+            # Keep this pinned to the Visual Studio 2022 runner because the
+            # Windows configure step explicitly uses "Visual Studio 17 2022".
+            # windows-latest has moved to a VS 2026 image, where that generator
+            # is no longer installed.
+            os: windows-2022
             pluginval-binary: ./pluginval.exe
             extra-flags: -DENABLE_VST2_COMPATIBILITY=OFF
 
