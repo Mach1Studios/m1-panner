@@ -1372,8 +1372,8 @@ void PannerUIBaseComponent::draw()
         streamingLabel.label = helperConnected ? "STREAMING TO M1-SYSTEM-HELPER" : "STREAMING (HELPER NOT CONNECTED)";
         streamingLabel.alignment = TEXT_LEFT;
         streamingLabel.customColor = true;
-        streamingLabel.color = helperConnected ? MurkaColor(0.35f, 0.85f, 0.45f)
-                                               : MurkaColor(1.0f, 0.6f, 0.25f);
+        streamingLabel.color = helperConnected ? MurkaColor(90, 217, 115)
+                                               : MurkaColor(255, 153, 64);
         streamingLabel.enabled = true;
         streamingLabel.highlighted = false;
         streamingLabel.draw();
