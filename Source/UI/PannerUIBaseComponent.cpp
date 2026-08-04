@@ -916,7 +916,8 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     // Remove bottom bar for CUSTOM_CHANNEL_LAYOUT macro
 #else
-    if (!processor->hostType.isProTools() || // not pro tools
+    if (processor->external_spatialmixer_active || // streaming mode always has IN/OUT selectors
+        !processor->hostType.isProTools() || // not pro tools
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)
             || // or is pro tools and has a higher order output configuration
@@ -933,7 +934,8 @@ void PannerUIBaseComponent::draw()
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 2);
 
         // skip drawing the input label if we only have the output dropdown available in PT
-        if (!processor->hostType.isProTools() || // is not PT
+        if (processor->external_spatialmixer_active || // streaming mode has a MONO/STEREO input dropdown
+            !processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an input dropdown in PT
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)))
         {
@@ -977,7 +979,7 @@ void PannerUIBaseComponent::draw()
         // INPUT DROPDOWN
         int dropdownItemHeight = 20;
 
-        if (processor->hostType.isProTools())
+        if (processor->hostType.isProTools() && !processor->external_spatialmixer_active)
         {
             // PT or other hosts that support multichannel and need selector dropdown for >4 channel modes
 
@@ -1185,7 +1187,8 @@ void PannerUIBaseComponent::draw()
 
         // OUTPUT DROPDOWN & LABELS
         /// -> label
-        if (!processor->hostType.isProTools() || // is not PT
+        if (processor->external_spatialmixer_active || // streaming mode always exposes the output dropdown
+            !processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an input dropdown in PT
             (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
             || (processor->hostType.isProTools() && // or has an output dropdown in PT but not a 7.1 output buss
@@ -1203,7 +1206,8 @@ void PannerUIBaseComponent::draw()
             arrowLabel.draw();
         }
 
-        if (!processor->hostType.isProTools() || // is not PT
+        if (processor->external_spatialmixer_active || // streaming mode always exposes the output dropdown
+            !processor->hostType.isProTools() || // is not PT
             (processor->hostType.isProTools() && // or has an output dropdown in PT
              processor->getMainBusNumOutputChannels() >= 8 &&
              processor->getBus(false, 0)->getCurrentLayout() != juce::AudioChannelSet::create7point1()))
@@ -1312,7 +1316,8 @@ void PannerUIBaseComponent::draw()
     auto& pannerLabel = m.prepare<M1Label>(MurkaShape(m.getSize().width() - 100, m.getSize().height() - 30, 80, 20));
 #else
     int labelYOffset;
-    if (!processor->hostType.isProTools() || // not pro tools
+    if (processor->external_spatialmixer_active || // streaming mode shows the bottom bar
+        !processor->hostType.isProTools() || // not pro tools
         (processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
                 (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6)
             || // or is pro tools and has a higher order output configuration
@@ -1336,7 +1341,8 @@ void PannerUIBaseComponent::draw()
 #ifdef CUSTOM_CHANNEL_LAYOUT
     m.drawImage(m1logo, 20, m.getSize().height() - 30, 161 / 3, 39 / 3);
 #else
-    if (!processor->hostType.isProTools() || // not pro tools
+    if (processor->external_spatialmixer_active || // streaming mode shows the bottom bar
+        !processor->hostType.isProTools() || // not pro tools
         ((processor->hostType.isProTools() && // or is pro tools and is input 4 or 6
              (processor->getMainBusNumInputChannels() == 4 || processor->getMainBusNumInputChannels() == 6))
             || // or is pro tools and has a higher order output configuration
@@ -1349,6 +1355,26 @@ void PannerUIBaseComponent::draw()
         m.drawImage(m1logo, 25, m.getSize().height() - 30, 161 / 3, 39 / 3);
     }
 #endif
+
+    // Streaming-mode indicator: make it unambiguous whether this instance is
+    // rendering locally (multichannel bus) or streaming audio to the
+    // m1-system-helper for external rendering. Drawn in the strip above the
+    // reticle field so it is always visible.
+    if (processor->external_spatialmixer_active)
+    {
+        const bool helperConnected = processor->pannerOSC != nullptr && processor->pannerOSC->isConnected();
+
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 5);
+        auto& streamingLabel = m.prepare<M1Label>(MurkaShape(25, 6, 260, 20));
+        streamingLabel.label = helperConnected ? "STREAMING TO M1-SYSTEM-HELPER" : "STREAMING (HELPER NOT CONNECTED)";
+        streamingLabel.alignment = TEXT_LEFT;
+        streamingLabel.customColor = true;
+        streamingLabel.color = helperConnected ? MurkaColor(0.35f, 0.85f, 0.45f)
+                                               : MurkaColor(1.0f, 0.6f, 0.25f);
+        streamingLabel.enabled = true;
+        streamingLabel.highlighted = false;
+        streamingLabel.draw();
+    }
 
     // update the panner state if a user is interacting with the UI
     if (azLabel.highlighted || dLabel.highlighted || zLabel.highlighted || xLabel.highlighted || yLabel.highlighted || srLabel.highlighted || ssLabel.highlighted || spLabel.highlighted || gLabel.highlighted)

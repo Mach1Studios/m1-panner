@@ -41,7 +41,7 @@ else()
 endif()
 
 option(ITD_PARAMETERS "Adds the experimental ITD processing parameters and UI" OFF)
-option(ENABLE_EXTERNAL_RENDERER "Enable external multichannel rendering via M1MemoryShare to m1-system-helper" OFF)
+option(ENABLE_EXTERNAL_RENDERER "Enable external multichannel rendering via M1MemoryShare to m1-system-helper" ON)
 option(BUILD_VST3 "Compile VST3 plugin type" ON)
 option(BUILD_VST "Compile VST2 plugin type" OFF)
 option(BUILD_AAX "Compile AAX plugin type" OFF)

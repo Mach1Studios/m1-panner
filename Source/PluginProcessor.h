@@ -200,6 +200,7 @@ public:
     std::unique_ptr<M1MemoryShare> m_memoryShare;
     bool m_memoryShareInitialized = false;
     juce::String m_instanceBaseName;
+    int m_lastKnownSamplesPerBlock = 512; // updated in prepareToPlay, used for ring geometry
     void initializeMemorySharing();
     void updateMemorySharing(const juce::AudioBuffer<float>& inputBuffer);
     void updateMemorySharingParametersOnly();

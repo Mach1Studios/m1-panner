@@ -533,8 +533,19 @@ void M1PannerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     // Initialize memory sharing if in external spatial mixer mode
     // This ensures the memory file is created even before audio starts playing
 #if M1_ENABLE_EXTERNAL_RENDERER
+    m_lastKnownSamplesPerBlock = samplesPerBlock;
+
     if (external_spatialmixer_active && !m_memoryShareInitialized)
         initializeMemorySharing();
+
+    // Keep the ring geometry in sync with the real host block size / channel
+    // count (no-op when unchanged; resets the ring when the host reconfigures).
+    if (m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
+    {
+        m_memoryShare->initializeForAudio(static_cast<uint32_t>(sampleRate),
+                                          static_cast<uint32_t>(getMainBusNumInputChannels()),
+                                          static_cast<uint32_t>(samplesPerBlock));
+    }
 #endif
 }
 
@@ -1730,20 +1741,21 @@ void M1PannerAudioProcessor::initializeMemorySharing()
             DBG("[M1MemoryShare] Using restored memory instance name: " + m_instanceBaseName);
         }
 
-        // Calculate memory size needed (roughly 1MB for audio data with enhanced headers)
+        // Calculate memory size needed (roughly 1MB for the block ring)
         size_t memorySize = 1024 * 1024; // 1MB
 
         // Create shared memory instance for audio data (with enhanced headers containing panner settings)
-        m_memoryShare = std::make_unique<M1MemoryShare>(m_instanceBaseName, memorySize, true, true);
+        m_memoryShare = std::make_unique<M1MemoryShare>(m_instanceBaseName, memorySize,
+                                                        /*persistent*/ true, /*createMode*/ true);
 
         if (m_memoryShare->isValid())
         {
-            // Initialize for audio with current settings
+            // Configure the ring geometry; updated again in prepareToPlay once
+            // the real host block size is known.
             m_memoryShare->initializeForAudio(
                 static_cast<uint32_t>(processorSampleRate),
                 static_cast<uint32_t>(getMainBusNumInputChannels()),
-                512 // Default block size, will be updated in prepareToPlay
-            );
+                static_cast<uint32_t>(m_lastKnownSamplesPerBlock));
 
             m_memoryShareInitialized = true;
 
@@ -1822,8 +1834,12 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     uint32_t currentSampleRate = static_cast<uint32_t>(processorSampleRate);
     if (currentSampleRate == 0) currentSampleRate = 44100;
 
+    // During offline bounces (isNonRealtime) the write blocks until consumers
+    // catch up, so the helper's capture never loses blocks. In realtime the
+    // write never blocks; a slow consumer simply misses old blocks.
     m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, m_rtParameterMap, dawTimestamp,
-                                                         playheadPosition, isPlaying, false, 1, currentSampleRate);
+                                                         playheadPosition, isPlaying,
+                                                         isNonRealtime(), 1, currentSampleRate);
 }
 
 void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
@@ -1875,8 +1891,13 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
     else
         m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = "M1-Panner (" + std::to_string(pannerSettings.port) + ")";
 
+    uint32_t currentSampleRate = static_cast<uint32_t>(processorSampleRate);
+    if (currentSampleRate == 0) currentSampleRate = 44100;
+
     juce::AudioBuffer<float> emptyBuffer(2, 0);
-    m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, m_rtParameterMap, dawTimestamp, playheadPosition, isPlaying, false);
+    m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, m_rtParameterMap, dawTimestamp,
+                                                         playheadPosition, isPlaying,
+                                                         false, 1, currentSampleRate);
 
     // Touch the file modification time on the timer thread (not the audio thread)
     if (m_memoryShare)
