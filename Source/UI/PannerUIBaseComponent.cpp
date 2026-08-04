@@ -79,6 +79,9 @@ PannerUIBaseComponent::~PannerUIBaseComponent()
 void PannerUIBaseComponent::initialise()
 {
     JuceMurkaBaseComponent::initialise();
+    // MurImage needs the GL context before load: allocate() silently no-ops
+    // without it and drawImage() then skips unallocated images entirely.
+    m1logo.setOpenGLContext(&openGLContext);
     m1logo.loadFromRawData(BinaryData::mach1logo_png, BinaryData::mach1logo_pngSize);
 }
 
