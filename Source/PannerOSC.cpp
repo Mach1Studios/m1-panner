@@ -83,6 +83,12 @@ bool PannerOSC::init(int helperPort_)
         }
         return false;
     } else {
+        // Publish the bound port on the processor so it reaches the helper in
+        // every memory-share parameter block (the helper joins the OSC-tracked
+        // and memory-share-tracked views of this instance by this port).
+        if (processor)
+            processor->pannerSettings.port = port;
+
         // Try to connect to the helper application
         if (helperPort > 0) {
             if (juce::OSCSender::connect("127.0.0.1", helperPort)) {

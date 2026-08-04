@@ -322,21 +322,22 @@ void M1PannerAudioProcessor::createLayout()
     {
         /// EXTERNAL MULTICHANNEL PROCESSING
 
-        // In external mixer mode, respect user's input mode choice
-        // but ensure bus layout is compatible (mono/stereo only)
-        if (pannerSettings.m1Encode.getInputMode() == Mach1EncodeInputMode::Mono)
-        {
-            getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::mono());
-        }
-        else
-        {
-            // Default to stereo for all other modes (stereo processing)
-            getBus(true, 0)->setCurrentLayout(juce::AudioChannelSet::stereo());
-        }
+        // NEVER mutate bus layouts from inside the plugin: the host owns the
+        // layout, and VST3 wrappers cache channel mappings that desync (and
+        // assert/crash, e.g. Reaper track width changes) if the plugin calls
+        // setCurrentLayout() behind the host's back. Streaming mode simply
+        // accepts whatever mono/stereo bus the host negotiated and writes
+        // that channel count into the memory share.
 
-        // For external mixer, respect user's output mode choice but output stereo to host
-        // (Internal processing uses user's chosen output mode: 4, 8, or 14 channels)
-        getBus(false, 0)->setCurrentLayout(juce::AudioChannelSet::stereo()); // But output stereo to host
+        // Clamp the encode input mode to what the bus actually carries: a
+        // mono bus cannot feed a stereo encode (the second channel would
+        // render as silence in the helper).
+        if (getBus(true, 0)->getCurrentLayout().size() == 1
+            && pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputMode::Mono)
+        {
+            pannerSettings.m1Encode.setInputMode(Mach1EncodeInputMode::Mono);
+            m_cachedInputMode.store(static_cast<int>(Mach1EncodeInputMode::Mono));
+        }
 
         // CRITICAL: Initialize coefficients for external mixer mode
         m1EncodeChangeInputOutputMode(pannerSettings.m1Encode.getInputMode(), pannerSettings.m1Encode.getOutputMode());
