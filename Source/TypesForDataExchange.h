@@ -34,6 +34,10 @@ struct M1PannerParameterIDs
     static constexpr uint32_t COLOR_A = 0x4E5F6071;           // "colorA"
     static constexpr uint32_t DISPLAY_NAME = 0x5F607182;      // "displayName"
 
+    // Revision counter echoed back to the helper after applying its control
+    // messages (2-way control). Must match M1SystemHelperParameterIDs.
+    static constexpr uint32_t CONTROL_REVISION = 0x6A7B8C9D;
+
     // Helper function to generate hash from string (for dynamic parameter IDs)
     static uint32_t hashString(const char* str)
     {

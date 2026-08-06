@@ -1255,8 +1255,15 @@ void M1PannerAudioProcessor::timerCallback()
     pannerOSC->update(); // test for connection
 
 #if M1_ENABLE_EXTERNAL_RENDERER
-    if (!external_spatialmixer_active && m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
-        updateMemorySharingParametersOnly();
+    if (m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
+    {
+        // 2-way control: apply any parameter edits the helper wrote into our
+        // control ring (message thread - safe to touch host parameters)
+        processExternalControlMessages();
+
+        if (!external_spatialmixer_active)
+            updateMemorySharingParametersOnly();
+    }
 #endif
 
     if (pendingPannerSettingsSend.load() && pannerOSC->isConnected() && sendCurrentPannerSettings())
@@ -1825,6 +1832,10 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_B] = static_cast<int32_t>(pannerSettings.color.b.load());
     m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_A] = static_cast<int32_t>(pannerSettings.color.a.load());
 
+    // Echo the newest helper control revision we've applied so the helper can
+    // clear its pending-edit overlay (2-way control acknowledgment)
+    m_rtParameterMap.intParams[M1PannerParameterIDs::CONTROL_REVISION] = m_lastAppliedControlRevision.load();
+
     // DISPLAY_NAME: use cached string to avoid allocation (updated on timer thread)
     // The key already exists after first call, so this is an in-place update
     if (track_properties.name.has_value() && !track_properties.name->isEmpty())
@@ -1887,6 +1898,8 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
     m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_B] = static_cast<int32_t>(pannerSettings.color.b.load());
     m_rtParameterMap.intParams[M1PannerParameterIDs::COLOR_A] = static_cast<int32_t>(pannerSettings.color.a.load());
 
+    m_rtParameterMap.intParams[M1PannerParameterIDs::CONTROL_REVISION] = m_lastAppliedControlRevision.load();
+
     if (track_properties.name.has_value() && !track_properties.name->isEmpty())
         m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = track_properties.name->toStdString();
     else
@@ -1903,6 +1916,89 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
     // Touch the file modification time on the timer thread (not the audio thread)
     if (m_memoryShare)
         m_memoryShare->scheduleAsyncFileModTimeUpdate();
+}
+
+void M1PannerAudioProcessor::processExternalControlMessages()
+{
+    if (!m_memoryShareInitialized || !m_memoryShare || !m_memoryShare->isValid())
+        return;
+
+    ParameterMap updates;
+    int32_t newestRevision = m_lastAppliedControlRevision.load();
+    bool receivedAny = false;
+
+    M1MemoryShare::ControlMessage message;
+    int drained = 0;
+    while (drained < 32 && m_memoryShare->readControlMessage(message))
+    {
+        ++drained;
+        receivedAny = true;
+        // The helper sends every edit as FLOAT (bools as 0/1); the message's
+        // intValue carries the helper's revision counter, which we echo back
+        // through CONTROL_REVISION so its pending-edit overlay can clear.
+        updates.floatParams[message.parameterID] = message.floatValue;
+        newestRevision = std::max(newestRevision, message.intValue);
+    }
+
+    if (!receivedAny)
+        return;
+
+    applyExternalSettingsUpdate(updates, ParameterUpdateSource::MEMORYSHARE);
+    m_lastAppliedControlRevision.store(newestRevision);
+}
+
+bool M1PannerAudioProcessor::applyExternalSettingsUpdate(const ParameterMap& updateParams, ParameterUpdateSource updateSource)
+{
+    juce::ignoreUnused(updateSource);
+
+    bool applied = false;
+
+    // Route through the host parameters (message thread) so automation, the
+    // UI, pannerSettings and the next shared-memory block all stay coherent -
+    // parameterChanged() is the single funnel for state updates.
+    auto applyFloat = [&](uint32_t id, const juce::String& juceParamID) {
+        auto it = updateParams.floatParams.find(id);
+        if (it == updateParams.floatParams.end())
+            return;
+        if (auto* parameter = parameters.getParameter(juceParamID))
+        {
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost(parameter->convertTo0to1(it->second));
+            parameter->endChangeGesture();
+            applied = true;
+        }
+    };
+
+    auto applyBool = [&](uint32_t id, const juce::String& juceParamID) {
+        float value = 0.0f;
+        if (auto it = updateParams.floatParams.find(id); it != updateParams.floatParams.end())
+            value = it->second;
+        else if (auto itB = updateParams.boolParams.find(id); itB != updateParams.boolParams.end())
+            value = itB->second ? 1.0f : 0.0f;
+        else
+            return;
+        if (auto* parameter = parameters.getParameter(juceParamID))
+        {
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost(value >= 0.5f ? 1.0f : 0.0f);
+            parameter->endChangeGesture();
+            applied = true;
+        }
+    };
+
+    applyFloat(M1PannerParameterIDs::AZIMUTH, paramAzimuth);
+    applyFloat(M1PannerParameterIDs::ELEVATION, paramElevation);
+    applyFloat(M1PannerParameterIDs::DIVERGE, paramDiverge);
+    applyFloat(M1PannerParameterIDs::GAIN, paramGain);
+    applyFloat(M1PannerParameterIDs::STEREO_ORBIT_AZIMUTH, paramStereoOrbitAzimuth);
+    applyFloat(M1PannerParameterIDs::STEREO_SPREAD, paramStereoSpread);
+    applyFloat(M1PannerParameterIDs::STEREO_INPUT_BALANCE, paramStereoInputBalance);
+    applyBool(M1PannerParameterIDs::AUTO_ORBIT, paramAutoOrbit);
+    applyBool(M1PannerParameterIDs::ISOTROPIC_MODE, paramIsotropicEncodeMode);
+    applyBool(M1PannerParameterIDs::EQUALPOWER_MODE, paramEqualPowerEncodeMode);
+    applyBool(M1PannerParameterIDs::GAIN_COMPENSATION_MODE, paramGainCompensationMode);
+
+    return applied;
 }
 
 bool M1PannerAudioProcessor::isHelperServiceAvailable() const

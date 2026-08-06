@@ -1366,14 +1366,34 @@ void PannerUIBaseComponent::draw()
     if (processor->external_spatialmixer_active)
     {
         const bool helperConnected = processor->pannerOSC != nullptr && processor->pannerOSC->isConnected();
+        // Somebody must be draining our shared-memory ring, otherwise the
+        // audio we write silently goes nowhere - the worst failure mode of
+        // streaming mode, so warn about it explicitly.
+        const bool hasConsumer = processor->getMemoryShareConsumerCount() > 0;
+
+        juce::String label;
+        MurkaColor color(90, 217, 115);
+        if (!helperConnected)
+        {
+            label = "STREAMING (HELPER NOT CONNECTED)";
+            color = MurkaColor(255, 153, 64);
+        }
+        else if (!hasConsumer)
+        {
+            label = "STREAMING (NO CONSUMER - AUDIO NOT RECEIVED)";
+            color = MurkaColor(255, 102, 102);
+        }
+        else
+        {
+            label = "STREAMING TO M1-SYSTEM-HELPER";
+        }
 
         m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 5);
-        auto& streamingLabel = m.prepare<M1Label>(MurkaShape(25, 6, 260, 20));
-        streamingLabel.label = helperConnected ? "STREAMING TO M1-SYSTEM-HELPER" : "STREAMING (HELPER NOT CONNECTED)";
+        auto& streamingLabel = m.prepare<M1Label>(MurkaShape(25, 6, 300, 20));
+        streamingLabel.label = label.toStdString();
         streamingLabel.alignment = TEXT_LEFT;
         streamingLabel.customColor = true;
-        streamingLabel.color = helperConnected ? MurkaColor(90, 217, 115)
-                                               : MurkaColor(255, 153, 64);
+        streamingLabel.color = color;
         streamingLabel.enabled = true;
         streamingLabel.highlighted = false;
         streamingLabel.draw();

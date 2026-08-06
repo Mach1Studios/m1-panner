@@ -212,6 +212,11 @@ public:
 
     bool applyExternalSettingsUpdate(const ParameterMap& parameters, ParameterUpdateSource updateSource);
 
+    // 2-way control (helper -> panner): drain the shared-memory control ring
+    // on the message-thread timer and apply edits via the host parameters.
+    void processExternalControlMessages();
+    std::atomic<int32_t> m_lastAppliedControlRevision { 0 };
+
     juce::String generateUniqueInstanceName() const;
     juce::String getMemoryInstanceName() const { return m_instanceBaseName; }
 
@@ -219,6 +224,19 @@ public:
     bool isHelperServiceAvailable() const;
     juce::String m_uniqueInstanceId;
 #endif
+
+    /** Consumers registered on our shared-memory ring. 0 means we are writing
+        audio but nothing (helper) is draining it - surfaced as a UI warning. */
+    uint32_t getMemoryShareConsumerCount() const
+    {
+#if M1_ENABLE_EXTERNAL_RENDERER
+        return (m_memoryShareInitialized && m_memoryShare != nullptr && m_memoryShare->isValid())
+            ? m_memoryShare->getConsumerCount()
+            : 0;
+#else
+        return 0;
+#endif
+    }
 
     // UI related utility functions
     struct Line2D
