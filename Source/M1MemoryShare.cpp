@@ -2,6 +2,7 @@
 #include "Utility/SharedMemoryPaths.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <limits>
 #include <new>
@@ -76,6 +77,12 @@ bool M1MemoryShare::createSharedMemoryFile()
     }
 
     DBG("[M1MemoryShare] Attempting to create file: " + m_tempFile.getFullPathName());
+
+    // Always start from a fresh inode: FileOutputStream appends to an existing
+    // file (a crash leftover would grow instead of being reinitialized), and
+    // readers still holding a mapping of the old file must see it disappear.
+    if (m_tempFile.exists())
+        m_tempFile.deleteFile();
 
     {
         juce::FileOutputStream outputStream(m_tempFile);
@@ -237,7 +244,8 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
                                                               bool isPlaying,
                                                               bool blockWhenConsumersBehind,
                                                               uint32_t updateSource,
-                                                              uint32_t sampleRate)
+                                                              uint32_t sampleRate,
+                                                              int64_t playheadPositionSamples)
 {
     if (!isRingConfigured())
         return 0;
@@ -257,7 +265,8 @@ uint64_t M1MemoryShare::writeAudioBufferWithGenericParameters(const juce::AudioB
     const size_t written = serializeBlock(slot, m_header->slotSize,
                                           audioBuffer, parameters,
                                           dawTimestamp, playheadPositionInSeconds, isPlaying,
-                                          updateSource, sampleRate, blockIndex);
+                                          updateSource, sampleRate, blockIndex,
+                                          playheadPositionSamples);
     if (written == 0)
         return 0;
 
@@ -511,7 +520,8 @@ size_t M1MemoryShare::serializeBlock(uint8_t* dst,
                                      bool isPlaying,
                                      uint32_t updateSource,
                                      uint32_t sampleRate,
-                                     uint64_t blockIndex)
+                                     uint64_t blockIndex,
+                                     int64_t playheadPositionSamples)
 {
     const uint32_t channels = static_cast<uint32_t>(std::max(0, audioBuffer.getNumChannels()));
     const uint32_t samples = static_cast<uint32_t>(std::max(0, audioBuffer.getNumSamples()));
@@ -549,7 +559,12 @@ size_t M1MemoryShare::serializeBlock(uint8_t* dst,
     header.consumerCount = m_header->consumerCount.load(std::memory_order_relaxed);
     header.acknowledgedCount = 0;
     header.sampleRate = sampleRate;
-    header.startSamplePosition = static_cast<int64_t>(playheadPositionInSeconds * static_cast<double>(sampleRate));
+    // Prefer the host's sample-accurate position; the seconds*rate fallback is
+    // rounded (not truncated) so consecutive blocks stay contiguous instead of
+    // drifting +/-1 sample per block, which shows up as clicks in exports.
+    header.startSamplePosition = playheadPositionSamples >= 0
+        ? playheadPositionSamples
+        : static_cast<int64_t>(std::llround(playheadPositionInSeconds * static_cast<double>(sampleRate)));
 
     std::memcpy(dst, &header, sizeof(header));
 

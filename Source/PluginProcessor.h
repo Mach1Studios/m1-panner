@@ -238,6 +238,14 @@ public:
 #endif
     }
 
+    // P4: user-facing toggle broadcast by the helper via
+    // "/m1-external-renderer-enabled". When off, an instance whose bus
+    // geometry qualifies for streaming stays in native processing instead.
+    std::atomic<bool> m_helperExternalRendererEnabled { true };
+    bool m_externalMixerGeometryEligible = false;
+    void setHelperExternalRendererEnabled(bool enabled);
+    bool isExternalMixerGeometryEligible() const { return m_externalMixerGeometryEligible; }
+
     // UI related utility functions
     struct Line2D
     {

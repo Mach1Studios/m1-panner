@@ -38,6 +38,12 @@ struct M1PannerParameterIDs
     // messages (2-way control). Must match M1SystemHelperParameterIDs.
     static constexpr uint32_t CONTROL_REVISION = 0x6A7B8C9D;
 
+    // Whether this instance is streaming audio to the helper (external
+    // renderer mode). False = processing natively (e.g. multichannel bus);
+    // keepalive blocks still flow but no audio will. Must match
+    // M1SystemHelperParameterIDs.
+    static constexpr uint32_t EXTERNAL_ACTIVE = 0x7B8C9DAE;
+
     // Helper function to generate hash from string (for dynamic parameter IDs)
     static uint32_t hashString(const char* str)
     {

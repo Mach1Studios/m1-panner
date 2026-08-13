@@ -179,6 +179,13 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
                 }
             }
         }
+        else if (msg.getAddressPattern() == "/m1-external-renderer-enabled")
+        {
+            // P4: user toggled streaming in the helper (tray menu). When off,
+            // eligible mono/stereo instances fall back to native processing.
+            if (msg.size() >= 1 && msg[0].isInt32())
+                setHelperExternalRendererEnabled(msg[0].getInt32() != 0);
+        }
     });
 
     // Get or assign a track color for panner instance -> player
@@ -214,7 +221,11 @@ M1PannerAudioProcessor::~M1PannerAudioProcessor()
     stopTimer();
 
 #if M1_ENABLE_EXTERNAL_RENDERER
-    if (m_memoryShare && m_memoryShareInitialized && m_instanceBaseName.isNotEmpty())
+    // Not gated on m_memoryShareInitialized: that flag is false whenever the
+    // instance sits on a multichannel bus (releaseResources clears it), but
+    // the segment file exists as long as m_memoryShare does. Leaving it
+    // behind would keep a ghost "No audio received" row in the helper.
+    if (m_memoryShare && m_instanceBaseName.isNotEmpty())
     {
         m_memoryShare.reset();
         M1MemoryShare::deleteSharedMemory(m_instanceBaseName);
@@ -305,12 +316,19 @@ void M1PannerAudioProcessor::createLayout()
 #if M1_ENABLE_EXTERNAL_RENDERER
     if ((inputChannels == 1 && outputChannels == 2) || (inputChannels == 2 && outputChannels == 2))
     {
-        external_spatialmixer_active = true;
-        setExternalSpatialMixerActive(true);
-        DBG("[PANNER] External spatial mixer activated for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
+        // Geometry qualifies; the user-facing helper toggle has final say
+        // (P4). When the helper has streaming disabled we behave like a
+        // plain stereo panner and write no audio into shared memory.
+        m_externalMixerGeometryEligible = true;
+        external_spatialmixer_active = m_helperExternalRendererEnabled.load();
+        setExternalSpatialMixerActive(external_spatialmixer_active);
+        DBG("[PANNER] External spatial mixer "
+            + juce::String(external_spatialmixer_active ? "activated" : "eligible but disabled by helper setting")
+            + " for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
     }
     else
     {
+        m_externalMixerGeometryEligible = false;
         external_spatialmixer_active = false;
         DBG("[PANNER] Internal processing mode for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
     }
@@ -1255,12 +1273,18 @@ void M1PannerAudioProcessor::timerCallback()
     pannerOSC->update(); // test for connection
 
 #if M1_ENABLE_EXTERNAL_RENDERER
-    if (m_memoryShareInitialized && m_memoryShare && m_memoryShare->isValid())
+    // Deliberately not gated on m_memoryShareInitialized: after a bus-width
+    // change to multichannel the segment stays valid but "uninitialized", and
+    // these keepalives are what tell the helper we're still alive - just no
+    // longer streaming audio (EXTERNAL_ACTIVE=false rides in the parameters).
+    if (m_memoryShare && m_memoryShare->isValid())
     {
         // 2-way control: apply any parameter edits the helper wrote into our
         // control ring (message thread - safe to touch host parameters)
         processExternalControlMessages();
 
+        // Keepalive writes only happen while processBlock is NOT writing
+        // (external inactive) - the shared ring has a single-writer design.
         if (!external_spatialmixer_active)
             updateMemorySharingParametersOnly();
     }
@@ -1287,6 +1311,25 @@ void M1PannerAudioProcessor::setUiInteractionState(int newState)
     const int previousState = pannerSettings.state.exchange(newState);
     if (previousState != newState)
         pendingPannerSettingsSend.store(true);
+}
+
+void M1PannerAudioProcessor::setHelperExternalRendererEnabled(bool enabled)
+{
+    const bool wasEnabled = m_helperExternalRendererEnabled.exchange(enabled);
+    if (wasEnabled == enabled)
+        return;
+
+#if M1_ENABLE_EXTERNAL_RENDERER
+    // Only flip the processing path when this instance's bus geometry
+    // qualifies for streaming; multichannel instances are unaffected.
+    if (m_externalMixerGeometryEligible)
+    {
+        external_spatialmixer_active = enabled;
+        setExternalSpatialMixerActive(enabled);
+        DBG("[PANNER] External renderer " + juce::String(enabled ? "re-enabled" : "disabled")
+            + " by helper setting");
+    }
+#endif
 }
 
 //==============================================================================
@@ -1738,6 +1781,23 @@ void M1PannerAudioProcessor::initializeMemorySharing()
 {
     try
     {
+        // Host bus-width round-trips (e.g. 2x2 -> 8x8 -> 2x2) re-enter here with
+        // a still-valid mapping. Reuse it instead of recreating the file: a
+        // recreate deletes the segment, which strands the helper's consumer
+        // registrations on the orphaned inode - audio then streams to nobody
+        // until the helper notices and remaps. Reconfiguring the ring in place
+        // keeps every registered consumer attached.
+        if (m_memoryShare != nullptr && m_memoryShare->isValid())
+        {
+            m_memoryShare->initializeForAudio(
+                static_cast<uint32_t>(processorSampleRate),
+                static_cast<uint32_t>(getMainBusNumInputChannels()),
+                static_cast<uint32_t>(m_lastKnownSamplesPerBlock));
+            m_memoryShareInitialized = true;
+            DBG("[M1MemoryShare] Reusing existing segment: " + m_instanceBaseName);
+            return;
+        }
+
         // Generate unique base name for this instance (only if not restored from state)
         if (m_instanceBaseName.isEmpty())
         {
@@ -1794,6 +1854,7 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
 
     uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
     double playheadPosition = 0.0;
+    int64_t playheadSamples = -1; // sample-accurate position; -1 = unknown
     bool isPlaying = false;
 
     // Get playhead info from DAW (this is safe in processBlock)
@@ -1804,6 +1865,7 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
         {
             isPlaying = currentPlayHeadInfo.isPlaying;
             playheadPosition = currentPlayHeadInfo.timeInSeconds;
+            playheadSamples = currentPlayHeadInfo.timeInSamples;
         }
     }
 
@@ -1836,6 +1898,10 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     // clear its pending-edit overlay (2-way control acknowledgment)
     m_rtParameterMap.intParams[M1PannerParameterIDs::CONTROL_REVISION] = m_lastAppliedControlRevision.load();
 
+    // Streaming-state report: lets the helper UI distinguish "streaming" from
+    // "alive but processing natively" (e.g. after a multichannel bus change)
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::EXTERNAL_ACTIVE] = external_spatialmixer_active;
+
     // DISPLAY_NAME: use cached string to avoid allocation (updated on timer thread)
     // The key already exists after first call, so this is an in-place update
     if (track_properties.name.has_value() && !track_properties.name->isEmpty())
@@ -1851,7 +1917,8 @@ void M1PannerAudioProcessor::updateMemorySharing(const juce::AudioBuffer<float>&
     // write never blocks; a slow consumer simply misses old blocks.
     m_memoryShare->writeAudioBufferWithGenericParameters(inputBuffer, m_rtParameterMap, dawTimestamp,
                                                          playheadPosition, isPlaying,
-                                                         isNonRealtime(), 1, currentSampleRate);
+                                                         isNonRealtime(), 1, currentSampleRate,
+                                                         playheadSamples);
 }
 
 void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
@@ -1861,6 +1928,7 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
 
     uint64_t dawTimestamp = static_cast<uint64_t>(juce::Time::currentTimeMillis());
     double playheadPosition = 0.0;
+    int64_t playheadSamples = -1;
     bool isPlaying = false;
 
     // Get playhead info from DAW if available
@@ -1871,6 +1939,7 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
         {
             isPlaying = currentPlayHeadInfo.isPlaying;
             playheadPosition = currentPlayHeadInfo.timeInSeconds;
+            playheadSamples = currentPlayHeadInfo.timeInSamples;
         }
     }
 
@@ -1900,6 +1969,10 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
 
     m_rtParameterMap.intParams[M1PannerParameterIDs::CONTROL_REVISION] = m_lastAppliedControlRevision.load();
 
+    // Streaming-state report: on a multichannel bus this keepalive is the
+    // helper's only signal that we're alive but intentionally not streaming
+    m_rtParameterMap.boolParams[M1PannerParameterIDs::EXTERNAL_ACTIVE] = external_spatialmixer_active;
+
     if (track_properties.name.has_value() && !track_properties.name->isEmpty())
         m_rtParameterMap.stringParams[M1PannerParameterIDs::DISPLAY_NAME] = track_properties.name->toStdString();
     else
@@ -1911,7 +1984,8 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
     juce::AudioBuffer<float> emptyBuffer(2, 0);
     m_memoryShare->writeAudioBufferWithGenericParameters(emptyBuffer, m_rtParameterMap, dawTimestamp,
                                                          playheadPosition, isPlaying,
-                                                         false, 1, currentSampleRate);
+                                                         false, 1, currentSampleRate,
+                                                         playheadSamples);
 
     // Touch the file modification time on the timer thread (not the audio thread)
     if (m_memoryShare)
@@ -1920,7 +1994,9 @@ void M1PannerAudioProcessor::updateMemorySharingParametersOnly()
 
 void M1PannerAudioProcessor::processExternalControlMessages()
 {
-    if (!m_memoryShareInitialized || !m_memoryShare || !m_memoryShare->isValid())
+    // Not gated on m_memoryShareInitialized: helper edits must still apply
+    // while this instance processes natively on a multichannel bus.
+    if (!m_memoryShare || !m_memoryShare->isValid())
         return;
 
     ParameterMap updates;

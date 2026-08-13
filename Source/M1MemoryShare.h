@@ -170,6 +170,11 @@ public:
      *        blocks until all registered consumers have caught up before
      *        overwriting unread slots, so no blocks are dropped. When false
      *        (realtime), never blocks; a slow consumer simply loses old blocks.
+     * @param playheadPositionSamples Sample-accurate DAW timeline position of
+     *        the first sample (AudioPlayHead timeInSamples). When >= 0 it is
+     *        stored directly in startSamplePosition; when < 0 the position is
+     *        derived from playheadPositionInSeconds * sampleRate, which can
+     *        jitter by +/-1 sample and cause seams in captured audio.
      * @return bufferId (blockIndex + 1) on success, 0 on failure/skip
      */
     uint64_t writeAudioBufferWithGenericParameters(const juce::AudioBuffer<float>& audioBuffer,
@@ -179,7 +184,8 @@ public:
                                                    bool isPlaying,
                                                    bool blockWhenConsumersBehind = false,
                                                    uint32_t updateSource = 1,
-                                                   uint32_t sampleRate = 44100);
+                                                   uint32_t sampleRate = 44100,
+                                                   int64_t playheadPositionSamples = -1);
 
     /** Maximum time a blocking write waits for consumers (default 2000 ms). */
     void setBackpressureTimeoutMs(uint32_t timeoutMs) { m_backpressureTimeoutMs = timeoutMs; }
@@ -276,7 +282,8 @@ private:
                           bool isPlaying,
                           uint32_t updateSource,
                           uint32_t sampleRate,
-                          uint64_t blockIndex);
+                          uint64_t blockIndex,
+                          int64_t playheadPositionSamples);
     bool parseBlock(const uint8_t* data, size_t size, SharedBlock& out) const;
     bool copySlotToScratch(uint64_t blockIndex, std::vector<uint8_t>& scratch) const;
 

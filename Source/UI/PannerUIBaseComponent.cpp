@@ -1398,6 +1398,21 @@ void PannerUIBaseComponent::draw()
         streamingLabel.highlighted = false;
         streamingLabel.draw();
     }
+    else if (processor->isExternalMixerGeometryEligible()
+             && !processor->m_helperExternalRendererEnabled.load())
+    {
+        // This bus would stream, but the user switched the feature off in the
+        // helper's tray menu - say so instead of silently showing nothing.
+        m.setFontFromRawData(PLUGIN_FONT, BINARYDATA_FONT, BINARYDATA_FONT_SIZE, DEFAULT_FONT_SIZE - 5);
+        auto& streamingLabel = m.prepare<M1Label>(MurkaShape(25, 6, 300, 20));
+        streamingLabel.label = "STREAMING DISABLED IN M1-SYSTEM-HELPER";
+        streamingLabel.alignment = TEXT_LEFT;
+        streamingLabel.customColor = true;
+        streamingLabel.color = MurkaColor(150, 150, 150);
+        streamingLabel.enabled = true;
+        streamingLabel.highlighted = false;
+        streamingLabel.draw();
+    }
 
     // update the panner state if a user is interacting with the UI
     if (azLabel.highlighted || dLabel.highlighted || zLabel.highlighted || xLabel.highlighted || yLabel.highlighted || srLabel.highlighted || ssLabel.highlighted || spLabel.highlighted || gLabel.highlighted)
