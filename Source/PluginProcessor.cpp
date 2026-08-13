@@ -6,8 +6,18 @@
   ==============================================================================
 */
 
+#if defined(_WIN32)
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+#endif
+
 #include "PluginProcessor.h"
 #include "ChannelConfigPolicy.h"
+#include "ExternalRendererModePolicy.h"
 #include "PluginEditor.h"
 
 // Platform-specific includes for process ID.
@@ -44,9 +54,6 @@ bool areUiReticleSnapshotStatesEqual(const M1PannerAudioProcessor::UiReticleSnap
     - parameterChanged() checks if matched with pannerSettings and otherwise updates this too
     - parameters expect normalized 0->1 except the i/o and pannerSettings which expects unnormalled values
  */
-
-// Static variable definition
-bool M1PannerAudioProcessor::s_globalExternalMixerActive = false;
 
 juce::String M1PannerAudioProcessor::paramAzimuth("azimuth");
 juce::String M1PannerAudioProcessor::paramElevation("elevation"); // also Z
@@ -312,24 +319,25 @@ void M1PannerAudioProcessor::createLayout()
     int inputChannels = getBus(true, 0)->getCurrentLayout().size();
     int outputChannels = getBus(false, 0)->getCurrentLayout().size();
 
-    // Activate external mixer for 1,2 (mono in, stereo out) or 2,2 (stereo in, stereo out) configurations
+    // Activate external rendering only when the host cannot carry the spatial
+    // output itself. Wider outputs always stay on the native multichannel path.
 #if M1_ENABLE_EXTERNAL_RENDERER
-    if ((inputChannels == 1 && outputChannels == 2) || (inputChannels == 2 && outputChannels == 2))
+    const auto rendererMode = Mach1::ExternalRendererModePolicy::evaluate(
+        inputChannels, outputChannels, m_helperExternalRendererEnabled.load());
+    m_externalMixerGeometryEligible = rendererMode.geometryEligible;
+    external_spatialmixer_active = rendererMode.streamToHelper;
+
+    if (rendererMode.geometryEligible)
     {
         // Geometry qualifies; the user-facing helper toggle has final say
         // (P4). When the helper has streaming disabled we behave like a
         // plain stereo panner and write no audio into shared memory.
-        m_externalMixerGeometryEligible = true;
-        external_spatialmixer_active = m_helperExternalRendererEnabled.load();
-        setExternalSpatialMixerActive(external_spatialmixer_active);
         DBG("[PANNER] External spatial mixer "
             + juce::String(external_spatialmixer_active ? "activated" : "eligible but disabled by helper setting")
             + " for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
     }
     else
     {
-        m_externalMixerGeometryEligible = false;
-        external_spatialmixer_active = false;
         DBG("[PANNER] Internal processing mode for " + juce::String(inputChannels) + "," + juce::String(outputChannels) + " configuration");
     }
 #else
@@ -354,7 +362,9 @@ void M1PannerAudioProcessor::createLayout()
             && pannerSettings.m1Encode.getInputMode() != Mach1EncodeInputMode::Mono)
         {
             pannerSettings.m1Encode.setInputMode(Mach1EncodeInputMode::Mono);
+#if M1_ENABLE_EXTERNAL_RENDERER
             m_cachedInputMode.store(static_cast<int>(Mach1EncodeInputMode::Mono));
+#endif
         }
 
         // CRITICAL: Initialize coefficients for external mixer mode
@@ -1325,7 +1335,6 @@ void M1PannerAudioProcessor::setHelperExternalRendererEnabled(bool enabled)
     if (m_externalMixerGeometryEligible)
     {
         external_spatialmixer_active = enabled;
-        setExternalSpatialMixerActive(enabled);
         DBG("[PANNER] External renderer " + juce::String(enabled ? "re-enabled" : "disabled")
             + " by helper setting");
     }

@@ -185,9 +185,6 @@ public:
     static constexpr bool external_spatialmixer_active = false;
 #endif
 
-    // Global functions for external mixer mode
-    static bool getExternalSpatialMixerActive() { return s_globalExternalMixerActive; }
-    static void setExternalSpatialMixerActive(bool active) { s_globalExternalMixerActive = active; }
     bool isExternalSpatialMixerActive() const { return external_spatialmixer_active; }
 #if M1_ENABLE_EXTERNAL_RENDERER
     void setInstanceExternalMixerActive(bool active) { external_spatialmixer_active = active; }
@@ -337,9 +334,6 @@ private:
     void refreshUiReticleSnapshotIfNeeded();
     void applyStateToEncode(Mach1Encode<float>& encode, const UiReticleSnapshotState& state);
     bool sendCurrentPannerSettings();
-
-    // Static variable for global external mixer state
-    static bool s_globalExternalMixerActive;
 
     // Per-instance counter for the periodic helper-service health check
     int helperHealthCheckCounter = 0;

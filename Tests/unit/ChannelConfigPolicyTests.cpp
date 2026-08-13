@@ -8,6 +8,7 @@
 // (grey/unresponsive plugin UIs).
 
 #include "ChannelConfigPolicy.h"
+#include "ExternalRendererModePolicy.h"
 
 #include <iostream>
 
@@ -53,6 +54,33 @@ int main()
 
     // A real change must go through.
     CHECK(shouldApplyChannelConfig(false, mode8, 0.0f, 0.5f));
+
+    using Mach1::ExternalRendererModePolicy::evaluate;
+
+    // Stereo-only host layouts are the only external-renderer candidates.
+    CHECK(evaluate(1, 2, true).geometryEligible);
+    CHECK(evaluate(2, 2, true).geometryEligible);
+    CHECK(!evaluate(1, 1, true).geometryEligible);
+    CHECK(!evaluate(2, 4, true).geometryEligible);
+    CHECK(!evaluate(4, 4, true).geometryEligible);
+    CHECK(!evaluate(8, 8, true).geometryEligible);
+    CHECK(!evaluate(14, 14, true).geometryEligible);
+
+    // The helper toggle can disable an eligible layout, but it must never
+    // turn a native multichannel layout into a streaming one.
+    CHECK(!evaluate(2, 2, false).streamToHelper);
+    CHECK(!evaluate(4, 4, true).streamToHelper);
+    CHECK(!evaluate(8, 8, true).streamToHelper);
+    CHECK(!evaluate(14, 14, true).streamToHelper);
+
+#if M1_ENABLE_EXTERNAL_RENDERER
+    CHECK(evaluate(1, 2, true).streamToHelper);
+    CHECK(evaluate(2, 2, true).streamToHelper);
+#else
+    // Native-only build: even eligible stereo geometry must never stream.
+    CHECK(!evaluate(1, 2, true).streamToHelper);
+    CHECK(!evaluate(2, 2, true).streamToHelper);
+#endif
 
     if (failures == 0) {
         std::cout << "All m1-panner policy tests passed" << std::endl;

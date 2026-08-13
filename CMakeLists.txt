@@ -228,10 +228,23 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Modules/m1-sdk/libmach1
 
 ### setup info.plist and entitlements for macos
 if(APPLE)
+  set(MACH1_ENTITLEMENTS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist")
+  if(NOT EXISTS "${MACH1_ENTITLEMENTS_FILE}")
+    message(FATAL_ERROR "External renderer requires ${MACH1_ENTITLEMENTS_FILE}")
+  endif()
+  file(READ "${MACH1_ENTITLEMENTS_FILE}" MACH1_ENTITLEMENTS_CONTENT)
+  string(FIND "${MACH1_ENTITLEMENTS_CONTENT}"
+              "<string>${MACH1_SHARED_APP_GROUP_ID}</string>"
+              MACH1_APP_GROUP_MATCH)
+  if(MACH1_APP_GROUP_MATCH EQUAL -1)
+    message(FATAL_ERROR
+      "M1-Panner entitlement must include app group ${MACH1_SHARED_APP_GROUP_ID}")
+  endif()
+
   foreach(format_target ${FORMATS})
     if(TARGET ${PLUGIN_NAME}_${format_target})
       set_target_properties(${PLUGIN_NAME}_${format_target} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/entitlements.mac.plist"
+        XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${MACH1_ENTITLEMENTS_FILE}"
       )
     endif()
   endforeach()

@@ -1,6 +1,7 @@
 target_sources(${PLUGIN_NAME} PRIVATE    Config.h
                                     TypesForDataExchange.h
                                     AlertData.h
+                                    ExternalRendererModePolicy.h
                                     PluginEditor.cpp
                                     PluginEditor.h
                                     PluginProcessor.cpp

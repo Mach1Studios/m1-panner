@@ -92,14 +92,30 @@ jobs:
 
       - name: Configure
         if: ${{ matrix.name != 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_AU=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_UNIT_TESTS=ON -DENABLE_EXTERNAL_RENDERER=ON -DBUILD_VST3=ON -DBUILD_AU=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
 
       - name: Configure (Windows)
         if: ${{ matrix.name == 'Windows' }}
-        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
+        run: cmake -B ${{ env.BUILD_DIR }} -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_UNIT_TESTS=ON -DENABLE_EXTERNAL_RENDERER=ON -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=ON ${{ matrix.extra-flags }} .
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} ${{ matrix.extra-build-flags }}
+
+      - name: Test streaming-mode policy
+        run: ctest --test-dir ${{ env.BUILD_DIR }} -C ${{ env.BUILD_TYPE }} --output-on-failure -R m1-panner-policy
+
+      - name: Configure native-only policy (macOS)
+        if: ${{ matrix.name == 'macOS' }}
+        run: cmake -B build-native-tests -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_UNIT_TESTS=ON -DENABLE_EXTERNAL_RENDERER=OFF -DBUILD_VST3=ON -DBUILD_AU=OFF -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=OFF -DENABLE_VST2_COMPATIBILITY=OFF .
+
+      - name: Configure native-only policy (Windows)
+        if: ${{ matrix.name == 'Windows' }}
+        run: cmake -B build-native-tests -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DBUILD_UNIT_TESTS=ON -DENABLE_EXTERNAL_RENDERER=OFF -DBUILD_VST3=ON -DBUILD_STANDALONE=OFF -DBUILD_VST=OFF -DBUILD_AAX=OFF -DENABLE_VST2_COMPATIBILITY=OFF .
+
+      - name: Test native multichannel policy
+        run: |
+          cmake --build build-native-tests --config ${{ env.BUILD_TYPE }} --target M1-Panner_VST3 m1-panner-policy-tests
+          ctest --test-dir build-native-tests -C ${{ env.BUILD_TYPE }} --output-on-failure -R m1-panner-policy
 
       - name: Set additional env vars for next step
         run: |
