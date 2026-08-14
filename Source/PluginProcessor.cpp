@@ -129,6 +129,12 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
     requestedOutputMode.store(static_cast<int>(pannerSettings.m1Encode.getOutputMode()));
 #endif
 
+    // Stable logical identity is independent from the ephemeral memory-share
+    // segment name. The helper may replace the binding with the canonical ID
+    // for the currently open DAW project.
+    projectBindingId = juce::Uuid().toString().toLowerCase();
+    pluginInstanceId = juce::Uuid().toString().toLowerCase();
+
     // Setup osc and listener
     pannerOSC = std::make_unique<PannerOSC>(this);
     pannerOSC->AddListener([&](juce::OSCMessage msg) {
@@ -193,6 +199,13 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
             if (msg.size() >= 1 && msg[0].isInt32())
                 setHelperExternalRendererEnabled(msg[0].getInt32() != 0);
         }
+        else if (msg.getAddressPattern() == "/m1-project-binding")
+        {
+            if (msg.size() >= 1 && msg[0].isString())
+                applyProjectBinding(msg[0].getString(),
+                                    msg.size() >= 2 && msg[1].isString()
+                                        ? msg[1].getString() : juce::String());
+        }
     });
 
     // Get or assign a track color for panner instance -> player
@@ -211,10 +224,6 @@ M1PannerAudioProcessor::M1PannerAudioProcessor()
 
     // pannerOSC update timer loop
     startTimer(50);
-
-#if M1_ENABLE_EXTERNAL_RENDERER
-    m_uniqueInstanceId = generateUniqueInstanceName();
-#endif
 
     // print build time for debug
     juce::String date(__DATE__);
@@ -1611,6 +1620,32 @@ int getParameterIntFromXmlElement(juce::XmlElement* xml, juce::String paramName,
     return defVal;
 }
 
+M1PannerAudioProcessor::ProjectIdentity M1PannerAudioProcessor::getProjectIdentity() const
+{
+    const juce::ScopedLock lock(projectIdentityLock);
+    return { projectBindingId, projectDisplayName, pluginInstanceId };
+}
+
+void M1PannerAudioProcessor::applyProjectBinding(const juce::String& bindingId,
+                                                 const juce::String& displayName)
+{
+    const auto normalisedId = bindingId.trim().toLowerCase();
+    if (normalisedId.isEmpty())
+        return;
+
+    bool changed = false;
+    {
+        const juce::ScopedLock lock(projectIdentityLock);
+        const auto cleanName = displayName.trim();
+        changed = projectBindingId != normalisedId || projectDisplayName != cleanName;
+        projectBindingId = normalisedId;
+        projectDisplayName = cleanName;
+    }
+
+    if (changed)
+        updateHostDisplay();
+}
+
 void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
@@ -1619,10 +1654,11 @@ void M1PannerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     state.setProperty("trackColor_b", osc_colour.blue, nullptr);
     state.setProperty("trackColor_a", osc_colour.alpha, nullptr);
     state.setProperty("output_layout_lock", pannerSettings.lockOutputLayout.load(), nullptr);
-#if M1_ENABLE_EXTERNAL_RENDERER
-    if (m_instanceBaseName.isNotEmpty())
-        state.setProperty("memory_instance_name", m_instanceBaseName, nullptr);
-#endif
+    const auto projectIdentity = getProjectIdentity();
+    state.setProperty("project_binding_id", projectIdentity.bindingId, nullptr);
+    state.setProperty("project_display_name", projectIdentity.displayName, nullptr);
+    state.setProperty("plugin_instance_id", projectIdentity.pluginInstanceId, nullptr);
+    state.removeProperty("memory_instance_name", nullptr); // legacy transport identity was not portable
     if (auto xml = state.createXml())
     {
         copyXmlToBinary(*xml, destData);
@@ -1648,9 +1684,17 @@ void M1PannerAudioProcessor::setStateInformation(const void* data, int sizeInByt
                                           juce::var(pannerSettings.lockOutputLayout.load())));
             pannerSettings.lockOutputLayout.store(restoredLockOutputLayout);
             lockOutputLayout = restoredLockOutputLayout;
-#if M1_ENABLE_EXTERNAL_RENDERER
-            m_instanceBaseName = restoredState.getProperty("memory_instance_name", m_instanceBaseName).toString();
-#endif
+            {
+                const juce::ScopedLock lock(projectIdentityLock);
+                projectBindingId = restoredState
+                    .getProperty("project_binding_id", projectBindingId).toString();
+                projectDisplayName = restoredState
+                    .getProperty("project_display_name", projectDisplayName).toString();
+                pluginInstanceId = restoredState
+                    .getProperty("plugin_instance_id", pluginInstanceId).toString();
+            }
+            if (pannerOSC)
+                pannerOSC->sendProjectBindingClaim();
 
             needToUpdateM1EncodePoints.store(true);
             uiReticleSnapshotDirty.store(true);
@@ -1807,17 +1851,14 @@ void M1PannerAudioProcessor::initializeMemorySharing()
             return;
         }
 
-        // Generate unique base name for this instance (only if not restored from state)
+        // Transport identity is intentionally runtime-only. Persisting a name
+        // containing an old PID/pointer made reopened projects publish a stale
+        // owner and invited helper cleanup to delete a live segment.
         if (m_instanceBaseName.isEmpty())
         {
             m_instanceBaseName = generateUniqueInstanceName();
             DBG("[M1MemoryShare] Generated new memory instance name: " + m_instanceBaseName);
         }
-        else
-        {
-            DBG("[M1MemoryShare] Using restored memory instance name: " + m_instanceBaseName);
-        }
-
         // Calculate memory size needed (roughly 1MB for the block ring)
         size_t memorySize = 1024 * 1024; // 1MB
 

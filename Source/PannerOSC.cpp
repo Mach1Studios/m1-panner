@@ -2,6 +2,23 @@
 
 #include "PluginProcessor.h"
 
+#if JUCE_WINDOWS
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
+
+namespace {
+int currentHostProcessId()
+{
+#if JUCE_WINDOWS
+    return static_cast<int>(GetCurrentProcessId());
+#else
+    return static_cast<int>(getpid());
+#endif
+}
+} // namespace
+
 PannerOSC::PannerOSC(M1PannerAudioProcessor* processor_)
 {
     processor = processor_;
@@ -92,9 +109,7 @@ bool PannerOSC::init(int helperPort_)
         // Try to connect to the helper application
         if (helperPort > 0) {
             if (juce::OSCSender::connect("127.0.0.1", helperPort)) {
-                juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
-                msg.addInt32(port);
-                is_connected = juce::OSCSender::send(msg);
+                is_connected = sendProjectBindingClaim();
                 DBG("[OSC] Registered: " + std::to_string(port));
             } else {
                 // Add alert for failed helper connection
@@ -187,15 +202,37 @@ bool PannerOSC::sendStatusPulse(bool editorOpen)
     }
 }
 
+bool PannerOSC::sendProjectBindingClaim()
+{
+    if (port <= 0 || helperPort <= 0)
+        return false;
+
+    juce::OSCMessage message("/m1-register-plugin");
+    message.addInt32(port);
+    message.addInt32(currentHostProcessId());
+
+    const auto identity = processor != nullptr
+        ? processor->getProjectIdentity()
+        : M1PannerAudioProcessor::ProjectIdentity{};
+    message.addString(identity.bindingId);
+    message.addString(identity.displayName);
+    message.addString(identity.pluginInstanceId);
+
+    // State restoration can run before the inherited sender has connected.
+    // A temporary connected sender makes this registration safe regardless
+    // of host startup ordering.
+    juce::OSCSender registrationSender;
+    return registrationSender.connect("127.0.0.1", helperPort)
+        && registrationSender.send(message);
+}
+
 void PannerOSC::update()
 {
     if (!is_connected && helperPort > 0)
     {
         if (juce::OSCSender::connect("127.0.0.1", helperPort))
         {
-            juce::OSCMessage msg = juce::OSCMessage(juce::OSCAddressPattern("/m1-register-plugin"));
-            msg.addInt32(port);
-            is_connected = juce::OSCSender::send(msg);
+            is_connected = sendProjectBindingClaim();
             DBG("[OSC] Registered: " + std::to_string(port));
         }
     }

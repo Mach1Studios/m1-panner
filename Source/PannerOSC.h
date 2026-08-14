@@ -26,6 +26,7 @@ public:
     // every ping reply (self-healing) and on editor open/close so the helper
     // can skip high-rate UI-only broadcasts to instances with closed editors.
     bool sendStatusPulse(bool editorOpen);
+    bool sendProjectBindingClaim();
     bool isConnected();
     bool sendRequestForCurrentChannelConfig();
     bool sendPannerSettings(int state);

@@ -178,6 +178,16 @@ public:
     std::unique_ptr<PannerOSC> pannerOSC;
     juce::OSCColour osc_colour = { 0, 0, 0, 255 };
 
+    struct ProjectIdentity
+    {
+        juce::String bindingId;
+        juce::String displayName;
+        juce::String pluginInstanceId;
+    };
+    ProjectIdentity getProjectIdentity() const;
+    void applyProjectBinding(const juce::String& bindingId,
+                             const juce::String& displayName);
+
     // External spatial mixer mode management (requires M1_ENABLE_EXTERNAL_RENDERER)
 #if M1_ENABLE_EXTERNAL_RENDERER
     bool external_spatialmixer_active = false;
@@ -219,7 +229,6 @@ public:
 
     // On-demand helper service
     bool isHelperServiceAvailable() const;
-    juce::String m_uniqueInstanceId;
 #endif
 
     /** Consumers registered on our shared-memory ring. 0 means we are writing
@@ -334,6 +343,11 @@ private:
     void refreshUiReticleSnapshotIfNeeded();
     void applyStateToEncode(Mach1Encode<float>& encode, const UiReticleSnapshotState& state);
     bool sendCurrentPannerSettings();
+
+    mutable juce::CriticalSection projectIdentityLock;
+    juce::String projectBindingId;
+    juce::String projectDisplayName;
+    juce::String pluginInstanceId;
 
     // Per-instance counter for the periodic helper-service health check
     int helperHealthCheckCounter = 0;
